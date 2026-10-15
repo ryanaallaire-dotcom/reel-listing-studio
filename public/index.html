@@ -125,6 +125,7 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outli
 .ph-badge{position:absolute;left:6px;top:6px;font-size:11px;font-weight:700;letter-spacing:.06em;background:rgba(10,8,14,.72);color:#fff;border-radius:6px;padding:2px 7px}
 .ph-badge.cover{background:var(--brand);color:var(--on-brand)}
 .ph-badge.fx{left:auto;right:6px;background:color-mix(in srgb,var(--ok) 88%,#000);color:#0b1a10}
+.ph-badge.ai{left:auto;right:6px;top:auto;bottom:6px;background:var(--gold);color:#120f18}
 .ph-badge.shot{top:auto;bottom:6px;font-weight:600;letter-spacing:.03em}
 .ph-body{padding:8px;display:flex;flex-direction:column;gap:6px}
 .ph-body input{padding:7px 9px;font-size:13.5px}
@@ -268,14 +269,20 @@ input[type=color]{width:42px;height:36px;border:1px solid var(--line);border-rad
           <div class="f"><span>Touch-up</span>
             <div class="seg" role="group" aria-label="Photo touch-up" id="enhSeg"><button data-v="off">Off</button><button data-v="natural">Natural</button><button data-v="punchy">Punchy</button></div>
           </div>
+          <div class="f clips-only" hidden><span>AI motion</span>
+            <div class="seg" role="group" aria-label="AI motion clips" id="clipSeg"><button data-v="0">Off</button><button data-v="4">Top 4 shots</button><button data-v="6">Top 6 shots</button></div>
+          </div>
           <label class="toggle"><input type="checkbox" id="autoRender"> Render the video when done</label>
         </div>
+        <p class="small clips-only" id="clipNote" hidden></p>
         <div class="row"><button class="btn primary big" id="go">Make my video</button><span class="status" id="goStatus" aria-live="polite"></span></div>
         <ol class="pipe" id="pipe" hidden>
           <li data-s="read">Reading listing<small></small></li>
           <li data-s="pick">Picking the best<small></small></li>
           <li data-s="fix">Touching up<small></small></li>
+          <li data-s="depth" hidden>3D depth<small></small></li>
           <li data-s="ai" class="ai-only">Details &amp; shot list<small></small></li>
+          <li data-s="clips" hidden>AI motion<small></small></li>
           <li data-s="render">Rendering film<small></small></li>
         </ol>
       </div>
@@ -295,6 +302,7 @@ input[type=color]{width:42px;height:36px;border:1px solid var(--line);border-rad
       <details class="left-wrap" id="leftWrap" hidden><summary id="leftSum">Left out</summary><div class="left" id="left"></div></details>
       <div class="row ai-only" style="margin-top:14px">
         <button class="btn ai" id="aiLabel">Label &amp; order with AI</button>
+        <button class="btn ai clips-only" id="aiMotionBtn" hidden>Add AI motion to top shots</button>
         <span class="status" id="aiLabelStatus"></span>
       </div>
     </section>
@@ -487,7 +495,7 @@ const MAX_PHOTOS=300, MAX_ZIP=2.5e9;
 const S={
   photos:[], head:null, sampleDetails:true, raw:[], left:[], track:null, trackName:"",
   d:{...SAMPLE_D},
-  o:{tpl:"walk", fmt:"9:16", dur:1.6, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill"}
+  o:{tpl:"walk", fmt:"9:16", dur:1.6, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
 };
 try{
   const saved=JSON.parse(localStorage.getItem("lr-draft-3")||"null");
@@ -495,8 +503,8 @@ try{
     if(!saved.o||!saved.o.v6){ S.o.tpl="walk"; S.o.dur=1.6; S.o.stats=false; S.o.frame="fill"; } S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
 }catch(e){}
 (function validateSaved(){
-  const def={v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:1.6,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const def={clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:1.6,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
+  const ok={clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
@@ -806,6 +814,7 @@ uniform int uTr,uTaps;
 uniform float uSat,uCon,uWarm,uBloom,uGrain,uVig,uFade,uBars,uTime,uLeak;
 uniform vec3 uLift,uGain,uLeakCol;
 uniform float uFitA,uFitB,uRad; uniform vec4 uCardA,uCardB;
+uniform sampler2D uDA,uDB; uniform float uHasDA,uHasDB; uniform vec4 uXA0,uXA1,uXB0,uXB1;
 float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 vec2 coverS(vec2 sz,float sa){ float ia=sz.x/sz.y; return ia>sa? vec2(sa/ia,1.) : vec2(1.,ia/sa); }
 float nearW(vec2 i,float mode,vec2 sz){
@@ -813,7 +822,7 @@ float nearW(vec2 i,float mode,vec2 sz){
   if(mode<1.5){ return smoothstep(.42,1.,i.y); }
   return .5;
 }
-vec2 mapUV(vec2 uv, vec4 C, vec4 P, float mode, vec2 sz, vec2 off, float zx, float a){
+vec2 mapUV(vec2 uv, vec4 C, vec4 P, float mode, vec2 sz, vec2 off, float zx, float a, sampler2D dm, float hasD, vec4 X){
   vec2 cs=coverS(sz,a);
   vec2 p=uv-.5+off; p.x*=a; float c=cos(C.w), s=sin(C.w); p=vec2(c*p.x-s*p.y, s*p.x+c*p.y);
   // true perspective camera rotation (yaw, pitch): straight lines stay straight
@@ -821,23 +830,30 @@ vec2 mapUV(vec2 uv, vec4 C, vec4 P, float mode, vec2 sz, vec2 off, float zx, flo
   float cy=cos(P.x), sy=sin(P.x); r=vec3(cy*r.x+sy*r.z, r.y, -sy*r.x+cy*r.z);
   float cp=cos(P.y), sp=sin(P.y); r=vec3(r.x, cp*r.y-sp*r.z, sp*r.y+cp*r.z);
   p=f*r.xy/r.z; p.x/=a; p/=zx;
-  vec2 i0=.5+cs*p/C.x+C.yz; float n=nearW(i0,mode,sz);
+  vec2 i0=.5+cs*p/C.x+C.yz;
+  if(hasD>.5){
+    // real 3D parallax from the photo's depth map: near things move and grow more than far things
+    vec2 q=i0;
+    for(int k=0;k<4;k++){ float d=texture(dm,clamp(q,0.,1.)).r; q=.5+cs*p/(C.x*(1.+X.z*d))+C.yz+X.xy*(d-X.w); }
+    return clamp(q,vec2(.0005),vec2(.9995));
+  }
+  float n=nearW(i0,mode,sz);
   vec2 i=.5+cs*p/(C.x*(1.+P.z*n))+C.yz;
   return clamp(i,vec2(.0005),vec2(.9995));
 }
 vec3 tx(sampler2D t, vec2 i, float lod){ return lod>.01 ? textureLod(t,i,lod).rgb : texture(t,i).rgb; }
 // one shot: either fills the frame, or (full-photo framing) sits as a framed photo over a soft blurred copy of itself
-vec3 shot(sampler2D t, vec2 uv, vec4 C, vec4 P, float mode, vec2 sz, vec2 off, float zx, float fit, vec4 card, float blur, float ex, inout vec2 iuv){
+vec3 shot(sampler2D t, vec2 uv, vec4 C, vec4 P, float mode, vec2 sz, vec2 off, float zx, float fit, vec4 card, float blur, float ex, inout vec2 iuv, sampler2D dm, float hasD, vec4 X){
   float sa=uRes.x/uRes.y;
-  if(fit<.5){ iuv=mapUV(uv,C,P,mode,sz,off,zx,sa); return tx(t,iuv,blur)*ex; }
+  if(fit<.5){ iuv=mapUV(uv,C,P,mode,sz,off,zx,sa,dm,hasD,X); return tx(t,iuv,blur)*ex; }
   vec2 u2=.5+(uv-.5+off)/zx;
-  vec2 bi=mapUV(u2,vec4(C.x*1.1,C.y*.3,C.z*.3,0.),vec4(0.),2.,sz,vec2(0.),1.,sa);
+  vec2 bi=mapUV(u2,vec4(C.x*1.1,C.y*.3,C.z*.3,0.),vec4(0.),2.,sz,vec2(0.),1.,sa,dm,0.,X);
   vec3 bg=textureLod(t,bi,5.2).rgb*ex*.42;
   vec2 ctr=card.xy+card.zw*.5, px=(u2-ctr)*uRes, hs=card.zw*uRes*.5;
   vec2 q=abs(px)-hs+uRad; float d=length(max(q,0.))+min(max(q.x,q.y),0.)-uRad;
   float a=clamp(.5-d,0.,1.);
   if(d>0.) bg*=1.-(1.-smoothstep(0.,uRes.y*.04,d))*.55;
-  vec2 ci=mapUV((u2-card.xy)/card.zw,C,P,mode,sz,vec2(0.),1.,card.z*uRes.x/(card.w*uRes.y));
+  vec2 ci=mapUV((u2-card.xy)/card.zw,C,P,mode,sz,vec2(0.),1.,card.z*uRes.x/(card.w*uRes.y),dm,hasD,X);
   iuv = a>.5 ? ci : bi;
   vec3 cc = a>0. ? tx(t,ci,blur)*ex : vec3(0.);
   return mix(bg,cc,a);
@@ -851,7 +867,7 @@ void main(){
     if(k>=uTaps) break;
     float f = uTaps>1 ? (float(k)+jit)/float(uTaps) : 0.;
     float m = mix(uM0,uM1,f);
-    vec4 CA=mix(uCA0,uCA1,f), PA=mix(uPA0,uPA1,f), CB=mix(uCB0,uCB1,f), PB=mix(uPB0,uPB1,f);
+    vec4 CA=mix(uCA0,uCA1,f), PA=mix(uPA0,uPA1,f), CB=mix(uCB0,uCB1,f), PB=mix(uPB0,uPB1,f), XA=mix(uXA0,uXA1,f), XB=mix(uXB0,uXB1,f);
     vec2 oA=vec2(0.), oB=vec2(0.); float zA=1., zB=1., wB=0., flash=0., rA=0., rB=0.;
     if(uTr==1||uTr==4){ wB=smoothstep(0.,1.,m); }
     else if(uTr==2){ float e=eio(m); oA=vec2(uDir*e,0.); oB=vec2(-uDir*(1.-e),0.); float xa=uv.x+uDir*e; wB = uDir>0. ? step(1.,xa) : step(xa,0.); }
@@ -860,8 +876,8 @@ void main(){
     else if(uTr==6){ float e=eio(m); rA=uDir*e*1.05; rB=-uDir*(1.-e)*1.05; zA=1.+1.5*e*e; zB=1.+1.5*(1.-e)*(1.-e); wB=smoothstep(.42,.58,m); }
     CA.w+=rA; CB.w+=rB;
     vec3 c=vec3(0.);
-    if(wB<.999){ vec2 i=vec2(.5); c+=shot(uA,uv,CA,PA,uModeA,uSzA,oA,zA,uFitA,uCardA,uBlurA,uExpA,i)*(1.-wB); if(k==0) iAc=i; }
-    if(wB>.001 && uHasB>.5){ vec2 i=vec2(.5); c+=shot(uB,uv,CB,PB,uModeB,uSzB,oB,zB,uFitB,uCardB,uBlurB,uExpB,i)*wB; if(k==0) iBc=i; }
+    if(wB<.999){ vec2 i=vec2(.5); c+=shot(uA,uv,CA,PA,uModeA,uSzA,oA,zA,uFitA,uCardA,uBlurA,uExpA,i,uDA,uHasDA,XA)*(1.-wB); if(k==0) iAc=i; }
+    if(wB>.001 && uHasB>.5){ vec2 i=vec2(.5); c+=shot(uB,uv,CB,PB,uModeB,uSzB,oB,zB,uFitB,uCardB,uBlurB,uExpB,i,uDB,uHasDB,XB)*wB; if(k==0) iBc=i; }
     acc+=c+vec3(flash); if(k==0) wBc=wB;
   }
   vec3 col=acc/float(uTaps);
@@ -895,7 +911,7 @@ function glInit(){
     const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
     const loc=gl.getAttribLocation(prog,"aP"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
     const n=gl.getProgramParameter(prog,gl.ACTIVE_UNIFORMS); for(let i=0;i<n;i++){ const info=gl.getActiveUniform(prog,i); U[info.name]=gl.getUniformLocation(prog,info.name); }
-    gl.uniform1i(U.uA,0); gl.uniform1i(U.uB,1);
+    gl.uniform1i(U.uA,0); gl.uniform1i(U.uB,1); if(U.uDA) gl.uniform1i(U.uDA,3); if(U.uDB) gl.uniform1i(U.uDB,4);
     maxTex=gl.getParameter(gl.MAX_TEXTURE_SIZE)||2048;
     aniso=gl.getExtension("EXT_texture_filter_anisotropic");
     dummyTex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,dummyTex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
@@ -935,6 +951,20 @@ function videoTex(p){
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,e.t); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,p.src); gl.generateMipmap(gl.TEXTURE_2D); e.fresh=true;
   }
   e.last=frameNo; return e;
+}
+const DTEX=new Map();
+function depthTex(p){
+  if(!p.depth||p.isVideo) return null; let e=DTEX.get(p.id);
+  if(!e||e.c!==p.depth){
+    if(e) gl.deleteTexture(e.t);
+    gl.activeTexture(gl.TEXTURE2); const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,p.depth);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    e={t,c:p.depth}; DTEX.set(p.id,e);
+    if(DTEX.size>40){ const k=DTEX.keys().next().value; gl.deleteTexture(DTEX.get(k).t); DTEX.delete(k); }
+  }
+  return e;
 }
 const TEXMAX=isPhone?4:6;
 function texGC(){ if(TEX.size<=TEXMAX) return; const arr=[...TEX.entries()].sort((a,b)=>a[1].last-b[1].last); while(arr.length>TEXMAX){ const [k,e]=arr.shift(); gl.deleteTexture(e.t); TEX.delete(k); } }
@@ -1101,7 +1131,8 @@ function build(){
 function camAt(seg,local,absT){
   const k=T().move*MOTION[S.o.motion]; const span=seg.dur+seg.outTr; const p=clamp(local/span,-.1,1.15);
   const img=seg.img.src, ia=img.width/img.height, sa=seg.fit?seg.cardAsp:W/H, cs=ia>sa?[sa/ia,1]:[1,ia/sa];
-  let z=1.06, px=0, py=0, rot=0, yaw=0, pitch=0, dolly=0; const dir=seg.dir||1;
+  let z=1.06, px=0, py=0, rot=0, yaw=0, pitch=0, dolly=0, tx=0, ty=0, dz=0, foc=.45; const dir=seg.dir||1;
+  const hasD=!!(seg.img.depth&&!seg.img.isVideo);
   const slackX=z=>.5-cs[0]/(2*z), slackY=z=>.5-cs[1]/(2*z);
   const q=(p-.5)*2;
   switch(seg.move){
@@ -1119,13 +1150,29 @@ function camAt(seg,local,absT){
     case "detail":{ const f=seg.img.focus||[.5,.5]; z=lerp(1.26,1.38+.05*k,p); px=(f[0]-.5)+dir*.02*q; py=(f[1]-.5)*.8; yaw=dir*.012*k*q; break; }
     case "pullBack": z=lerp(1.2+.06*k,1.03,p); dolly=lerp(.03*k,0,p); pitch=.01*k*q; break;
   }
+  if(hasD){
+    switch(seg.move){
+      case "slide": tx=dir*.042*k*q; break;
+      case "orbit": tx=dir*.05*k*q; break;
+      case "pan": tx=dir*.04*k*q; foc=.4; break;
+      case "dollyIn": dz=lerp(0,.13*k,p); break;
+      case "dollyOut": dz=lerp(.13*k,0,p); break;
+      case "walkIn": dz=lerp(0,.17*k,p); tx=dir*.012*k*q; z=lerp(1.02,1.06+.06*k,p); break;
+      case "pullBack": dz=lerp(.16*k,0,p); break;
+      case "crane": ty=-.034*k*q; foc=.4; break;
+      case "craneDown": ty=.03*k*q; foc=.4; break;
+      case "push": dz=lerp(0,.09*k,p); break;
+      case "detail": dz=lerp(0,.06*k,p); break;
+    }
+    z+=(Math.abs(tx)+Math.abs(ty))*(1-foc)*2.4;
+  }
   const s=seg.seed||0;
   rot+=.0024*Math.sin(absT*.83+s)+.001*Math.sin(absT*1.9+s*2.1);
   yaw+=.0035*Math.sin(absT*.71+s*1.3); pitch+=.0028*Math.sin(absT*.93+s*.4);
   px+=.0018*Math.sin(absT*1.13+s*1.7); py+=.0015*Math.sin(absT*.97+s*.6);
   z+=(Math.abs(yaw)+Math.abs(pitch))*.9+Math.abs(rot)*.6;
   const mx=Math.max(0,slackX(z)-Math.abs(yaw)*1.2*cs[0]/(sa*z)-.004), my=Math.max(0,slackY(z)-Math.abs(pitch)*1.2*cs[1]/z-.004);
-  return {C:[z,clamp(px,-mx,mx),clamp(py,-my,my),rot], P:[yaw,pitch,dolly,0]};
+  return {C:[z,clamp(px,-mx,mx),clamp(py,-my,my),rot], P:[yaw,pitch,dolly,0], X:[tx,ty,dz,foc]};
 }
 function segBlur(seg,local){
   if(seg.type==="intro") return 2.6*(1-easeIO(clamp(local/1.6)));
@@ -1146,10 +1193,13 @@ function drawGL(t,A,lA,B,lB,tr,m0,m1,sh){
     gl.uniform2f(U["uSz"+sfx],e.w,e.h); set4("uC"+sfx+"0",c0.C); set4("uC"+sfx+"1",c1.C); set4("uP"+sfx+"0",c0.P); set4("uP"+sfx+"1",c1.P);
     gl.uniform1f(U["uMode"+sfx],seg.mode); gl.uniform1f(U["uBlur"+sfx],segBlur(seg,local)); gl.uniform1f(U["uExp"+sfx],segExp(seg));
     gl.uniform1f(U["uFit"+sfx],seg.fit?1:0); const cd=seg.card||[0,0,1,1]; gl.uniform4f(U["uCard"+sfx],cd[0],cd[1],cd[2],cd[3]);
+    const de=depthTex(seg.img); gl.activeTexture(sfx==="A"?gl.TEXTURE3:gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D,de?de.t:dummyTex);
+    if(U["uHasD"+sfx]) gl.uniform1f(U["uHasD"+sfx],de?1:0);
+    if(U["uX"+sfx+"0"]){ set4("uX"+sfx+"0",c0.X); set4("uX"+sfx+"1",c1.X); }
   };
   side(A,lA,"A",gl.TEXTURE0);
   if(B){ side(B,lB,"B",gl.TEXTURE1); gl.uniform1f(U.uHasB,1); }
-  else { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,dummyTex); gl.uniform1f(U.uHasB,0); }
+  else { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,dummyTex); gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D,dummyTex); gl.uniform1f(U.uHasB,0); if(U.uHasDB) gl.uniform1f(U.uHasDB,0); }
   gl.uniform2f(U.uRes,W,H); gl.uniform1f(U.uRad,(A.card&&A.card[2]>=.99)||(B&&B.card&&B.card[2]>=.99)?0:18*u);
   gl.uniform1i(U.uTr,tr?tr.type:0); gl.uniform1f(U.uM0,m0); gl.uniform1f(U.uM1,m1); gl.uniform1f(U.uDir,tr?tr.dir:1);
   gl.uniform1i(U.uTaps, tr&&(tr.type===2||tr.type===3||tr.type===6)?12:5);
@@ -1540,7 +1590,7 @@ function renderPhotos(){
   const shotOf=p=>{ const s=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")); return s?SHOT_NAMES[s.move]:""; };
   S.photos.forEach((p,i)=>{
     const el=document.createElement("div"); el.className="ph"; el.draggable=true;
-    el.innerHTML=`<div class="ph-img"><img alt=""><span class="ph-badge ${i?"":"cover"}">${i?String(i+1).padStart(2,"0"):"OPENING"}</span>${p.fixed?`<span class="ph-badge fx">${p.useFixed?"TOUCHED UP":"ORIGINAL"}</span>`:""}<span class="ph-badge shot"></span>${p.isVideo?`<span class="ph-badge fx">▶ ${(p.duration||0).toFixed(1)}s</span>`:""}</div>
+    el.innerHTML=`<div class="ph-img"><img alt=""><span class="ph-badge ${i?"":"cover"}">${i?String(i+1).padStart(2,"0"):"OPENING"}</span>${p.fixed?`<span class="ph-badge fx">${p.useFixed?"TOUCHED UP":"ORIGINAL"}</span>`:""}<span class="ph-badge shot"></span>${p.isVideo?`<span class="ph-badge fx">▶ ${(p.duration||0).toFixed(1)}s</span>`:""}${p.aiClip?`<span class="ph-badge ai">AI MOTION</span>`:""}</div>
       <div class="ph-body"><input type="text" id="cap-${p.id}" maxlength="40" placeholder="Room label" aria-label="Label for shot ${i+1}">
       <div class="ph-ctl"><button data-a="l" aria-label="Move earlier">←</button><button data-a="r" aria-label="Move later">→</button>${p.fixed?`<button data-a="t" aria-label="${p.useFixed?"Show original":"Show touched-up"}" title="Compare with original">◐</button>`:""}<button data-a="x" aria-label="Remove photo">✕</button></div></div>`;
     el.querySelector("img").src=p.thumb; el.querySelector(".shot").textContent=shotOf(p); el.querySelector(".shot").hidden=!shotOf(p);
@@ -1578,7 +1628,7 @@ async function addFiles(list){
   if(S.photos.every(p=>p.sample)) S.photos=[];
   let bad=0;
   for(let i=0;i<items.length;i++){ st.textContent=`Adding ${i+1} of ${items.length}…`; try{ const r=await analyzeBlob(items[i]); S.raw.push(r); S.photos.push(await materialize(r,S.o.enh)); }catch(e){ bad++; } await yieldUI(); }
-  build(); renderPhotos(); refresh();
+  build(); renderPhotos(); refresh(); queueDepth();
   st.className=bad||capped?"status warn":"status"; st.textContent=(bad?`${bad} file${bad>1?"s":""} couldn't be read. iPhone HEIC photos need exporting as JPEG first. `:"")+(capped?`Only the first ${MAX_PHOTOS} of ${total} photos were added.`:"");
 }
 $("#pick").onclick=()=>$("#file").click();
@@ -1644,6 +1694,8 @@ async function detectImport(){
   if(!IMPORT) return;
   if(IMPORT.ai && !window.claude){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); }
   $("#importBtn").hidden=false;
+  if(IMPORT.depth){ const li=$('#pipe li[data-s="depth"]'); if(li) li.hidden=false; queueDepth(); }
+  if(IMPORT.clips){ $$(".clips-only").forEach(e=>e.hidden=false); const li=$('#pipe li[data-s="clips"]'); if(li) li.hidden=false; syncClipNote(); }
   if(IMPORT.keyRequired){ $("#keyRow").hidden=false; const k=$("#accessKey"); try{ k.value=localStorage.getItem("lr-access")||""; }catch(e){}
     k.addEventListener("input",()=>{ const v=k.value.trim(); if(/^(https?:\/\/|www\.)/i.test(v)||/^[\w-]+(\.[\w-]+)+(:\d+)?\/\S/.test(v)){ $("#url").value=v; S.d.url=v; k.value=""; urlChanged(); persist(); const n=$("#urlNote"); n.className="status warn"; n.textContent="That looked like a listing link, so it moved to the Listing link box. The access key is the private key you were given."; } }); }
   const g=document.querySelector(".grab b"); if(g) g.textContent="Paste a listing link and press Import, or use the Chrome Grabber for any site";
@@ -1712,7 +1764,7 @@ function setTpl(v){ S.o.tpl=v; S.o.dur=TPL[v].dur; tplDefaults(v); syncStyle(); 
 function segSync(id,val){ $$(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(val)))); }
 function syncStyle(){
   $$("#tpls .tpl").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.o.tpl));
-  segSync("fmtSeg",S.o.fmt); segSync("fmtSeg2",S.o.fmt);
+  segSync("fmtSeg",S.o.fmt); segSync("fmtSeg2",S.o.fmt); segSync("clipSeg",S.o.clips); syncClipNote();
   $("#fmtHint").textContent={"9:16":"Fills a phone screen: Reels, TikTok, Shorts, Stories. Shows black sides on a computer.","16:9":"Fills a computer, TV, YouTube or MLS player. Shows black bars on a phone.","4:5":"Instagram and Facebook feed posts.","1:1":"Square posts for feeds and ads."}[S.o.fmt]||""; segSync("motionSeg",S.o.motion); segSync("fpsSeg",S.o.fps); segSync("musicSeg",S.o.music); segSync("enhSeg",S.o.enh);
   $("#dur").value=S.o.dur; $("#durV").textContent=(+S.o.dur).toFixed(1)+"s";
   $("#accent").value=ACC(); $("#grade").value=S.o.grade||""; $("#frame").value=S.o.frame;
@@ -1723,7 +1775,7 @@ function syncStyle(){
 $$("#tpls .tpl").forEach(b=>b.onclick=()=>setTpl(b.dataset.v));
 function tplDefaults(v){ if(v==="walk"){ S.o.stats=false; } }
 const segBind=(id,key,cast=v=>v)=>$$(`#${id} button`).forEach(b=>b.onclick=()=>{ if(busy||building) return; if(playing) pause(); S.o[key]=cast(b.dataset.v); syncStyle(); persist(); build(); renderPhotos(); refresh(); });
-segBind("fmtSeg","fmt"); segBind("fmtSeg2","fmt"); segBind("motionSeg","motion"); segBind("fpsSeg","fps",Number);
+segBind("fmtSeg","fmt"); segBind("fmtSeg2","fmt"); segBind("clipSeg","clips",Number); segBind("motionSeg","motion"); segBind("fpsSeg","fps",Number);
 $$("#musicSeg button").forEach(b=>b.onclick=()=>{ if(playing) pause(); S.o.music=b.dataset.v; syncStyle(); persist(); if(S.o.music==="track"&&!S.track) $("#trackFile").click(); });
 $("#pickTrack").onclick=()=>$("#trackFile").click();
 async function decodeTrack(blob){ const oac=new OfflineAudioContext(2,1,48000); return await oac.decodeAudioData(await blob.arrayBuffer()); }
@@ -1978,13 +2030,111 @@ $("#copyCap").onclick=async ()=>{ const ta=$("#capText"), st=$("#capStatus");
   try{ await navigator.clipboard.writeText(ta.value); st.className="status ok"; st.textContent="Copied."; }
   catch(e){ ta.focus(); ta.select(); st.className="status"; st.textContent="Selected. Press Ctrl/Cmd+C to copy."; } };
 
+/* ---------- free 3D depth (runs in the browser; only when the Studio is served by the Reel Listing server) ---------- */
+let DEPTH=null, depthLoading=null, depthQueued=false;
+function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)) return res(); const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load "+src)); document.head.appendChild(s); }); }
+function loadDepth(){
+  if(!IMPORT||!IMPORT.depth||!glOK) return Promise.resolve(null);
+  if(!depthLoading) depthLoading=(async()=>{
+    await loadScript("/vendor/ort.wasm.min.js");
+    ort.env.wasm.wasmPaths="/vendor/"; ort.env.wasm.numThreads=1;
+    DEPTH=await ort.InferenceSession.create("/models/depth_q8.onnx",{executionProviders:["wasm"],graphOptimizationLevel:"all"});
+    return DEPTH;
+  })().catch(e=>{ console.warn("3D depth unavailable",e); DEPTH=null; return null; });
+  return depthLoading;
+}
+async function depthFor(p){
+  if(!DEPTH||!p||p.isVideo||p.depth||!p.src) return false;
+  const src=p.src, w=378, h=Math.max(14,Math.round(w*src.height/src.width/14)*14);
+  const c=mk(w,h), g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(src,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data, N=w*h, x=new Float32Array(3*N);
+  for(let i=0,j=0;j<N;i+=4,j++){ x[j]=(d[i]/255-.485)/.229; x[N+j]=(d[i+1]/255-.456)/.224; x[2*N+j]=(d[i+2]/255-.406)/.225; }
+  const out=await DEPTH.run({image:new ort.Tensor("float32",x,[1,3,h,w])});
+  const v=out[DEPTH.outputNames[0]].data, n=v.length, ow=Math.round(Math.sqrt(n*w/h)), oh=Math.round(n/ow);
+  const smp=[]; for(let i=0;i<n;i+=37) smp.push(v[i]); smp.sort((a,b)=>a-b);
+  const lo=smp[Math.floor(smp.length*.02)], hi=smp[Math.floor(smp.length*.98)]||lo+1;
+  const raw=mk(ow,oh), rg=raw.getContext("2d"), im=rg.createImageData(ow,oh);
+  for(let i=0;i<n;i++){ const t=Math.round(clamp((v[i]-lo)/(hi-lo))*255); im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=t; im.data[i*4+3]=255; }
+  rg.putImageData(im,0,0);
+  const sm=mk(ow,oh), sg=sm.getContext("2d"); sg.filter="blur(2px)"; sg.drawImage(raw,0,0); sg.filter="none";
+  p.depth=sm; return true;
+}
+async function depthAll(onStep){
+  if(!await loadDepth()) return 0; let n=0; const list=S.photos.filter(p=>!p.isVideo&&!p.depth);
+  for(let i=0;i<list.length;i++){ onStep&&onStep(i,list.length); try{ if(await depthFor(list[i])) n++; }catch(e){ console.warn(e); } await yieldUI(); }
+  return n;
+}
+function queueDepth(){
+  if(depthQueued||!IMPORT||!IMPORT.depth) return; depthQueued=true;
+  const tick=async()=>{
+    if(busy||building||playing){ setTimeout(tick,1500); return; }
+    if(!await loadDepth()){ depthQueued=false; return; }
+    const p=S.photos.find(p=>!p.isVideo&&!p.depth);
+    if(!p){ depthQueued=false; return; }
+    try{ await depthFor(p); refresh(); }catch(e){ p.depth=null; depthQueued=false; return; }
+    setTimeout(tick,60);
+  };
+  setTimeout(tick,400);
+}
+
+/* ---------- AI motion clips (server-side image-to-video; costs credits on your fal.ai account) ---------- */
+const CLIP_COST=.35;
+function syncClipNote(){
+  const n=$("#clipNote"); if(!n) return;
+  const k=S.o.clips; n.textContent=k?`AI motion turns your top ${k} shots into real moving footage. Takes 2–5 minutes and costs about $${(k*CLIP_COST).toFixed(2)} per video in AI credits. It's made for the video shape you've picked.`:"AI motion is off: every shot uses free camera moves with 3D depth.";
+}
+function cropForClip(p){
+  const [fw,fh]=FMT[S.o.fmt], ta=fw/fh, src=p.src, ia=src.width/src.height;
+  let sw=src.width, sh=src.height; if(ia>ta) sw=sh*ta; else sh=sw/ta;
+  const sx=(src.width-sw)/2, sy=(src.height-sh)/2, sc=Math.min(1,1280/Math.max(sw,sh));
+  const c=mk(sw*sc,sh*sc); c.getContext("2d").drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",.9);
+}
+async function clipOne(p,onState){
+  const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
+  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int"})});
+  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"The AI video service couldn't start.");
+  const t0=Date.now();
+  for(;;){
+    await new Promise(res=>setTimeout(res,4000));
+    const s=await fetch(`/api/clips/${j.id}`,{headers}).then(r=>r.json()).catch(()=>({status:"working"}));
+    onState&&onState(s);
+    if(s.status==="done") break;
+    if(s.status==="failed") throw new Error(s.error||"The AI clip failed.");
+    if(s.error&&!s.status) throw new Error(s.error);
+    if(Date.now()-t0>9*60e3) throw new Error("The AI clip took too long.");
+  }
+  const v=await fetch(`/api/clips/${j.id}/video`,{headers}); if(!v.ok) throw new Error("Couldn't download the AI clip.");
+  const blob=await v.blob();
+  return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,aiClip:true});
+}
+async function makeClips(n,onProg){
+  const cands=S.photos.filter(p=>!p.isVideo&&!p.sample).slice(0,n);
+  if(!cands.length) return {ok:0,fail:0,err:""};
+  let done=0, ok=0, fail=0, err=""; onProg&&onProg(0,cands.length);
+  const queue=[...cands];
+  const worker=async()=>{ while(queue.length){ const p=queue.shift();
+    try{ const vp=await clipOne(p); const i=S.photos.indexOf(p); if(i>=0){ S.photos[i]=vp; ok++; build(); renderPhotos(); refresh(); } }
+    catch(e){ fail++; err=e.message; }
+    onProg&&onProg(++done,cands.length); } };
+  await Promise.all([worker(),worker(),worker()]);
+  return {ok,fail,err};
+}
+$("#aiMotionBtn").onclick=async ()=>{
+  if(building||busy) return; const btn=$("#aiMotionBtn"), st=$("#aiLabelStatus");
+  busyBtn(btn,true,"Making AI clips…"); lock(true); st.className="status"; st.textContent="Making AI motion clips. This takes 2–5 minutes.";
+  try{ const r=await makeClips(S.o.clips||4,(d,n)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; });
+    st.className=r.fail?"status warn":"status ok"; st.textContent=r.ok?`Added AI motion to ${r.ok} shot${r.ok>1?"s":""}.`+(r.fail?` ${r.fail} didn't work and stay as stills: ${r.err}`:""):(r.fail?`The AI clips didn't work: ${r.err}`:"Add your own photos first."); }
+  finally{ lock(false); busyBtn(btn,false,"Add AI motion to top shots"); }
+};
+
 /* ---------- one-click pipeline ---------- */
 let building=false;
 function stage(s,state,note){ const li=$(`#pipe li[data-s="${s}"]`); if(!li) return; li.classList.remove("on","done","skip"); if(state) li.classList.add(state); li.querySelector("small").textContent=note||""; }
 async function autoBuild(files){
   if(building||busy||fixing) return; building=true; pause(); lock(true);
   const st=$("#goStatus"), go=$("#go"); go.disabled=true; st.className="status"; st.textContent="";
-  $("#pipe").hidden=false; ["read","pick","fix","ai","render"].forEach(s=>stage(s,""));
+  $("#pipe").hidden=false; ["read","pick","fix","depth","ai","clips","render"].forEach(s=>stage(s,""));
   try{
     let gotListing=false;
     if(files&&files.length){
@@ -2009,6 +2159,11 @@ async function autoBuild(files){
       S.photos=photos; build(); renderPhotos(); renderLeft(); curT=Math.min(2.2,TOTAL||2.2); refresh();
       stage("fix","done",S.o.enh==="off"?"off":S.o.enh);
     }
+    if(IMPORT&&IMPORT.depth&&glOK){
+      stage("depth","on");
+      const nd=await depthAll((i,n)=>stage("depth","on",`${i+1}/${n}`));
+      stage("depth",nd||S.photos.some(p=>p.depth)?"done":"skip",nd?`${nd} shots`:""); refresh();
+    }
 
     if(SAMPLE){
       stage("ai","on"); const notes=[];
@@ -2016,6 +2171,13 @@ async function autoBuild(files){
       notes.push(await doLabel()?"shot list":"");
       stage("ai","done",notes.filter(Boolean).join(" + ")||"skipped");
     } else stage("ai","skip");
+
+    if(IMPORT&&IMPORT.clips&&S.o.clips>0&&S.photos.some(p=>!p.isVideo&&!p.sample)){
+      stage("clips","on","starting");
+      const r=await makeClips(S.o.clips,(d,n)=>stage("clips","on",`${d}/${n}`));
+      stage("clips",r.ok?"done":"skip",r.ok?`${r.ok} clips`:"stills");
+      if(r.fail){ st.className="status warn"; st.textContent=`${r.fail} AI clip${r.fail>1?"s":""} didn't work, so ${r.fail>1?"those shots stay":"that shot stays"} as a still: ${r.err}`; }
+    }
 
     if(S.o.autoRender){
       stage("render","on","0%"); renderProgress=f=>stage("render","on",Math.round(f*100)+"%");
@@ -2044,7 +2206,7 @@ async function restoreSession(){
       lock(true); st.className="status"; const out=[];
       for(let i=0;i<sess.items.length;i++){ const it=sess.items[i]; st.textContent=`Restoring your last session: ${i+1} of ${sess.items.length}…`;
         try{ const p=it.video?await makeVideoPhoto(it.blob,{caption:aStr(it.caption,40),kind:["ext","int","detail"].includes(it.kind)?it.kind:"int"}):await materialize({blob:it.blob,kind:it.kind},it.useFixed===false?"off":S.o.enh,{caption:aStr(it.caption,40),kind:["ext","int","detail"].includes(it.kind)?it.kind:"int"}); out.push(p); }catch(e){} }
-      if(out.length){ S.photos=out; build(); renderPhotos(); refresh(); st.className="status ok"; st.textContent=`Restored your last session (${out.length} photos).`; }
+      if(out.length){ S.photos=out; build(); renderPhotos(); refresh(); queueDepth(); st.className="status ok"; st.textContent=`Restored your last session (${out.length} photos).`; }
       else st.textContent="";
       lock(false);
     }
@@ -2093,7 +2255,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={S,renderFrame,build,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={S,renderFrame,build,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");

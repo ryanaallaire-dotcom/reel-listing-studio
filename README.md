@@ -10,6 +10,9 @@ GET  /              the Studio
 GET  /api/health    tells the Studio that link import (and AI) are available
 POST /api/import    {"url": "https://..."}  →  ZIP of photos + listing.json
 POST /api/ai        auto-fill, photo labels and captions, through your Anthropic API key
+POST /api/clips     AI motion: turns a photo into a moving clip (fal.ai), then
+GET  /api/clips/:id        and  GET /api/clips/:id/video
+GET  /models/, /vendor/     the 3D depth model and the engine that runs it in the browser
 ```
 
 ## Run it on your computer
@@ -19,7 +22,7 @@ Needs Node.js 20 or newer.
 ```bash
 npm install
 npm start              # http://localhost:8787
-npm test               # 32 checks against a fake listing site, page service and Claude API
+npm test               # 44 checks against a fake listing site, page service, Claude API and AI video service
 ```
 
 ## Which links work
@@ -53,6 +56,10 @@ copyrighted by the photographer or brokerage.
 | `ANTHROPIC_API_KEY` | Turns on auto-fill, photo labels and captions (from console.anthropic.com) |
 | `AI_MODEL_QUICK` / `AI_MODEL_DEFAULT` | Models used (default `claude-haiku-5-5` / `claude-sonnet-5-5`) |
 | `AI_PER_HOUR` | AI requests per visitor per hour (default 60) |
+| `FAL_KEY` | Turns on AI motion clips (from fal.ai → API keys) |
+| `FAL_VIDEO_MODEL` | Image-to-video model (default `fal-ai/kling-video/v2.5-turbo/pro/image-to-video`, about $0.35 per 5-second clip) |
+| `CLIPS_PER_HOUR` | AI clips per visitor per hour (default 30) — each clip costs you money |
+| `MAX_CLIPS_PER_VIDEO` | Shown to the Studio (default 6) |
 
 Copy `.env.example` to `.env` for local runs (`node --env-file=.env server.js`).
 
@@ -88,8 +95,21 @@ In claude.ai the Studio's AI runs on each viewer's own Claude account. On your d
 $0.05 on Sonnet. The endpoint only does listing work (it won't act as a free chatbot), takes at most
 8 photos per request, and is limited per visitor per hour. Without a key the AI buttons stay hidden.
 
+## 3D depth (free)
+
+`public/models/depth_q8.onnx` is Depth Anything (small, Apache 2.0), shrunk to 27 MB. The Studio
+downloads it once (cached for a week) and runs it in the visitor's browser to measure how far away
+everything in each photo is. Camera moves then use real parallax: near furniture moves and grows
+more than far walls. No cost per video. If a browser can't run it, shots fall back to flat moves.
+
+## AI motion (paid, per clip)
+
+With `FAL_KEY` set, the Studio's **AI motion** option (off / top 4 / top 6 shots) sends those photos
+to an image-to-video model and swaps the finished clips into the video. The Studio only sends the
+photo and the kind of shot; the instructions to the model live in `lib/clips.js`, so visitors can't
+use your account for anything else. Clips are made in the video shape selected at the time. Expect
+2–5 minutes and about $0.35 per clip ($1.40 for 4 shots). Failed clips leave the photo as a still.
+
 ## Not in this server yet
 
-- **AI photo-to-video clips** (the next step): an `/api/clips` endpoint that sends photos to an
-  image-to-video model and returns clips the Studio already knows how to use.
 - **Accounts and billing.**

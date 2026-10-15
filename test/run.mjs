@@ -50,6 +50,19 @@ const aimock = http.createServer(async (req, res) => {
   const text = '{"labels":["Sunny Living Room"],"order":[1]}';
   res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ content: [{ type: "text", text }], stop_reason: "end_turn" }));
 });
+// ---------- fake fal.ai (AI video) ----------
+const FALM = 18904; let falCalls = [], falPolls = 0;
+const falmock = http.createServer(async (req, res) => {
+  let b = ""; for await (const c of req) b += c;
+  const send = (o, st = 200) => { res.writeHead(st, { "content-type": "application/json" }); res.end(JSON.stringify(o)); };
+  if (req.method === "POST") { const j = JSON.parse(b); falCalls.push({ path: req.url, auth: req.headers.authorization, body: j });
+    if (/ZmFpbC1tZQ/.test(j.image_url)) return send({ detail: "bad" }, 422);
+    return send({ request_id: "r1", status_url: `http://127.0.0.1:${FALM}/st/r1`, response_url: `http://127.0.0.1:${FALM}/res/r1` }); }
+  if (req.url === "/st/r1") { falPolls++; return send({ status: falPolls < 2 ? "IN_PROGRESS" : "COMPLETED" }); }
+  if (req.url === "/res/r1") return send({ video: { url: `http://127.0.0.1:${FALM}/v.mp4` } });
+  if (req.url === "/v.mp4") { res.writeHead(200, { "content-type": "video/mp4" }); return res.end(Buffer.alloc(50000, 7)); }
+  res.writeHead(404); res.end();
+});
 function startServer(port, env) {
   const p = spawn(process.execPath, ["server.js"], { cwd: path.join(DIR, ".."), env: { ...process.env, PORT: String(port), ...env }, stdio: ["ignore", "pipe", "pipe"] });
   return new Promise((res, rej) => { p.stdout.on("data", d => { if (String(d).includes("Reel Listing Studio on")) res(p); }); p.stderr.on("data", d => process.stderr.write(d)); p.on("exit", c => rej(new Error("server exited " + c))); });
@@ -59,6 +72,7 @@ const post = (port, body, headers = {}) => fetch(`http://127.0.0.1:${port}/api/i
 await new Promise(r => fixture.listen(FX, "127.0.0.1", r));
 await new Promise(r => mock.listen(MOCK, "127.0.0.1", r));
 await new Promise(r => aimock.listen(AIM, "127.0.0.1", r));
+await new Promise(r => falmock.listen(FALM, "127.0.0.1", r));
 
 // ===== server A: test mode (may fetch the local fixture), no page service =====
 const A = 18911; const sa = await startServer(A, { ALLOW_LOCAL_FETCH: "1", IMPORTS_PER_HOUR: "6" });
@@ -160,7 +174,42 @@ const F = 18916; const sf = await startServer(F, {});
 }
 sf.kill();
 
-fixture.close(); mock.close(); aimock.close();
+// ===== server G: AI motion clips + 3D depth files =====
+const Gp = 18917; const sg = await startServer(Gp, { FAL_KEY: "fal-test", FAL_QUEUE_BASE: `http://127.0.0.1:${FALM}`, CLIP_POLL_MS: "100", ALLOW_LOCAL_FETCH: "1", CLIPS_PER_HOUR: "3" });
+{
+  const h = await (await fetch(`http://127.0.0.1:${Gp}/api/health`)).json();
+  check("Clips: health reports AI motion and 3D depth", h.clips === true && h.depth === true && /kling/.test(h.clipModel), JSON.stringify(h));
+  const jpg = "data:image/jpeg;base64," + fs.readFileSync(path.join(FIX, "photo1.jpg")).toString("base64");
+  const r = await fetch(`http://127.0.0.1:${Gp}/api/clips`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: jpg, kind: "int" }) });
+  const { id } = await r.json();
+  let st; for (let k = 0; k < 40; k++) { await new Promise(r => setTimeout(r, 100)); st = await (await fetch(`http://127.0.0.1:${Gp}/api/clips/${id}`)).json(); if (st.status === "done" || st.status === "failed") break; }
+  const c = falCalls[0] || {};
+  check("Clips: sends the photo to the video model with your key", c.auth === "Key fal-test" && /kling-video/.test(c.path) && c.body.image_url.startsWith("data:image/jpeg") && /dolly/.test(c.body.prompt) && /people/.test(c.body.negative_prompt), c.path);
+  check("Clips: finishes and the video downloads", st.status === "done", JSON.stringify(st));
+  const v = await fetch(`http://127.0.0.1:${Gp}/api/clips/${id}/video`);
+  check("Clips: video served as MP4", v.status === 200 && v.headers.get("content-type") === "video/mp4" && (await v.arrayBuffer()).byteLength === 50000);
+  const bad = await fetch(`http://127.0.0.1:${Gp}/api/clips`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: "data:text/html;base64,PGI+" }) });
+  check("Clips: rejects non-photos", bad.status === 400, (await bad.json()).error);
+  const f = await fetch(`http://127.0.0.1:${Gp}/api/clips`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: "data:image/jpeg;base64,ZmFpbC1tZQ==" }) });
+  const fid = (await f.json()).id; let fs2; for (let k = 0; k < 20; k++) { await new Promise(r => setTimeout(r, 100)); fs2 = await (await fetch(`http://127.0.0.1:${Gp}/api/clips/${fid}`)).json(); if (fs2.status === "failed") break; }
+  check("Clips: a failed clip explains itself", fs2.status === "failed" && /still/.test(fs2.error), fs2.error);
+  const lim = await fetch(`http://127.0.0.1:${Gp}/api/clips`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: jpg }) });
+  check("Clips: hourly limit per visitor", lim.status === 429, (await lim.json()).error);
+  const gone = await fetch(`http://127.0.0.1:${Gp}/api/clips/00000000-0000-0000-0000-000000000000`);
+  check("Clips: unknown clip says it expired", gone.status === 404);
+  const m = await fetch(`http://127.0.0.1:${Gp}/models/depth_q8.onnx`, { method: "HEAD" }).catch(() => null);
+  const m2 = await fetch(`http://127.0.0.1:${Gp}/models/depth_q8.onnx`);
+  check("Depth model served with caching", m2.status === 200 && /immutable/.test(m2.headers.get("cache-control")) && +m2.headers.get("content-length") > 20e6); await m2.body?.cancel();
+  const w = await fetch(`http://127.0.0.1:${Gp}/vendor/ort-wasm-simd-threaded.wasm`); check("Depth engine served as WebAssembly", w.status === 200 && w.headers.get("content-type") === "application/wasm"); await w.body?.cancel();
+  const trav = await fetch(`http://127.0.0.1:${Gp}/vendor/..%2F..%2Fserver.js`); check("Static files can't escape their folder", trav.status === 404);
+}
+sg.kill();
+const Hp = 18918; const sh = await startServer(Hp, {});
+{ const h = await (await fetch(`http://127.0.0.1:${Hp}/api/health`)).json(); const r = await fetch(`http://127.0.0.1:${Hp}/api/clips`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  check("Clips: off without a fal.ai key, and says so", h.clips === false && r.status === 404); }
+sh.kill();
+
+fixture.close(); mock.close(); aimock.close(); falmock.close();
 console.log(results.join("\n"));
 console.log(`\n${results.filter(r => r.startsWith("PASS")).length}/${results.length} passed`);
 process.exit(results.some(r => r.startsWith("FAIL")) ? 1 : 0);
