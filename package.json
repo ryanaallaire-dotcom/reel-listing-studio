@@ -11,12 +11,14 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "better-sqlite3": "^11.10.0",
     "fflate": "^0.8.2",
     "undici": "^6.21.0"
   },
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.5"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
   }
 }
