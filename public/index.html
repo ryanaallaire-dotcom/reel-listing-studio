@@ -564,9 +564,9 @@ const GRADES={
 };
 // Pace: how long each shot holds, how many shots per room, and how calm the transitions are
 const PACE={
-  relaxed:{mul:1.85, label:"Relaxed", introMul:1.3, clipCap:5,   walkShots:n=>1, walkTrans:[[1,.07],[1,.07],[1,.6],[1,.07],[1,.07],[4,.8]]},
-  standard:{mul:1.35, label:"Standard", introMul:1.15, clipCap:4, walkShots:n=>1, walkTrans:[[1,.06],[1,.06],[1,.45],[1,.06],[1,.06],[1,.06]]},
-  fast:{mul:1, label:"Fast", introMul:1, clipCap:3.2,           walkShots:n=>1, walkTrans:[[1,.05],[1,.05],[1,.05],[2,.3],[1,.05],[1,.05]]}
+  relaxed:{mul:1.85, label:"Relaxed", introMul:1.3, clipCap:5,   walkShots:n=>1, walkTrans:[[1,.85],[1,.75],[1,.9],[1,.8],[4,1.0],[1,.8]]},
+  standard:{mul:1.35, label:"Standard", introMul:1.15, clipCap:4, walkShots:n=>1, walkTrans:[[1,.55],[1,.5],[1,.06],[1,.6],[1,.5],[1,.06]]},
+  fast:{mul:1, label:"Fast", introMul:1, clipCap:3.2,           walkShots:n=>1, walkTrans:[[1,.05],[1,.35],[1,.05],[2,.3],[1,.35],[1,.05]]}
 };
 // Auto pace: read the listing (type, price, wording) and pick a tempo that fits the property
 function autoPace(){
@@ -1188,7 +1188,7 @@ const openHouseOn=()=>D().openHouse && /open house|coming soon/i.test(D().status
 
 /* ---------- timeline + shot list ---------- */
 let SEGS=[], TOTAL=10;
-const SHOT_NAMES={truck:"Side glide",glide:"Walk forward",arc:"Arc",tilt:"Tilt up",reveal:"Reveal",macro:"Close glide",footage:"Video clip",walkIn:"Walk-in",pan:"Pan",detail:"Detail",pullBack:"Pull back",slide:"Slider",orbit:"Orbit",dollyIn:"Dolly in",dollyOut:"Dolly out",crane:"Crane up",craneDown:"Crane down",push:"Push + focus",drift:"Drift"};
+const SHOT_NAMES={rpan:"Pan",rtilt:"Tilt up",rdiag:"Pan and tilt",truck:"Side glide",glide:"Walk forward",arc:"Arc",tilt:"Tilt up",reveal:"Reveal",macro:"Close glide",footage:"Video clip",walkIn:"Walk-in",pan:"Pan",detail:"Detail",pullBack:"Pull back",slide:"Slider",orbit:"Orbit",dollyIn:"Dolly in",dollyOut:"Dolly out",crane:"Crane up",craneDown:"Crane down",push:"Push + focus",drift:"Drift"};
 function build(){
   const t=T(), P=S.photos, beat=60/t.bpm, segs=[]; let at=0;
   if(!P.length){ SEGS=[]; TOTAL=0; return; }
@@ -1231,11 +1231,12 @@ function build(){
     if(s.img.isVideo && (s.type==="intro"||s.type==="photo")){ s.move="footage"; s.mode=2; s.fit=false; s.card=null; s.cardAsp=0; return; }
     if(t.walk && (s.type==="intro"||s.type==="photo")){
       const sub=s.sub||0;
-      const pool = s.type==="intro" ? (kind==="ext"?["tilt","glide"]:["glide","truck"])
-        : sub>=1 ? (sub===1?["macro","arc"]:["truck","arc"])
-        : kind==="ext" ? ["truck","tilt","arc","glide"] : kind==="detail" ? ["macro","truck"]
-        : wide ? ["truck","glide","arc","pan","pan","truck"] : ["glide","truck","arc","tilt","pan"];
-      let m, tries=0; do{ m=pool[Math.floor(rnd()*pool.length)]; tries++; } while(tries<12&&(m===lastMove||(m===prevMove&&pool.length>2)));
+      const dep=!!s.img.depth;
+      const pool = s.type==="intro" ? (kind==="ext"?["rpan","rdiag"]:["rpan","rdiag"])
+        : kind==="ext" ? ["rpan","rpan","rdiag",dep?"truck":"rpan","rtilt"]
+        : kind==="detail" ? ["rpan","rdiag","rtilt"]
+        : ["rpan","rpan","rtilt","rdiag","rdiag",dep?"glide":"rpan",dep?"truck":"rtilt"];
+      let m, tries=0; do{ m=pool[Math.floor(rnd()*pool.length)]; tries++; } while(tries<12&&(m===lastMove||(m===prevMove&&rnd()<.4)));
       prevMove=lastMove; s.move=m; lastMove=m; s.mode = kind==="ext"?1:0;
       // a real operator usually keeps moving the same way across cuts, then changes direction
       s.dir = k===0||rnd()<.45 ? (rnd()<.5?-1:1)*(k===0?1:-walkDir) : walkDir; walkDir=s.dir;
@@ -1282,6 +1283,10 @@ function camAt(seg,local,absT){
     case "detail":{ const f=seg.img.focus||[.5,.5]; z=lerp(1.26,1.38+.05*k,p); px=(f[0]-.5)+dir*.02*q; py=(f[1]-.5)*.8; yaw=dir*.012*k*q; break; }
     case "pullBack": z=lerp(1.2+.06*k,1.03,p); dolly=lerp(.03*k,0,p); pitch=.01*k*q; break;
     // real-camera moves: the frame size stays fixed and the camera itself travels (no zooming)
+    // camera rotations: a real pan/tilt on a tripod or gimbal is pure perspective, so it looks fully real from one photo
+    case "rpan":{ z=1; const A=.075*k; yaw=lerp(-dir*A,dir*A,p); pitch=.035*(seg.frameY||0); break; }
+    case "rtilt":{ z=1; const B=.055*k; pitch=lerp(-B,B,p); yaw=dir*.012*k*q; break; }
+    case "rdiag":{ z=1; const A=.06*k, B=.035*k; yaw=lerp(-dir*A,dir*A,p); pitch=lerp(-B,B,p); break; }
     case "truck":{ z=1.04; const R=slackX(z)*clamp(.55*k,.2,.9); px=lerp(-dir*R,dir*R,p); py=slackY(z)*(seg.frameY||0); yaw=dir*.006*k*q; break; }
     case "glide":{ z=1.04; if(hasD){ dolly=lerp(0,.02*k,p); px=dir*slackX(z)*.18*q; } else { px=dir*slackX(z)*clamp(.4*k,.15,.7)*q; yaw=dir*.008*k*q; } break; }
     case "arc":{ z=1.05; const R=slackX(z)*clamp(.42*k,.15,.8); px=lerp(-dir*R,dir*R,p); py=slackY(z)*(seg.frameY||0)*.7; yaw=-dir*.045*k*q; break; }
@@ -1321,7 +1326,14 @@ function camAt(seg,local,absT){
   yaw+=.0035*Math.sin(absT*.71+s*1.3); pitch+=.0028*Math.sin(absT*.93+s*.4);
   px+=.0018*Math.sin(absT*1.13+s*1.7); py+=.0015*Math.sin(absT*.97+s*.6);
   if(e0.hasD) z+=(mx_("tx")+mx_("ty"))*(1-foc)*2.4;
-  z+=(mx_("yaw")+.0035+mx_("pitch")+.0028)*.9+(mx_("rot")+.0034)*.6;
+  // how much to enlarge so no edge ever shows: projected frame corners for every rotation this shot reaches
+  const F=1.1, coverFor=(yw,pt,rt)=>{ let need=1; const c=Math.cos(rt), sn=Math.sin(rt), cY=Math.cos(yw), sY=Math.sin(yw), cP=Math.cos(pt), sP=Math.sin(pt);
+    for(const ux of [-.5,.5]) for(const uy of [-.5,.5]){ let x=ux*sa, y=uy; [x,y]=[c*x-sn*y, sn*x+c*y];
+      let rx=cY*x+sY*F, rz=-sY*x+cY*F, ry=cP*y-sP*rz; rz=sP*y+cP*rz;
+      need=Math.max(need, cs[0]*Math.abs(F*rx/rz/sa)/.5, cs[1]*Math.abs(F*ry/rz)/.5); }
+    return need; };
+  let zNeed=0; for(const pp of [-.1,0,.25,.5,.75,1,1.15]){ const c=core(pp); for(const sg of [-1,1]) zNeed=Math.max(zNeed, coverFor(c.yaw+sg*.0035,c.pitch+sg*.0028,c.rot+sg*.0034)-1); }
+  z+=zNeed*1.02+.004;
   const mx=Math.max(0,slackX(z)-Math.abs(yaw)*1.2*cs[0]/(sa*z)-.004), my=Math.max(0,slackY(z)-Math.abs(pitch)*1.2*cs[1]/z-.004);
   return {C:[z,clamp(px,-mx,mx),clamp(py,-my,my),rot], P:[yaw,pitch,dolly,0], X:[tx,ty,dz,foc]};
 }
@@ -1557,7 +1569,7 @@ function drawOverlay(seg,local,alpha){
   overlayShade(seg,alpha);
   const out=seg.dur-.62;
   if(seg.type==="intro") introText(local,out);
-  else if(seg.type==="photo"){ if(S.o.tpl!=="walk") caption(seg.img.caption,local,.3+(seg.tIn?seg.tIn.d*.45:0),seg.dur-.55,seg); }
+  else if(seg.type==="photo") caption(seg.img.caption,local,.3+(seg.tIn?seg.tIn.d*.45:0),seg.dur-.55,seg);
   else if(seg.type==="stats") statsCard(local,out);
   else if(seg.type==="outro") outro(local);
   if((seg.type==="photo"||seg.type==="stats")&&S.o.tpl!=="walk"&&!(S.o.brandEvery&&(S.logo||S.d.agent))) bug(alpha);
