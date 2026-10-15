@@ -1216,9 +1216,9 @@ function build(){
     if(t.walk && (s.type==="intro"||s.type==="photo")){
       const sub=s.sub||0;
       const pool = s.type==="intro" ? (kind==="ext"?["tilt","glide"]:["glide","truck"])
-        : sub>=1 ? (sub===1?["macro","arc"]:["reveal","truck"])
+        : sub>=1 ? (sub===1?["macro","arc"]:["truck","arc"])
         : kind==="ext" ? ["truck","tilt","arc","glide"] : kind==="detail" ? ["macro","truck"]
-        : wide ? ["truck","glide","arc","pan","reveal"] : ["glide","truck","arc","tilt"];
+        : wide ? ["truck","glide","arc","pan"] : ["glide","truck","arc","tilt"];
       const pk=pool.join(), nextOf=()=>pool[(walkPick[pk]=(walkPick[pk]||0)+1)%pool.length];
       let m=nextOf(); if(m===lastMove) m=nextOf();
       s.move=m; lastMove=m; s.mode = kind==="ext"?1:0;
@@ -1244,10 +1244,10 @@ function build(){
 function camAt(seg,local,absT){
   const k=T().move*MOTION[S.o.motion]; const span=seg.dur+seg.outTr; const p=clamp(local/span,-.1,1.15);
   const img=seg.img.src, ia=img.width/img.height, sa=seg.fit?seg.cardAsp:W/H, cs=ia>sa?[sa/ia,1]:[1,ia/sa];
-  let z=1.06, px=0, py=0, rot=0, yaw=0, pitch=0, dolly=0, tx=0, ty=0, dz=0, foc=.45; const dir=seg.dir||1;
-  const hasD=!!(seg.img.depth&&!seg.img.isVideo);
+  const dir=seg.dir||1, hasD=!!(seg.img.depth&&!seg.img.isVideo);
   const slackX=z=>.5-cs[0]/(2*z), slackY=z=>.5-cs[1]/(2*z);
-  const q=(p-.5)*2;
+  const core=(p)=>{ const q=(p-.5)*2;
+  let z=1.06, px=0, py=0, rot=0, yaw=0, pitch=0, dolly=0, tx=0, ty=0, dz=0, foc=.45;
   switch(seg.move){
     case "slide":{ z=seg.fit?1.08:1.02; const R=slackX(z)*clamp(.5*k,.18,.85); px=lerp(-dir*R,dir*R,p); yaw=-dir*.022*k*q; py=lerp(.004,-.004,p); break; }
     case "orbit":{ z=seg.fit?1.09:1.03; const R=slackX(z)*clamp(.36*k,.12,.75); px=lerp(-dir*R,dir*R,p); yaw=dir*.04*k*q; rot=dir*.007*k*q; break; }
@@ -1264,10 +1264,10 @@ function camAt(seg,local,absT){
     case "pullBack": z=lerp(1.2+.06*k,1.03,p); dolly=lerp(.03*k,0,p); pitch=.01*k*q; break;
     // real-camera moves: the frame size stays fixed and the camera itself travels (no zooming)
     case "truck":{ z=1.04; const R=slackX(z)*clamp(.55*k,.2,.9); px=lerp(-dir*R,dir*R,p); yaw=dir*.006*k*q; break; }
-    case "glide":{ z=hasD?1.04:lerp(1.03,1.07,p); dolly=lerp(0,.02*k,p); px=dir*slackX(1.04)*.18*q; break; }
+    case "glide":{ z=1.04; if(hasD){ dolly=lerp(0,.02*k,p); px=dir*slackX(z)*.18*q; } else { px=dir*slackX(z)*clamp(.4*k,.15,.7)*q; yaw=dir*.008*k*q; } break; }
     case "arc":{ z=1.05; const R=slackX(z)*clamp(.42*k,.15,.8); px=lerp(-dir*R,dir*R,p); yaw=-dir*.045*k*q; break; }
     case "tilt":{ z=1.05; const Ry=slackY(z)*.7; py=lerp(Ry,-Ry,p); pitch=-.028*k*q; px=dir*slackX(z)*.15*q; break; }
-    case "reveal":{ z=hasD?1.04:lerp(1.07,1.03,p); dolly=lerp(.02*k,0,p); px=-dir*slackX(1.04)*.18*q; break; }
+    case "reveal":{ z=1.04; dolly=lerp(.02*k,0,p); px=-dir*slackX(1.04)*.18*q; break; }
     case "macro":{ const f=seg.img.focus||[.5,.5]; z=1.24; px=(f[0]-.5)*.85+dir*.05*q; py=(f[1]-.5)*.65; yaw=dir*.008*k*q; break; }
   }
   if(hasD){
@@ -1290,13 +1290,19 @@ function camAt(seg,local,absT){
       case "reveal": dz=lerp(.16*k,0,p); tx=-dir*.012*k*q; break;
       case "macro": tx=dir*.035*k*q; foc=.5; break;
     }
-    z+=(Math.abs(tx)+Math.abs(ty))*(1-foc)*2.4;
   }
+    return {z,px,py,rot,yaw,pitch,dolly,tx,ty,dz,foc,hasD};
+  };
+  let {z,px,py,rot,yaw,pitch,dolly,tx,ty,dz,foc}=core(p);
+  // edge cover is worked out from the biggest movement in the whole shot and held steady,
+  // so the picture never quietly zooms out and back in while the camera moves
+  const e0=core(-.1), e1=core(1.15), mx_=(k_)=>Math.max(Math.abs(e0[k_]),Math.abs(e1[k_]));
   const s=seg.seed||0;
   rot+=.0024*Math.sin(absT*.83+s)+.001*Math.sin(absT*1.9+s*2.1);
   yaw+=.0035*Math.sin(absT*.71+s*1.3); pitch+=.0028*Math.sin(absT*.93+s*.4);
   px+=.0018*Math.sin(absT*1.13+s*1.7); py+=.0015*Math.sin(absT*.97+s*.6);
-  z+=(Math.abs(yaw)+Math.abs(pitch))*.9+Math.abs(rot)*.6;
+  if(e0.hasD) z+=(mx_("tx")+mx_("ty"))*(1-foc)*2.4;
+  z+=(mx_("yaw")+.0035+mx_("pitch")+.0028)*.9+(mx_("rot")+.0034)*.6;
   const mx=Math.max(0,slackX(z)-Math.abs(yaw)*1.2*cs[0]/(sa*z)-.004), my=Math.max(0,slackY(z)-Math.abs(pitch)*1.2*cs[1]/z-.004);
   return {C:[z,clamp(px,-mx,mx),clamp(py,-my,my),rot], P:[yaw,pitch,dolly,0], X:[tx,ty,dz,foc]};
 }
@@ -2538,7 +2544,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={S,renderFrame,build,fillFields,autoPace,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
