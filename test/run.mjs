@@ -239,6 +239,10 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", FAL_KEY: 
   falCalls.length = 0; await postAs(Gp, "default", "/api/clips", { image: jpg, kind: "int", move: "truck" });
   await new Promise(r => setTimeout(r, 200));
   check("Clips: the planned camera move goes to the model, never a zoom", /sideways/.test(falCalls[0]?.body.prompt || "") && !/dolly/.test(falCalls[0]?.body.prompt || "") && /zoom/.test(falCalls[0]?.body.negative_prompt || ""), falCalls[0]?.body.prompt);
+  falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rtilt", live: ["ceiling_fan", "fireplace", "rocket"] }, { headers: {} });
+  await new Promise(r => setTimeout(r, 200));
+  const lp = falCalls[0]?.body.prompt || "";
+  check("Clips: fans spin and fires flicker when the photo has them (unknown items ignored)", /fan blades turn/.test(lp) && /flames flicker/.test(lp) && /nothing new appears/.test(lp) && !/rocket/.test(lp) && !/(^|, )flicker,/.test(falCalls[0]?.body.negative_prompt || ""), lp.slice(-200));
   falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan" }, { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "reel.example.com" } });
   await new Promise(r => setTimeout(r, 200));
   const iu = falCalls[0]?.body.image_url || ""; const srcPath = iu.replace("https://reel.example.com", "");
