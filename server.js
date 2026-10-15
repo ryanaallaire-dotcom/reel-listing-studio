@@ -3,6 +3,7 @@
 //   GET  /api/health     lets the Studio know link import is available
 //   POST /api/import     { url } → ZIP of photos + listing.json (same format as the Chrome Grabber)
 import http from "node:http";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,6 +43,9 @@ function cacheSet(k, v) { cache.set(k, { ...v, at: Date.now() }); cacheBytes += 
   for (const [key, e] of cache) { if (cacheBytes <= CACHE_MAX) break; cache.delete(key); cacheBytes -= e.zip.length; } }
 let running = 0;
 
+// constant-time key check so the key can't be guessed by timing responses
+const keyOk = req => { if (!ACCESS_KEY) return true; const a = Buffer.from(String(req.headers["x-access-key"] || "")), b = Buffer.from(ACCESS_KEY);
+  return a.length === b.length && crypto.timingSafeEqual(a, b); };
 const json = (res, status, obj) => { res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(obj)); };
 const clientIp = req => (process.env.TRUST_PROXY === "1" && String(req.headers["x-forwarded-for"] || "").split(",")[0].trim()) || req.socket.remoteAddress || "?";
 const cacheKey = u => { try { const x = new URL(u); x.hash = ""; ["utm_source", "utm_medium", "utm_campaign", "fbclid", "gclid"].forEach(p => x.searchParams.delete(p)); return x.href; } catch { return u; } };
@@ -54,6 +58,10 @@ async function readJson(req, limit = 10000) {
 export const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   res.setHeader("x-content-type-options", "nosniff");
+  res.setHeader("x-frame-options", "DENY");                       // no one can embed the studio in their page
+  res.setHeader("referrer-policy", "strict-origin-when-cross-origin");
+  res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
+  if (process.env.TRUST_PROXY === "1") res.setHeader("strict-transport-security", "max-age=31536000");
   try {
     if (req.method === "GET" && (u.pathname === "/" || u.pathname === "/index.html")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(page());
@@ -74,7 +82,7 @@ export const server = http.createServer(async (req, res) => {
         clips: clipsEnabled(), clipModel: clipsEnabled() ? clipModel() : null, maxClips: MAX_CLIPS_PER_VIDEO, depth: fs.existsSync(DEPTH_MODEL) });
     }
     if (u.pathname.startsWith("/api/clips")) {
-      if (ACCESS_KEY && req.headers["x-access-key"] !== ACCESS_KEY) return json(res, 401, { error: "Enter your access key next to the listing link, then try again." });
+      if (!keyOk(req)) return json(res, 401, { error: "Enter your access key next to the listing link, then try again." });
       const owner = clientIp(req);
       if (req.method === "POST" && u.pathname === "/api/clips") {
         if (!clipsEnabled()) return json(res, 404, { error: "AI motion isn't set up on this server." });
@@ -89,7 +97,7 @@ export const server = http.createServer(async (req, res) => {
       }
     }
     if (req.method === "POST" && u.pathname === "/api/import") {
-      if (ACCESS_KEY && req.headers["x-access-key"] !== ACCESS_KEY) return json(res, 401, { error: "This studio needs an access key for link import. Enter the key you were given, then try again." });
+      if (!keyOk(req)) return json(res, 401, { error: "This studio needs an access key for link import. Enter the key you were given, then try again." });
       const { url } = await readJson(req);
       if (!url || typeof url !== "string") return json(res, 400, { error: "Paste a listing link first." });
       assertPublicUrl(url);
@@ -105,7 +113,7 @@ export const server = http.createServer(async (req, res) => {
       return res.end(out.zip);
     }
     if (req.method === "POST" && u.pathname === "/api/ai") {
-      if (ACCESS_KEY && req.headers["x-access-key"] !== ACCESS_KEY) return json(res, 401, { error: "Enter your access key next to the listing link, then try again." });
+      if (!keyOk(req)) return json(res, 401, { error: "Enter your access key next to the listing link, then try again." });
       if (!aiEnabled()) return json(res, 404, { error: "AI isn't set up on this server." });
       if (!allow(clientIp(req), aiHits, AI_PER_HOUR)) return json(res, 429, { error: `You've used the AI ${AI_PER_HOUR} times this hour. Wait a bit, then try again.` });
       const body = await readJson(req, 25e6);
