@@ -47,8 +47,8 @@ h1,h2,h3{text-wrap:balance}
 .full{grid-column:1/-1}
 label.f,div.f{display:flex;flex-direction:column;gap:6px;min-width:0}
 .f>span,.lbl{font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-input[type=text],input[type=url],input[type=tel],select,textarea{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;transition:border-color .15s,background .15s}
-input[type=text]:hover,input[type=url]:hover,input[type=tel]:hover,select:hover,textarea:hover{border-color:var(--panel-3)}
+input[type=text],input[type=url],input[type=tel],input[type=password],select,textarea{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;transition:border-color .15s,background .15s}
+input[type=text]:hover,input[type=url]:hover,input[type=tel]:hover,input[type=password]:hover,select:hover,textarea:hover{border-color:var(--panel-3)}
 input::placeholder,textarea::placeholder{color:var(--faint)}
 textarea{resize:vertical;min-height:84px;line-height:1.5}
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 35%,transparent)}
@@ -100,6 +100,7 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outli
 .drop.big{padding:28px 24px;min-height:140px}
 .drop.big strong{font-family:var(--f-display);font-size:19px;display:block;margin-bottom:4px;letter-spacing:-.01em}
 .link-row{display:flex;gap:8px;min-width:0}
+.key-row{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .link-row input{flex:1}
 @media (max-width:520px){.link-row{flex-direction:column}}
 .pipe{list-style:none;margin:4px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
@@ -249,7 +250,7 @@ input[type=color]{width:42px;height:36px;border:1px solid var(--line);border-rad
         </div>
         <div class="f lockable"><label class="lbl" for="url">Listing link</label>
           <div class="link-row"><input type="url" id="url" data-k="url" maxlength="500" placeholder="Zillow, Realtor.com, MLS, Airbnb or VRBO link"><button class="btn primary" id="importBtn" hidden>Import listing</button></div>
-          <input type="password" id="accessKey" maxlength="200" placeholder="Access key" autocomplete="off" hidden>
+          <div class="key-row" id="keyRow" hidden><label class="lbl" for="accessKey">Access key</label><input type="password" id="accessKey" maxlength="200" placeholder="The private key you were given (not the listing link)" autocomplete="off"></div>
         </div>
         <p class="small" id="urlNote"></p>
         <div class="drop big lockable" id="autoDrop">
@@ -1643,7 +1644,8 @@ async function detectImport(){
   if(!IMPORT) return;
   if(IMPORT.ai && !window.claude){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); }
   $("#importBtn").hidden=false;
-  if(IMPORT.keyRequired){ const k=$("#accessKey"); k.hidden=false; try{ k.value=localStorage.getItem("lr-access")||""; }catch(e){} }
+  if(IMPORT.keyRequired){ $("#keyRow").hidden=false; const k=$("#accessKey"); try{ k.value=localStorage.getItem("lr-access")||""; }catch(e){}
+    k.addEventListener("input",()=>{ const v=k.value.trim(); if(/^(https?:\/\/|www\.)/i.test(v)||/^[\w-]+(\.[\w-]+)+(:\d+)?\/\S/.test(v)){ $("#url").value=v; S.d.url=v; k.value=""; urlChanged(); persist(); const n=$("#urlNote"); n.className="status warn"; n.textContent="That looked like a listing link, so it moved to the Listing link box. The access key is the private key you were given."; } }); }
   const g=document.querySelector(".grab b"); if(g) g.textContent="Paste a listing link and press Import, or use the Chrome Grabber for any site";
   urlChanged();
 }
@@ -1669,8 +1671,11 @@ function serverAI(){
 }
 async function importFromLink(){
   if(!IMPORT||building||busy) return;
-  const n=$("#urlNote"), url=($("#url").value||"").trim();
-  if(!/^https?:\/\//i.test(url)){ n.className="status warn"; n.textContent="Paste the full listing link first, starting with https://"; return; }
+  const n=$("#urlNote"); let url=($("#url").value||"").trim().replace(/^<|>$/g,"");
+  if(!url){ n.className="status warn"; n.textContent="Paste a listing link in the box above first, then press Import listing."; $("#url").focus(); return; }
+  if(!/^https?:\/\//i.test(url)){ if(/^[\w-]+(\.[\w-]+)+(:\d+)?(\/|$)/.test(url)) url=(/^(\d+\.){3}\d+/.test(url)?"http://":"https://")+url; else { n.className="status warn"; n.textContent="That doesn't look like a link. Copy the listing's address from your browser's address bar and paste it here."; return; } }
+  $("#url").value=url; S.d.url=url; persist();
+  if(IMPORT.keyRequired&&!$("#accessKey").value.trim()){ n.className="status warn"; n.textContent="Enter your access key in the Access key box first. It's the private key from your Render settings."; $("#accessKey").focus(); return; }
   const btn=$("#importBtn"); busyBtn(btn,true,"Importing…"); n.className="status"; n.textContent="Loading the listing… this usually takes 10–40 seconds.";
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired){ const k=$("#accessKey").value.trim(); headers["x-access-key"]=k; try{ localStorage.setItem("lr-access",k); }catch(e){} }
   try{
@@ -2022,7 +2027,11 @@ async function autoBuild(files){
   }catch(e){ console.error(e); st.className="status bad"; st.textContent="The build stopped partway. Try again; if it happens again, use fewer photos or remove any unusual files."; }
   finally{ building=false; go.disabled=false; lock(false); }
 }
-$("#go").onclick=()=>autoBuild(null);
+$("#go").onclick=()=>{
+  const link=($("#url").value||"").trim(), hasOwn=S.raw.length||S.photos.some(p=>!p.sample);
+  if(IMPORT&&link&&!hasOwn) return importFromLink();
+  autoBuild(null);
+};
 
 /* ---------- refresh / tabs / leaving ---------- */
 async function restoreSession(){
