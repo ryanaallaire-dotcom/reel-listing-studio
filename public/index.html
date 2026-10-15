@@ -555,8 +555,8 @@ const GRADES={
 };
 // Pace: how long each shot holds, how many shots per room, and how calm the transitions are
 const PACE={
-  relaxed:{mul:1.85, label:"Relaxed", introMul:1.3, clipCap:5,   walkShots:n=>n<=5?2:1, walkTrans:[[1,.75],[4,.95],[2,.6],[1,.75],[3,.65]]},
-  standard:{mul:1.35, label:"Standard", introMul:1.15, clipCap:4, walkShots:n=>n<=8?2:1, walkTrans:[[6,.6],[1,.55],[2,.45],[4,.75],[3,.5]]},
+  relaxed:{mul:1.85, label:"Relaxed", introMul:1.3, clipCap:5,   walkShots:n=>n<=5?2:1, walkTrans:[[1,.07],[1,.7],[1,.07],[2,.55],[1,.07],[4,.9]]},
+  standard:{mul:1.35, label:"Standard", introMul:1.15, clipCap:4, walkShots:n=>n<=8?2:1, walkTrans:[[1,.07],[2,.42],[1,.07],[1,.5],[1,.07],[2,.42]]},
   fast:{mul:1, label:"Fast", introMul:1, clipCap:3.2,           walkShots:n=>n<=6?3:n<=10?2:1, walkTrans:null}
 };
 // Auto pace: read the listing (type, price, wording) and pick a tempo that fits the property
@@ -1176,7 +1176,7 @@ const openHouseOn=()=>D().openHouse && /open house|coming soon/i.test(D().status
 
 /* ---------- timeline + shot list ---------- */
 let SEGS=[], TOTAL=10;
-const SHOT_NAMES={footage:"Video clip",walkIn:"Walk-in",pan:"Pan",detail:"Detail",pullBack:"Pull back",slide:"Slider",orbit:"Orbit",dollyIn:"Dolly in",dollyOut:"Dolly out",crane:"Crane up",craneDown:"Crane down",push:"Push + focus",drift:"Drift"};
+const SHOT_NAMES={truck:"Side glide",glide:"Walk forward",arc:"Arc",tilt:"Tilt up",reveal:"Reveal",macro:"Close glide",footage:"Video clip",walkIn:"Walk-in",pan:"Pan",detail:"Detail",pullBack:"Pull back",slide:"Slider",orbit:"Orbit",dollyIn:"Dolly in",dollyOut:"Dolly out",crane:"Crane up",craneDown:"Crane down",push:"Push + focus",drift:"Drift"};
 function build(){
   const t=T(), P=S.photos, beat=60/t.bpm, segs=[]; let at=0;
   if(!P.length){ SEGS=[]; TOTAL=0; return; }
@@ -1203,7 +1203,7 @@ function build(){
   });
   const [ty,d]=t.toOutro; push({type:"outro",dur:t.outroB*beat,img:P[0],tIn:{type:ty,d,dir:1}});
   // director: pick a camera move per shot so the film flows
-  let alt=0;
+  let alt=0, walkPick={}, walkRun=0, lastMove="";
   segs.forEach((s,k)=>{
     const nx=segs[k+1]; s.outTr=nx?nx.tIn.d:0;
     const img=s.img.src, ia=img.width/img.height, wide=ia/sa>1.35, kind=s.img.kind||"int";
@@ -1215,8 +1215,15 @@ function build(){
     if(s.img.isVideo && (s.type==="intro"||s.type==="photo")){ s.move="footage"; s.mode=2; s.fit=false; s.card=null; s.cardAsp=0; return; }
     if(t.walk && (s.type==="intro"||s.type==="photo")){
       const sub=s.sub||0;
-      s.move = s.type==="intro" ? "walkIn" : sub===0 ? "pan" : sub===1 ? "detail" : (alt%2?"pullBack":"walkIn");
-      s.mode = kind==="ext"?1:0;
+      const pool = s.type==="intro" ? (kind==="ext"?["tilt","glide"]:["glide","truck"])
+        : sub>=1 ? (sub===1?["macro","arc"]:["reveal","truck"])
+        : kind==="ext" ? ["truck","tilt","arc","glide"] : kind==="detail" ? ["macro","truck"]
+        : wide ? ["truck","glide","arc","pan","reveal"] : ["glide","truck","arc","tilt"];
+      const pk=pool.join(), nextOf=()=>pool[(walkPick[pk]=(walkPick[pk]||0)+1)%pool.length];
+      let m=nextOf(); if(m===lastMove) m=nextOf();
+      s.move=m; lastMove=m; s.mode = kind==="ext"?1:0;
+      // a real operator keeps moving the same way across a couple of cuts, then changes direction
+      if(!(nx && nx.tIn.type===2)) s.dir = (Math.floor(walkRun++/2)%2)?-1:1;
     }
     if(s.type!=="stats"&&s.type!=="outro") alt++;
     // framing: keep the whole photo when it doesn't fit the frame's shape (landscape photo in a vertical Reel)
@@ -1255,6 +1262,13 @@ function camAt(seg,local,absT){
     case "pan":{ z=1.03; const R=slackX(z)*.9; px=lerp(-dir*R,dir*R,p); yaw=-dir*.03*k*q; break; }
     case "detail":{ const f=seg.img.focus||[.5,.5]; z=lerp(1.26,1.38+.05*k,p); px=(f[0]-.5)+dir*.02*q; py=(f[1]-.5)*.8; yaw=dir*.012*k*q; break; }
     case "pullBack": z=lerp(1.2+.06*k,1.03,p); dolly=lerp(.03*k,0,p); pitch=.01*k*q; break;
+    // real-camera moves: the frame size stays fixed and the camera itself travels (no zooming)
+    case "truck":{ z=1.04; const R=slackX(z)*clamp(.55*k,.2,.9); px=lerp(-dir*R,dir*R,p); yaw=dir*.006*k*q; break; }
+    case "glide":{ z=hasD?1.04:lerp(1.03,1.07,p); dolly=lerp(0,.02*k,p); px=dir*slackX(1.04)*.18*q; break; }
+    case "arc":{ z=1.05; const R=slackX(z)*clamp(.42*k,.15,.8); px=lerp(-dir*R,dir*R,p); yaw=-dir*.045*k*q; break; }
+    case "tilt":{ z=1.05; const Ry=slackY(z)*.7; py=lerp(Ry,-Ry,p); pitch=-.028*k*q; px=dir*slackX(z)*.15*q; break; }
+    case "reveal":{ z=hasD?1.04:lerp(1.07,1.03,p); dolly=lerp(.02*k,0,p); px=-dir*slackX(1.04)*.18*q; break; }
+    case "macro":{ const f=seg.img.focus||[.5,.5]; z=1.24; px=(f[0]-.5)*.85+dir*.05*q; py=(f[1]-.5)*.65; yaw=dir*.008*k*q; break; }
   }
   if(hasD){
     switch(seg.move){
@@ -1269,6 +1283,12 @@ function camAt(seg,local,absT){
       case "craneDown": ty=.03*k*q; foc=.4; break;
       case "push": dz=lerp(0,.09*k,p); break;
       case "detail": dz=lerp(0,.06*k,p); break;
+      case "truck": tx=dir*.055*k*q; foc=.55; break;
+      case "glide": dz=lerp(0,.17*k,p); tx=dir*.012*k*q; break;
+      case "arc": tx=dir*.06*k*q; foc=.35; break;
+      case "tilt": ty=-.04*k*q; foc=.45; break;
+      case "reveal": dz=lerp(.16*k,0,p); tx=-dir*.012*k*q; break;
+      case "macro": tx=dir*.035*k*q; foc=.5; break;
     }
     z+=(Math.abs(tx)+Math.abs(ty))*(1-foc)*2.4;
   }
