@@ -541,7 +541,7 @@ const FMT={"9:16":[1080,1920],"4:5":[1080,1350],"1:1":[1080,1080],"16:9":[1920,1
 const BODY='Jost, "Avenir Next", "Helvetica Neue", Arial, sans-serif';
 // transition types: 1 film dissolve, 2 whip pan, 3 zoom-through, 4 light-leak dissolve, 5 flash cut
 const TPL={
-  walk:{disp:'Jost, "Avenir Next", "Helvetica Neue", Arial, sans-serif', accent:"#f4efe6", bpm:112, introB:7, statsB:6, outroB:8, dur:1.6, trans:[[2,.34],[1,.06],[2,.34],[1,.06],[5,.22],[1,.06]], toStats:[1,.45], toOutro:[1,.6], move:1.4, grade:"bright", align:"center", walk:true},
+  walk:{disp:'Jost, "Avenir Next", "Helvetica Neue", Arial, sans-serif', accent:"#f4efe6", bpm:112, introB:7, statsB:6, outroB:8, dur:1.6, trans:[[1,.06],[1,.06],[1,.06],[1,.4]], toStats:[1,.45], toOutro:[1,.6], move:1.4, grade:"bright", align:"center", walk:true},
   luxe:{disp:'"Bodoni Moda", Didot, "Times New Roman", serif', accent:"#c9a86a", bpm:72, introB:7, statsB:6, outroB:8, dur:3.3, trans:[[4,1.5],[1,1.3]], toStats:[1,1.2], toOutro:[4,1.6], move:1, grade:"cine", align:"center"},
   bold:{disp:'Anton, Impact, "Arial Narrow", sans-serif', accent:"#f4c542", bpm:120, introB:8, statsB:8, outroB:10, dur:2.0, trans:[[2,.45],[3,.5],[2,.45],[5,.36]], toStats:[3,.5], toOutro:[3,.55], move:1.5, grade:"punch", align:"left"},
   stay:{disp:'Fraunces, Georgia, serif', accent:"#e8825f", bpm:96, introB:9, statsB:8, outroB:10, dur:2.5, trans:[[4,1.1],[1,.95],[2,.6]], toStats:[1,.9], toOutro:[4,1.2], move:1.15, grade:"airy", align:"left"}
@@ -555,9 +555,9 @@ const GRADES={
 };
 // Pace: how long each shot holds, how many shots per room, and how calm the transitions are
 const PACE={
-  relaxed:{mul:1.85, label:"Relaxed", introMul:1.3, clipCap:5,   walkShots:n=>n<=5?2:1, walkTrans:[[1,.07],[1,.7],[1,.07],[2,.55],[1,.07],[4,.9]]},
-  standard:{mul:1.35, label:"Standard", introMul:1.15, clipCap:4, walkShots:n=>n<=8?2:1, walkTrans:[[1,.07],[2,.42],[1,.07],[1,.5],[1,.07],[2,.42]]},
-  fast:{mul:1, label:"Fast", introMul:1, clipCap:3.2,           walkShots:n=>n<=6?3:n<=10?2:1, walkTrans:null}
+  relaxed:{mul:1.85, label:"Relaxed", introMul:1.3, clipCap:5,   walkShots:n=>1, walkTrans:[[1,.07],[1,.07],[1,.6],[1,.07],[1,.07],[4,.8]]},
+  standard:{mul:1.35, label:"Standard", introMul:1.15, clipCap:4, walkShots:n=>1, walkTrans:[[1,.06],[1,.06],[1,.45],[1,.06],[1,.06],[1,.06]]},
+  fast:{mul:1, label:"Fast", introMul:1, clipCap:3.2,           walkShots:n=>1, walkTrans:[[1,.05],[1,.05],[1,.05],[2,.3],[1,.05],[1,.05]]}
 };
 // Auto pace: read the listing (type, price, wording) and pick a tempo that fits the property
 function autoPace(){
