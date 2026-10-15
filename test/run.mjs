@@ -236,6 +236,9 @@ const Gp = 18917; const sg = await startServer(Gp, { FAL_KEY: "fal-test", FAL_QU
   const c = falCalls[0] || {};
   check("Clips: sends the photo to the video model with your key", c.auth === "Key fal-test" && /kling-video/.test(c.path) && c.body.image_url.startsWith("data:image/jpeg") && /dolly/.test(c.body.prompt) && /people/.test(c.body.negative_prompt), c.path);
   check("Clips: finishes and the video downloads", st.status === "done", JSON.stringify(st));
+  falCalls.length = 0; await postAs(Gp, "default", "/api/clips", { image: jpg, kind: "int", move: "truck" });
+  await new Promise(r => setTimeout(r, 200));
+  check("Clips: the planned camera move goes to the model, never a zoom", /sideways/.test(falCalls[0]?.body.prompt || "") && !/dolly/.test(falCalls[0]?.body.prompt || "") && /zoom/.test(falCalls[0]?.body.negative_prompt || ""), falCalls[0]?.body.prompt);
   const other = await api(Gp, `/api/clips/${id}/video`);
   check("Clips: other accounts can't download your clip", other.status === 404);
   const v = await api(Gp, `/api/clips/${id}/video`, undefined, { as: "u" });

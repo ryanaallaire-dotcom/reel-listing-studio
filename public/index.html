@@ -541,7 +541,7 @@ const FMT={"9:16":[1080,1920],"4:5":[1080,1350],"1:1":[1080,1080],"16:9":[1920,1
 const BODY='Jost, "Avenir Next", "Helvetica Neue", Arial, sans-serif';
 // transition types: 1 film dissolve, 2 whip pan, 3 zoom-through, 4 light-leak dissolve, 5 flash cut
 const TPL={
-  walk:{disp:'Jost, "Avenir Next", "Helvetica Neue", Arial, sans-serif', accent:"#f4efe6", bpm:112, introB:7, statsB:6, outroB:8, dur:1.6, trans:[[6,.5],[2,.4],[3,.45],[2,.4],[6,.5],[1,.32]], toStats:[3,.45], toOutro:[6,.55], move:1.4, grade:"bright", align:"center", walk:true},
+  walk:{disp:'Jost, "Avenir Next", "Helvetica Neue", Arial, sans-serif', accent:"#f4efe6", bpm:112, introB:7, statsB:6, outroB:8, dur:1.6, trans:[[2,.34],[1,.06],[2,.34],[1,.06],[5,.22],[1,.06]], toStats:[1,.45], toOutro:[1,.6], move:1.4, grade:"bright", align:"center", walk:true},
   luxe:{disp:'"Bodoni Moda", Didot, "Times New Roman", serif', accent:"#c9a86a", bpm:72, introB:7, statsB:6, outroB:8, dur:3.3, trans:[[4,1.5],[1,1.3]], toStats:[1,1.2], toOutro:[4,1.6], move:1, grade:"cine", align:"center"},
   bold:{disp:'Anton, Impact, "Arial Narrow", sans-serif', accent:"#f4c542", bpm:120, introB:8, statsB:8, outroB:10, dur:2.0, trans:[[2,.45],[3,.5],[2,.45],[5,.36]], toStats:[3,.5], toOutro:[3,.55], move:1.5, grade:"punch", align:"left"},
   stay:{disp:'Fraunces, Georgia, serif', accent:"#e8825f", bpm:96, introB:9, statsB:8, outroB:10, dur:2.5, trans:[[4,1.1],[1,.95],[2,.6]], toStats:[1,.9], toOutro:[4,1.2], move:1.15, grade:"airy", align:"left"}
@@ -1256,8 +1256,8 @@ function camAt(seg,local,absT){
     case "crane":{ z=lerp(1.07,1.03,p); const Ry=slackY(z)*.6; py=lerp(Ry,-Ry,p); pitch=-.03*k*q; const Rx=slackX(z)*.25*k; px=lerp(-dir*Rx,dir*Rx,p); break; }
     case "craneDown":{ z=lerp(1.03,1.07,p); const Ry=slackY(z)*.5; py=lerp(-Ry,Ry,p); pitch=.025*k*q; break; }
     case "push": z=lerp(1.02,1.02+.08*k,p); yaw=dir*.01*k*q; break;
-    case "drift": z=lerp(1.14,1.21,p); px=lerp(-.012,.012,p); break;
-    case "footage": z=lerp(1.0,1.025,p); px=dir*slackX(1.01)*.18*q; break;
+    case "drift": z=1.16; px=lerp(-.02,.02,p); break;
+    case "footage": z=1.0; break;          // real or AI footage already moves: add nothing
     case "walkIn": z=lerp(1.02,1.02+.17*k,p); dolly=lerp(0,.03*k,p); pitch=-.012*k*q; yaw=dir*.016*k*q; px=dir*slackX(1.1)*.25*q; break;
     case "pan":{ z=1.03; const R=slackX(z)*.9; px=lerp(-dir*R,dir*R,p); yaw=-dir*.03*k*q; break; }
     case "detail":{ const f=seg.img.focus||[.5,.5]; z=lerp(1.26,1.38+.05*k,p); px=(f[0]-.5)+dir*.02*q; py=(f[1]-.5)*.8; yaw=dir*.012*k*q; break; }
@@ -2376,7 +2376,8 @@ function cropForClip(p){
 }
 async function clipOne(p,onState){
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
-  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int"})});
+  const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"truck";
+  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"The AI video service couldn't start.");
   const t0=Date.now();
   for(;;){
