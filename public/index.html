@@ -219,6 +219,41 @@ input[type=color]{width:42px;height:36px;border:1px solid var(--line);border-rad
   .brand{font-size:23px}
   .hero h2{font-size:24px}
 }
+/* account + plans */
+.acct{display:flex;align-items:center;gap:10px;margin-left:auto}
+.credit-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel-2);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.credit-pill b{color:var(--gold);font-variant-numeric:tabular-nums}
+.credit-pill:hover{border-color:var(--accent)}
+dialog.dlg{border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:18px;padding:0;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+dialog.dlg.wide{width:min(1060px,calc(100vw - 32px))}
+dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
+.dlg-in{padding:24px}
+.dlg-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.dlg-h h2{font-family:var(--f-display);font-size:24px;margin:0;line-height:1.15}
+.dlg-x{border:0;background:none;color:var(--muted);font-size:26px;line-height:1;cursor:pointer;padding:0 4px}
+.dlg-x:hover{color:var(--fg)}
+.dlg form{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.dlg label{display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:var(--muted);font-weight:600}
+.dlg input[type=email],.dlg input[type=password],.dlg input[type=text],.dlg input[type=number]{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--fg);font-size:15px}
+.swap{font-size:14px;color:var(--muted);margin:14px 0 0}
+.linkish{border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:16px}
+.plan{border:1px solid var(--line);background:var(--panel-2);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.plan.pop{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.plan.current{border-color:var(--ok)}
+.plan h3{margin:0;font-family:var(--f-display);font-size:19px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.plan .tagx{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,var(--brand) 30%,transparent);color:var(--accent)}
+.plan.current .tagx{background:var(--ok-bg);color:var(--ok)}
+.plan .price{font-family:var(--f-display);font-size:32px;font-weight:700;line-height:1}
+.plan .price small{font-size:14px;color:var(--muted);font-weight:500;font-family:var(--f-body)}
+.plan ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:4px}
+.plan ul b{color:var(--fg)}
+.plan .pp{margin-top:auto;min-height:44px}
+.topup{margin-top:16px;border:1px dashed var(--line);border-radius:14px;padding:16px;display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between}
+.topup .pp{width:min(260px,100%)}
+.fine{font-size:12.5px;color:var(--faint);margin:14px 0 0}
+.admin-box{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.admin-box form{flex-direction:row;flex-wrap:wrap;align-items:flex-end}
 [hidden]{display:none!important}
 .locked .lockable{opacity:.5;pointer-events:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -227,7 +262,47 @@ input[type=color]{width:42px;height:36px;border:1px solid var(--line);border-rad
 <header class="top">
   <div class="logo"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#6d4ae0"/><path d="M9 19.5 20 10l11 9.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 17v12.5h15V17" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/><path d="M18 20.3v6.4l5.4-3.2z" fill="#f2c14e"/></svg><h1 class="brand"><em>Reel</em> Listing<span class="studio-word">Studio</span></h1></div>
   <p class="tag">Drop in a listing. Get a scroll-stopping video for Reels, TikTok, YouTube, MLS and Airbnb.</p>
+  <div class="acct" id="acct" hidden>
+    <button class="credit-pill" id="creditPill" hidden title="Your AI motion credits"><span>AI credits</span> <b id="creditNum">0</b></button>
+    <button class="btn" id="plansBtn">Plans</button>
+    <button class="btn primary" id="signBtn">Sign in</button>
+  </div>
 </header>
+
+<dialog class="dlg" id="authDlg" aria-labelledby="authTitle">
+  <div class="dlg-in">
+    <div class="dlg-h"><h2 id="authTitle">Create your free account</h2><button class="dlg-x" data-close aria-label="Close">×</button></div>
+    <p class="small" id="authWhy">Free accounts make 3D videos and import 2 listing links a month. Upgrade any time for AI motion.</p>
+    <form id="authForm" novalidate>
+      <label>Email<input type="email" id="authEmail" autocomplete="email" required maxlength="200"></label>
+      <label>Password<input type="password" id="authPass" autocomplete="new-password" required minlength="8" maxlength="200" placeholder="At least 8 characters"></label>
+      <label id="inviteRow" hidden>Invite code<input type="text" id="authInvite" autocomplete="off" maxlength="200" placeholder="The code you were given"></label>
+      <p class="status" id="authStatus" role="status" aria-live="polite"></p>
+      <button class="btn primary" id="authGo" type="submit">Create account</button>
+    </form>
+    <p class="swap" id="authSwap"></p>
+  </div>
+</dialog>
+
+<dialog class="dlg wide" id="plansDlg" aria-labelledby="plansTitle">
+  <div class="dlg-in">
+    <div class="dlg-h"><h2 id="plansTitle">Plans</h2><button class="dlg-x" data-close aria-label="Close">×</button></div>
+    <p class="small" id="plansWhy">1 credit turns 1 shot into real AI-generated moving footage. 3D depth videos are always free.</p>
+    <div class="plans" id="planCards"></div>
+    <div class="topup" id="topupBox" hidden>
+      <div><strong>Need more this month?</strong><p class="small" style="margin:2px 0 0"><span id="topupLine"></span> Top-up credits never expire.</p></div>
+      <div class="pp" id="ppTopup"></div>
+    </div>
+    <p class="status" id="plansStatus" role="status" aria-live="polite"></p>
+    <p class="fine" id="plansFine">Billed monthly through PayPal. Cancel any time: your plan and credits stay until the end of the month you paid for. Switching plans starts the new plan today.</p>
+    <p class="fine" id="acctLine"></p>
+    <div class="admin-box" id="adminBox" hidden>
+      <strong>Owner tools</strong>
+      <form id="grantForm"><label style="flex:1 1 220px">Customer email<input type="email" id="grantEmail" required></label><label style="width:120px">Credits<input type="number" id="grantNum" value="10" step="1"></label><button class="btn" type="submit">Give credits</button></form>
+      <p class="status" id="grantStatus"></p>
+    </div>
+  </div>
+</dialog>
 
 <main class="studio" id="app">
   <div class="steps">
@@ -1450,6 +1525,8 @@ function renderFrame(t,shutter){
   if(tr){ overlayShade(A,1-m0); drawOverlay(seg,local,m0); }
   else drawOverlay(seg,local,1);
   if(S.o.tpl==="bold") storyBars(t);
+  if(watermarkOn()){ ctx.save(); font(600,20*u,BODY); ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.globalAlpha=.78; ctx.fillStyle="#fff"; ctx.shadowColor="rgba(0,0,0,.6)"; ctx.shadowBlur=10*u;
+    ctx.fillText("Made with Reel Listing Studio",W-28*u,H-28*u); ctx.restore(); }
   if(glOK){ const nx=SEGS[k+1]; if(nx&&local>seg.dur-1.2) texFor(nx.img); texGC(); }
 }
 
@@ -1723,8 +1800,9 @@ let IMPORT=null;
 async function detectImport(){
   try{ const r=await fetch("/api/health",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&j.service==="reel-listing"&&j.import) IMPORT=j; }catch(e){ return; }
   if(!IMPORT) return;
-  if(IMPORT.ai && !window.claude){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); }
+  if(IMPORT.ai && !window.claude && !IMPORT.accounts){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); }
   $("#importBtn").hidden=false;
+  if(IMPORT.accounts) await loadMe();
   if(IMPORT.depth){ const li=$('#pipe li[data-s="depth"]'); if(li) li.hidden=false; queueDepth(); }
   if(IMPORT.clips){ $$(".clips-only").forEach(e=>e.hidden=false); const li=$('#pipe li[data-s="clips"]'); if(li) li.hidden=false; syncClipNote(); }
   if(IMPORT.keyRequired){ $("#keyRow").hidden=false; const k=$("#accessKey"); try{ k.value=localStorage.getItem("lr-access")||""; }catch(e){}
@@ -1732,6 +1810,142 @@ async function detectImport(){
   const g=document.querySelector(".grab b"); if(g) g.textContent="Paste a listing link and press Import, or use the Chrome Grabber for any site";
   urlChanged();
 }
+/* ---------- accounts, credits and PayPal (only when served from our own server) ---------- */
+let ACCT=null, afterSignIn=null, authMode="signup";
+const signedIn=()=>!!(ACCT&&ACCT.user);
+const credits=()=>ACCT&&ACCT.user?(ACCT.user.admin?999:ACCT.user.credits):0;
+async function loadMe(){
+  try{ const r=await fetch("/api/me",{cache:"no-store"}); if(!r.ok) return; ACCT=await r.json(); }catch(e){ return; }
+  renderAcct();
+}
+function setUser(u){ if(!ACCT) ACCT={}; ACCT.user=u; renderAcct(); }
+function renderAcct(){
+  if(!ACCT) return; const u=ACCT.user;
+  $("#acct").hidden=false;
+  $("#signBtn").textContent=u?"Sign out":"Sign in"; $("#signBtn").classList.toggle("primary",!u);
+  $("#signBtn").title=u?`Signed in as ${u.email}`:"";
+  $("#creditPill").hidden=!u; if(u) $("#creditNum").textContent=u.admin?"∞":u.credits;
+  $("#plansBtn").textContent=u&&u.tier!=="free"?u.tierLabel:"Plans";
+  if(IMPORT&&IMPORT.ai&&!window.claude){ if(u){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); } }
+  syncClipNote(); if(typeof refresh==="function"&&SEGS.length) refresh();
+}
+function dlgOpen(d){ try{ d.showModal(); }catch(e){ d.setAttribute("open",""); } }
+$$("dialog.dlg [data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
+$$("dialog.dlg").forEach(d=>d.addEventListener("click",e=>{ if(e.target===d) d.close(); }));
+function openAuth(why,mode,then){
+  afterSignIn=then||null; authMode=mode||"signup"; syncAuthMode();
+  if(why) $("#authWhy").textContent=why;
+  $("#authStatus").className="status"; $("#authStatus").textContent="";
+  dlgOpen($("#authDlg")); setTimeout(()=>$("#authEmail").focus(),50);
+}
+function syncAuthMode(){
+  const up=authMode==="signup";
+  $("#authTitle").textContent=up?"Create your free account":"Welcome back";
+  $("#authGo").textContent=up?"Create account":"Sign in";
+  $("#authPass").autocomplete=up?"new-password":"current-password";
+  $("#inviteRow").hidden=!(up&&ACCT&&ACCT.inviteRequired);
+  $("#authWhy").textContent=up?"Free accounts make 3D videos and import 2 listing links a month. Upgrade any time for AI motion.":"Sign in to use link import, AI writing and AI motion.";
+  $("#authSwap").innerHTML=up?'Already have an account? <button class="linkish" type="button" id="swapBtn">Sign in</button>':'New here? <button class="linkish" type="button" id="swapBtn">Create a free account</button><br><span class="small">Forgot your password? Ask the studio owner to reset it.</span>';
+  $("#swapBtn").onclick=()=>{ authMode=up?"login":"signup"; syncAuthMode(); };
+}
+$("#authForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const st=$("#authStatus"), go=$("#authGo");
+  const email=$("#authEmail").value.trim(), password=$("#authPass").value;
+  if(!/^\S+@\S+\.\S+$/.test(email)){ st.className="status warn"; st.textContent="Enter your email address."; $("#authEmail").focus(); return; }
+  if(password.length<8){ st.className="status warn"; st.textContent="Use a password with at least 8 characters."; $("#authPass").focus(); return; }
+  go.disabled=true; st.className="status"; st.textContent=authMode==="signup"?"Creating your account…":"Signing in…";
+  try{
+    const r=await fetch(authMode==="signup"?"/api/account/signup":"/api/account/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password,invite:$("#authInvite").value.trim()})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){ st.className="status bad"; st.textContent=j.error||"That didn't work. Try again."; return; }
+    $("#authPass").value=""; setUser(j.user); $("#authDlg").close();
+    const then=afterSignIn; afterSignIn=null; if(then) then();
+  }catch(err){ st.className="status bad"; st.textContent="Couldn't reach the studio. Check your connection and try again."; }
+  finally{ go.disabled=false; }
+});
+$("#signBtn").onclick=async()=>{
+  if(!signedIn()) return openAuth(null,"login");
+  await fetch("/api/account/logout",{method:"POST",headers:{"content-type":"application/json"},body:"{}"}).catch(()=>{});
+  setUser(null); document.body.classList.add("ai-off");
+};
+$("#plansBtn").onclick=()=>openPlans();
+$("#creditPill").onclick=()=>openPlans();
+
+const PLAN_COPY={
+  free:["3D depth videos (free camera moves)","2 listing-link imports a month","AI writing for titles and captions","Small “Made with Reel Listing Studio” mark"],
+  starter:["<b>25 AI motion credits</b> a month","About 6 videos with AI motion on the top 4 shots","60 listing-link imports a month","No watermark"],
+  pro:["<b>70 AI motion credits</b> a month","About 17 videos with AI motion on the top 4 shots","200 listing-link imports a month","No watermark"],
+  agency:["<b>200 AI motion credits</b> a month","About 50 videos with AI motion on the top 4 shots","600 listing-link imports a month","No watermark"]
+};
+let ppLoaded={};
+function loadPP(ns,params){
+  if(ppLoaded[ns]) return ppLoaded[ns];
+  return ppLoaded[ns]=new Promise((res,rej)=>{ const sc=document.createElement("script");
+    sc.src=`https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(ACCT.paypal.clientId)}&currency=USD&components=buttons&${params}`;
+    sc.dataset.namespace=ns; sc.onload=()=>res(window[ns]); sc.onerror=()=>{ ppLoaded[ns]=null; rej(new Error("paypal")); }; document.head.appendChild(sc); });
+}
+async function openPlans(why){
+  if(!ACCT) return; const u=ACCT.user, T=ACCT.tiers, st=$("#plansStatus");
+  $("#plansWhy").textContent=why||"1 credit turns 1 shot into real AI-generated moving footage. 3D depth videos are always free.";
+  st.className="status"; st.textContent="";
+  const order=["free","starter","pro","agency"];
+  $("#planCards").innerHTML=order.map(k=>{ const t=T[k], cur=u&&u.tier===k;
+    return `<div class="plan${k==="pro"?" pop":""}${cur?" current":""}"><h3>${t.label}${cur?'<span class="tagx">Your plan</span>':k==="pro"?'<span class="tagx">Most popular</span>':""}</h3>
+      <div class="price">${k==="free"?"$0":"$"+parseFloat(t.price)}<small>${k==="free"?"":" / month"}</small></div>
+      <ul>${PLAN_COPY[k].map(x=>`<li>${x}</li>`).join("")}</ul>
+      <div class="pp" id="pp-${k}">${k==="free"?(u?"":'<button class="btn" data-signup style="width:100%">Create free account</button>'):""}</div></div>`; }).join("");
+  const sb=$("#planCards [data-signup]"); if(sb) sb.onclick=()=>{ $("#plansDlg").close(); openAuth(null,"signup"); };
+  const top=ACCT.topup; $("#topupLine").textContent=`${top.credits} AI credits for $${parseFloat(top.price)}.`;
+  $("#topupBox").hidden=!u||!ACCT.paypal;
+  $("#acctLine").innerHTML=u?`Signed in as ${escapeHtml(u.email)}. ${u.tier!=="free"?(u.subStatus==="ACTIVE"&&u.renews?`Renews ${new Date(u.renews).toLocaleDateString()}. <button class="linkish" id="cancelPlan">Cancel plan</button>`:u.endsAt?`Your ${u.tierLabel} plan ends ${new Date(u.endsAt).toLocaleDateString()}.`:""):""} Credits: ${u.monthly} monthly + ${u.extra} top-up.`:"";
+  const cp=$("#cancelPlan"); if(cp) cp.onclick=cancelPlan;
+  $("#adminBox").hidden=!(u&&u.admin);
+  dlgOpen($("#plansDlg"));
+  if(!ACCT.paypal){ order.slice(1).forEach(k=>{ $("#pp-"+k).innerHTML='<p class="small">Payments open soon.</p>'; }); return; }
+  if(!u){ order.slice(1).forEach(k=>{ const b=document.createElement("button"); b.className="btn primary"; b.style.width="100%"; b.textContent=`Choose ${T[k].label}`;
+    b.onclick=()=>{ $("#plansDlg").close(); openAuth(`Create your account first, then pick ${T[k].label}.`,"signup",()=>openPlans()); }; $("#pp-"+k).appendChild(b); }); return; }
+  try{
+    const ppS=await loadPP("paypalSub","vault=true&intent=subscription");
+    order.slice(1).forEach(k=>{ const box=$("#pp-"+k); if(u.tier===k&&u.subStatus==="ACTIVE"){ box.innerHTML='<p class="small">This is your current plan.</p>'; return; }
+      ppS.Buttons({style:{shape:"pill",label:"subscribe",height:42,tagline:false},
+        createSubscription:(d,a)=>a.subscription.create({plan_id:ACCT.paypal.plans[k],custom_id:String(u.id)}),
+        onApprove:d=>confirmSub(d.subscriptionID,T[k].label),
+        onError:()=>{ st.className="status bad"; st.textContent="PayPal had a problem. You haven't been charged. Try again."; }}).render(box).catch(()=>{});
+    });
+    const ppO=await loadPP("paypalOne","intent=capture");
+    $("#ppTopup").innerHTML="";
+    ppO.Buttons({style:{shape:"pill",label:"pay",height:42,tagline:false},
+      createOrder:async()=>{ const r=await fetch("/api/account/topup",{method:"POST",headers:{"content-type":"application/json"},body:"{}"}); const j=await r.json(); if(!r.ok) throw new Error(j.error); return j.id; },
+      onApprove:async d=>{ st.className="status"; st.textContent="Adding your credits…";
+        const r=await fetch("/api/account/topup/capture",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({orderID:d.orderID})}); const j=await r.json().catch(()=>({}));
+        if(r.ok){ setUser(j.user); st.className="status ok"; st.textContent=`Added ${ACCT.topup.credits} credits. You now have ${j.user.credits}.`; } else { st.className="status bad"; st.textContent=j.error||"Couldn't add the credits. If you were charged, contact support."; } },
+      onError:()=>{ st.className="status bad"; st.textContent="PayPal had a problem. You haven't been charged. Try again."; }}).render("#ppTopup").catch(()=>{});
+  }catch(e){ st.className="status warn"; st.textContent="Couldn't load PayPal. Turn off any ad blocker for this page, then open Plans again."; }
+}
+async function confirmSub(id,label){
+  const st=$("#plansStatus"); st.className="status"; st.textContent=`Starting your ${label} plan…`;
+  for(let i=0;i<6;i++){
+    const r=await fetch("/api/account/subscribe",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({subscriptionID:id})}); const j=await r.json().catch(()=>({}));
+    if(r.ok){ setUser(j.user); st.className="status ok"; st.textContent=`You're on ${j.user.tierLabel}. ${j.user.credits} AI credits are ready.`; setTimeout(()=>openPlans(),1500); return; }
+    if(r.status!==402){ st.className="status bad"; st.textContent=j.error||"Couldn't start the plan. If you were charged, contact support."; return; }
+    await new Promise(r=>setTimeout(r,2500));
+  }
+  st.className="status warn"; st.textContent="PayPal is still activating your plan. Refresh this page in a minute.";
+}
+async function cancelPlan(){
+  if(!confirm("Cancel your plan? You keep your plan and credits until the end of the month you paid for.")) return;
+  const st=$("#plansStatus"); const r=await fetch("/api/account/cancel",{method:"POST",headers:{"content-type":"application/json"},body:"{}"}); const j=await r.json().catch(()=>({}));
+  if(r.ok){ setUser(j.user); openPlans(); $("#plansStatus").className="status ok"; $("#plansStatus").textContent="Your plan is cancelled. It stays active until the end of this paid month."; }
+  else { st.className="status bad"; st.textContent=j.error||"Couldn't cancel. Try again, or cancel in your PayPal account."; }
+}
+$("#grantForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const st=$("#grantStatus");
+  const r=await fetch("/api/account/admin",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:$("#grantEmail").value.trim(),credits:+$("#grantNum").value})}); const j=await r.json().catch(()=>({}));
+  st.className=r.ok?"status ok":"status bad"; st.textContent=r.ok?`${j.user.email} now has ${j.user.credits} credits.`:(j.error||"Didn't work.");
+});
+function escapeHtml(x){ return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+const watermarkOn=()=>!!(IMPORT&&IMPORT.accounts&&(!ACCT||!ACCT.user||ACCT.user.watermark));
+
 /* the same calls the Studio makes to Claude inside claude.ai, sent to your server's /api/ai instead */
 function serverAI(){
   const toDataURL=b=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(b); });
@@ -1758,12 +1972,17 @@ async function importFromLink(){
   if(!url){ n.className="status warn"; n.textContent="Paste a listing link in the box above first, then press Import listing."; $("#url").focus(); return; }
   if(!/^https?:\/\//i.test(url)){ if(/^[\w-]+(\.[\w-]+)+(:\d+)?(\/|$)/.test(url)) url=(/^(\d+\.){3}\d+/.test(url)?"http://":"https://")+url; else { n.className="status warn"; n.textContent="That doesn't look like a link. Copy the listing's address from your browser's address bar and paste it here."; return; } }
   $("#url").value=url; S.d.url=url; persist();
+  if(IMPORT.accounts&&!signedIn()){ openAuth("Create a free account (or sign in) to import listing links. It takes 10 seconds.","signup",()=>importFromLink()); return; }
   if(IMPORT.keyRequired&&!$("#accessKey").value.trim()){ n.className="status warn"; n.textContent="Enter your access key in the Access key box first. It's the private key from your Render settings."; $("#accessKey").focus(); return; }
   const btn=$("#importBtn"); busyBtn(btn,true,"Importing…"); n.className="status"; n.textContent="Loading the listing… this usually takes 10–40 seconds.";
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired){ const k=$("#accessKey").value.trim(); headers["x-access-key"]=k; try{ localStorage.setItem("lr-access",k); }catch(e){} }
   try{
     const r=await fetch("/api/import",{method:"POST",headers,body:JSON.stringify({url})});
-    if(!r.ok){ let msg="The import didn't work. Try again, or use the Chrome Grabber."; try{ const j=await r.json(); if(j&&j.error) msg=j.error; }catch(e){} n.className="status bad"; n.textContent=msg; return; }
+    if(!r.ok){ let msg="The import didn't work. Try again, or use the Chrome Grabber."; try{ const j=await r.json(); if(j&&j.error) msg=j.error; }catch(e){} n.className="status bad"; n.textContent=msg;
+      if(r.status===401){ setUser(null); openAuth("Your session ended. Sign in again to import.","login",()=>importFromLink()); }
+      if(r.status===402) openPlans(msg);
+      return; }
+    if(IMPORT.accounts) loadMe();
     const blob=await r.blob(); const count=r.headers.get("x-photo-count");
     n.className="status ok"; n.textContent=`Imported ${count||"the"} photos and the listing details. Building your video…`;
     busyBtn(btn,false,"Import listing");
@@ -2117,7 +2336,10 @@ function queueDepth(){
 const CLIP_COST=.35;
 function syncClipNote(){
   const n=$("#clipNote"); if(!n) return;
-  const k=S.o.clips; n.textContent=k?`AI motion turns your top ${k} shots into real moving footage. Takes 2–5 minutes and costs about $${(k*CLIP_COST).toFixed(2)} per video in AI credits. It's made for the video shape you've picked.`:"AI motion is off: every shot uses free camera moves with 3D depth.";
+  const k=S.o.clips;
+  if(IMPORT&&IMPORT.accounts&&k){ if(!signedIn()){ n.textContent=`AI motion turns your top ${k} shots into real moving footage. Sign in and pick a plan to use it (1 credit per shot).`; return; }
+    const c=credits(); n.textContent=c>=k?`AI motion turns your top ${k} shots into real moving footage. Uses ${k} of your ${ACCT.user.admin?"unlimited":c} AI credits and takes 2–5 minutes.`:c>0?`You have ${c} AI credit${c>1?"s":""}, so AI motion will animate your top ${c} shot${c>1?"s":""}. Open Plans for more.`:"You're out of AI credits, so every shot uses free 3D camera moves. Open Plans to add credits."; return; }
+  n.textContent=k?`AI motion turns your top ${k} shots into real moving footage. Takes 2–5 minutes and costs about $${(k*CLIP_COST).toFixed(2)} per video in AI credits. It's made for the video shape you've picked.`:"AI motion is off: every shot uses free camera moves with 3D depth.";
 }
 function cropForClip(p){
   const [fw,fh]=FMT[S.o.fmt], ta=fw/fh, src=p.src, ia=src.width/src.height;
@@ -2145,6 +2367,7 @@ async function clipOne(p,onState){
   return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,aiClip:true});
 }
 async function makeClips(n,onProg){
+  if(IMPORT&&IMPORT.accounts){ if(!signedIn()) return {ok:0,fail:0,err:"",skipped:"signin"}; n=Math.min(n,credits()); if(n<=0) return {ok:0,fail:0,err:"",skipped:"credits"}; }
   const cands=S.photos.filter(p=>!p.isVideo&&!p.sample).slice(0,n);
   if(!cands.length) return {ok:0,fail:0,err:""};
   let done=0, ok=0, fail=0, err=""; onProg&&onProg(0,cands.length);
@@ -2154,11 +2377,14 @@ async function makeClips(n,onProg){
     catch(e){ fail++; err=e.message; }
     onProg&&onProg(++done,cands.length); } };
   await Promise.all([worker(),worker(),worker()]);
+  if(IMPORT&&IMPORT.accounts) loadMe();
   return {ok,fail,err};
 }
 $("#aiMotionBtn").onclick=async ()=>{
   if(building||busy) return; const btn=$("#aiMotionBtn"), st=$("#aiLabelStatus");
   busyBtn(btn,true,"Making AI clips…"); lock(true); st.className="status"; st.textContent="Making AI motion clips. This takes 2–5 minutes.";
+  if(IMPORT&&IMPORT.accounts&&!signedIn()){ busyBtn(btn,false,"Add AI motion to top shots"); lock(false); openAuth("Sign in to use AI motion.","login"); return; }
+  if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion to top shots"); lock(false); openPlans("You're out of AI credits. Pick a plan or add credits to use AI motion."); return; }
   try{ const r=await makeClips(S.o.clips||4,(d,n)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; });
     st.className=r.fail?"status warn":"status ok"; st.textContent=r.ok?`Added AI motion to ${r.ok} shot${r.ok>1?"s":""}.`+(r.fail?` ${r.fail} didn't work and stay as stills: ${r.err}`:""):(r.fail?`The AI clips didn't work: ${r.err}`:"Add your own photos first."); }
   finally{ lock(false); busyBtn(btn,false,"Add AI motion to top shots"); }
@@ -2211,7 +2437,8 @@ async function autoBuild(files){
     if(IMPORT&&IMPORT.clips&&S.o.clips>0&&S.photos.some(p=>!p.isVideo&&!p.sample)){
       stage("clips","on","starting");
       const r=await makeClips(S.o.clips,(d,n)=>stage("clips","on",`${d}/${n}`));
-      stage("clips",r.ok?"done":"skip",r.ok?`${r.ok} clips`:"stills");
+      stage("clips",r.ok?"done":"skip",r.ok?`${r.ok} clips`:r.skipped==="signin"?"sign in":r.skipped==="credits"?"no credits":"stills");
+      if(r.skipped){ st.className="status"; st.textContent=r.skipped==="signin"?"Sign in and pick a plan to add AI motion. This video uses free 3D camera moves.":"You're out of AI credits, so this video uses free 3D camera moves. Open Plans to add credits."; }
       if(r.fail){ st.className="status warn"; st.textContent=`${r.fail} AI clip${r.fail>1?"s":""} didn't work, so ${r.fail>1?"those shots stay":"that shot stays"} as a still: ${r.err}`; }
     }
 

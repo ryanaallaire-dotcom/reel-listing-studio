@@ -12,10 +12,13 @@ import { providerInfo } from "./lib/providers.js";
 import { assertPublicUrl } from "./lib/safe-fetch.js";
 import { runAI, aiEnabled } from "./lib/ai.js";
 import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel } from "./lib/clips.js";
+import * as acct from "./lib/accounts.js";
+import { paypalEnabled, ensureSetup, clientConfig, confirmSubscription, cancelSubscription, createTopup, captureTopup, handleWebhook } from "./lib/paypal.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +process.env.PORT || 8787;
-const ACCESS_KEY = process.env.ACCESS_KEY || "";            // optional: require a key while in private beta
+const ACCESS_KEY = process.env.ACCESS_KEY || "";            // optional: invite code required to create an account (private beta)
+const SECURE = process.env.TRUST_PROXY === "1";
 const PER_HOUR = +process.env.IMPORTS_PER_HOUR || 20;       // per visitor
 const MAX_PARALLEL = +process.env.MAX_PARALLEL_IMPORTS || 3;
 const CACHE_HOURS = +process.env.CACHE_HOURS || 24;
@@ -31,7 +34,7 @@ const SKELETON_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8
 const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!doctype/i.test(body) ? body : SKELETON_HEAD + body + "</body></html>"; };
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
-const hits = new Map(), aiHits = new Map(), clipHits = new Map();
+const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map();
 function allow(ip, map = hits, limit = PER_HOUR) {
   const now = Date.now(), list = (map.get(ip) || []).filter(t => now - t < 3600e3);
   if (list.length >= limit) { map.set(ip, list); return false; }
@@ -43,9 +46,8 @@ function cacheSet(k, v) { cache.set(k, { ...v, at: Date.now() }); cacheBytes += 
   for (const [key, e] of cache) { if (cacheBytes <= CACHE_MAX) break; cache.delete(key); cacheBytes -= e.zip.length; } }
 let running = 0;
 
-// constant-time key check so the key can't be guessed by timing responses
-const keyOk = req => { if (!ACCESS_KEY) return true; const a = Buffer.from(String(req.headers["x-access-key"] || "")), b = Buffer.from(ACCESS_KEY);
-  return a.length === b.length && crypto.timingSafeEqual(a, b); };
+const needUser = req => { const u = acct.userFrom(req); if (!u) throw Object.assign(new Error("Sign in (or create a free account) to use this."), { status: 401 }); return u; };
+const meJson = u => acct.publicUser(u);
 const json = (res, status, obj) => { res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(obj)); };
 const clientIp = req => (process.env.TRUST_PROXY === "1" && String(req.headers["x-forwarded-for"] || "").split(",")[0].trim()) || req.socket.remoteAddress || "?";
 const cacheKey = u => { try { const x = new URL(u); x.hash = ""; ["utm_source", "utm_medium", "utm_campaign", "fbclid", "gclid"].forEach(p => x.searchParams.delete(p)); return x.href; } catch { return u; } };
@@ -77,18 +79,66 @@ export const server = http.createServer(async (req, res) => {
         return fs.createReadStream(file).pipe(res);
       }
     }
+    // browsers can't send JSON to another site without permission, so requiring it blocks cross-site form tricks
+    if (req.method === "POST" && u.pathname.startsWith("/api/") && u.pathname !== "/api/paypal/webhook" && !/^application\/json/i.test(req.headers["content-type"] || ""))
+      return json(res, 415, { error: "Send JSON." });
+    if (u.pathname.startsWith("/api/account/") || u.pathname === "/api/me") {
+      if (req.method === "GET" && u.pathname === "/api/me") {
+        let paypal = null; try { paypal = await clientConfig(); } catch (e) { console.error("paypal setup", e.message); }
+        return json(res, 200, { user: meJson(acct.userFrom(req)), tiers: acct.TIERS, topup: acct.TOPUP, paypal, inviteRequired: !!ACCESS_KEY });
+      }
+      if (req.method === "POST" && (u.pathname === "/api/account/signup" || u.pathname === "/api/account/login")) {
+        if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many sign-in attempts. Wait a few minutes, then try again." });
+        const body = await readJson(req);
+        const token = u.pathname.endsWith("signup") ? acct.signup(body) : acct.login(body);
+        res.setHeader("set-cookie", acct.sessionCookie(token, SECURE));
+        return json(res, 200, { user: meJson(acct.userFrom({ headers: { cookie: `${acct.cookieName}=${token}` } })) });
+      }
+      if (req.method === "POST" && u.pathname === "/api/account/logout") {
+        acct.logout(acct.tokenFrom(req)); res.setHeader("set-cookie", acct.sessionCookie("", SECURE)); return json(res, 200, { ok: true });
+      }
+      if (req.method === "POST" && u.pathname === "/api/account/password") {
+        const user = needUser(req); acct.changePassword(user, await readJson(req)); return json(res, 200, { ok: true });
+      }
+      if (req.method === "POST" && u.pathname === "/api/account/subscribe") {
+        const user = needUser(req); const { subscriptionID } = await readJson(req); return json(res, 200, { user: meJson(await confirmSubscription(user, subscriptionID)) });
+      }
+      if (req.method === "POST" && u.pathname === "/api/account/cancel") {
+        const user = needUser(req); return json(res, 200, { user: meJson(await cancelSubscription(user)) });
+      }
+      if (req.method === "POST" && u.pathname === "/api/account/topup") {
+        const user = needUser(req); return json(res, 200, { id: await createTopup(user) });
+      }
+      if (req.method === "POST" && u.pathname === "/api/account/topup/capture") {
+        const user = needUser(req); const { orderID } = await readJson(req); return json(res, 200, { user: meJson(await captureTopup(user, orderID)) });
+      }
+      if (u.pathname === "/api/account/admin") {
+        const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
+        if (req.method === "GET") return json(res, 200, { users: acct.adminList() });
+        const { email, credits } = await readJson(req); return json(res, 200, { user: acct.adminGrant(email, credits) });
+      }
+    }
+    if (req.method === "POST" && u.pathname === "/api/paypal/webhook") {
+      if (!paypalEnabled()) return json(res, 404, { error: "Not found." });
+      const event = await readJson(req, 200000);
+      try { return json(res, 200, { result: await handleWebhook(req.headers, event) }); }
+      catch (e) { console.warn("paypal webhook", e.message); return json(res, e.status || 500, { error: "Rejected." }); }
+    }
     if (req.method === "GET" && u.pathname === "/api/health") {
-      return json(res, 200, { ok: true, service: "reel-listing", import: true, provider: providerInfo() || "none", keyRequired: !!ACCESS_KEY, ai: aiEnabled(),
+      return json(res, 200, { ok: true, service: "reel-listing", import: true, provider: providerInfo() || "none", keyRequired: false, accounts: true, accountsSaved: acct.dbPersistent(), payments: paypalEnabled(), ai: aiEnabled(),
         clips: clipsEnabled(), clipModel: clipsEnabled() ? clipModel() : null, maxClips: MAX_CLIPS_PER_VIDEO, depth: fs.existsSync(DEPTH_MODEL) });
     }
     if (u.pathname.startsWith("/api/clips")) {
-      if (!keyOk(req)) return json(res, 401, { error: "Enter your access key next to the listing link, then try again." });
-      const owner = clientIp(req);
+      const user = needUser(req), owner = "u" + user.id;
       if (req.method === "POST" && u.pathname === "/api/clips") {
         if (!clipsEnabled()) return json(res, 404, { error: "AI motion isn't set up on this server." });
         const body = await readJson(req, 6e6);
-        if (!allow(owner, clipHits, CLIPS_PER_HOUR)) return json(res, 429, { error: `You've made ${CLIPS_PER_HOUR} AI clips this hour. Wait a bit, then try again.` });
-        return json(res, 200, { id: startClip(body, owner) });
+        const charge = acct.spend(user.id, 1, "ai_clip", crypto.randomUUID());     // 1 credit per clip, refunded if the clip fails
+        if (!allow(owner, clipHits, CLIPS_PER_HOUR)) { acct.refund(user.id, charge, "clip_refund", "limit-" + crypto.randomUUID()); return json(res, 429, { error: `You've made ${CLIPS_PER_HOUR} AI clips this hour. Wait a bit, then try again.` }); }
+        let id;
+        try { id = startClip(body, owner, { onFail: jid => acct.refund(user.id, charge, "clip_refund", jid) }); }
+        catch (e) { acct.refund(user.id, charge, "clip_refund", "start-" + crypto.randomUUID()); throw e; }
+        return json(res, 200, { id, credits: acct.publicUser(acct.getUser(user.id)).credits });
       }
       const m = u.pathname.match(/^\/api\/clips\/([0-9a-f-]{36})(\/video)?$/);
       if (req.method === "GET" && m) {
@@ -97,7 +147,7 @@ export const server = http.createServer(async (req, res) => {
       }
     }
     if (req.method === "POST" && u.pathname === "/api/import") {
-      if (!keyOk(req)) return json(res, 401, { error: "This studio needs an access key for link import. Enter the key you were given, then try again." });
+      const user = needUser(req);
       const { url } = await readJson(req);
       if (!url || typeof url !== "string") return json(res, 400, { error: "Paste a listing link first." });
       assertPublicUrl(url);
@@ -106,14 +156,15 @@ export const server = http.createServer(async (req, res) => {
         if (!allow(clientIp(req))) return json(res, 429, { error: `You've imported ${PER_HOUR} listings this hour. Wait a bit, then try again.` });
         if (running >= MAX_PARALLEL) return json(res, 503, { error: "The importer is busy with other listings. Try again in a few seconds." });
       }
+      acct.countImport(user);
       let out = hit;
-      if (!out) { running++; try { out = await importListing(url); cacheSet(key, out); } finally { running--; } }
+      if (!out) { running++; try { out = await importListing(url); cacheSet(key, out); } catch (e) { acct.uncountImport(user); throw e; } finally { running--; } }
       res.writeHead(200, { "content-type": "application/zip", "content-length": out.zip.length, "x-photo-count": out.count, "x-import-via": out.via, "cache-control": "no-store",
         "content-disposition": "attachment; filename=listing.zip" });
       return res.end(out.zip);
     }
     if (req.method === "POST" && u.pathname === "/api/ai") {
-      if (!keyOk(req)) return json(res, 401, { error: "Enter your access key next to the listing link, then try again." });
+      needUser(req);
       if (!aiEnabled()) return json(res, 404, { error: "AI isn't set up on this server." });
       if (!allow(clientIp(req), aiHits, AI_PER_HOUR)) return json(res, 429, { error: `You've used the AI ${AI_PER_HOUR} times this hour. Wait a bit, then try again.` });
       const body = await readJson(req, 25e6);
@@ -128,5 +179,8 @@ export const server = http.createServer(async (req, res) => {
 });
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  acct.openDb();
+  if (!acct.dbPersistent()) console.warn("DB_PATH isn't set: accounts are stored inside the app and are lost on every redeploy. Attach a disk and set DB_PATH.");
+  ensureSetup().then(s => s && console.log("PayPal ready:", JSON.stringify(s.plans))).catch(e => console.error("PayPal setup failed:", e.message));
   server.listen(PORT, () => console.log(`Reel Listing Studio on http://localhost:${PORT}  (page service: ${providerInfo() || "none — protected sites will ask for the Grabber"}; AI: ${aiEnabled() ? "on" : "off"}; AI motion: ${clipsEnabled() ? "on" : "off"}; 3D depth: ${fs.existsSync(DEPTH_MODEL) ? "on" : "off"})`));
 }

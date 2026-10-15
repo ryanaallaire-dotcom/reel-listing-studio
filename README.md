@@ -47,7 +47,7 @@ copyrighted by the photographer or brokerage.
 | `SCRAPER_PROVIDER` | `scraperapi`, `zenrows` or `brightdata` — leave empty to skip protected sites |
 | `SCRAPER_KEY` | That provider's API key |
 | `BRIGHTDATA_ZONE` | Bright Data only: your Web Unlocker zone name |
-| `ACCESS_KEY` | Optional. Require this key for imports (private beta). The Studio shows a key box. |
+| `ACCESS_KEY` | Optional invite code. While it's set, new accounts need it to sign up (private beta). Owners in `ADMIN_EMAILS` don't. |
 | `IMPORTS_PER_HOUR` | Per-visitor limit (default 20) |
 | `MAX_PARALLEL_IMPORTS` | Imports running at once (default 3) |
 | `MAX_PHOTOS` | Photos per listing (default 60) |
@@ -113,3 +113,30 @@ use your account for anything else. Clips are made in the video shape selected a
 ## Not in this server yet
 
 - **Accounts and billing.**
+
+## Accounts, credits and PayPal
+
+People sign up with an email and password (stored as a scrypt hash; sessions are HttpOnly cookies).
+Link import, AI writing and AI motion need an account; 3D-depth videos render free in the browser.
+
+| Plan | Price | AI credits / month | Link imports / month |
+|---|---|---|---|
+| Free | $0 | 0 (watermark) | 2 |
+| Starter | $29 | 25 | 60 |
+| Pro | $79 | 70 | 200 |
+| Agency | $199 | 200 | 600 |
+| Top-up | $25 once | +20, never expire | — |
+
+1 credit = 1 AI motion shot (about $0.35 on fal.ai). Credits are charged on the server and refunded
+automatically if a clip fails. Plans and prices live in `lib/accounts.js` (`TIERS`, `TOPUP`).
+
+| Variable | What it does |
+|---|---|
+| `DB_PATH` | Where accounts are saved. On Render: add a Disk mounted at `/var/data`, set `DB_PATH=/var/data/reel.db`. Without it, accounts reset on every deploy. |
+| `ADMIN_EMAILS` | Your email(s). Owners get unlimited credits, skip the invite code, and see Owner tools to give credits. |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | From developer.paypal.com → Apps & Credentials. |
+| `PAYPAL_ENV` | `sandbox` (fake money, for testing) or `live`. |
+| `PUBLIC_URL` | Your site's https address, so PayPal can send renewals and cancellations to `/api/paypal/webhook`. |
+
+The PayPal product, the three monthly plans and the webhook are created automatically on first start.
+Switching `PAYPAL_ENV` to `live` creates live ones the same way.
