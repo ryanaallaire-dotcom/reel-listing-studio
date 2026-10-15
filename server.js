@@ -188,7 +188,7 @@ export const server = http.createServer(async (req, res) => {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   acct.openDb();
-  if (!acct.dbPersistent()) console.warn("DB_PATH isn't set: accounts are stored inside the app and are lost on every redeploy. Attach a disk and set DB_PATH.");
+  if (!process.env.DB_PATH) console.warn("DB_PATH isn't set: accounts are stored inside the app and are lost on every redeploy. Attach a disk and set DB_PATH.");
   ensureSetup().then(s => s && console.log("PayPal ready:", JSON.stringify(s.plans))).catch(e => console.error("PayPal setup failed:", e.message));
   server.listen(PORT, () => console.log(`Reel Listing Studio on http://localhost:${PORT}  (page service: ${providerInfo() || "none — protected sites will ask for the Grabber"}; AI: ${aiEnabled() ? "on" : "off"}; AI motion: ${clipsEnabled() ? "on" : "off"}; 3D depth: ${fs.existsSync(DEPTH_MODEL) ? "on" : "off"})`));
 }
