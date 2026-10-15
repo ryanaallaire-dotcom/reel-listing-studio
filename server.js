@@ -11,7 +11,7 @@ import { importListing } from "./lib/import.js";
 import { providerInfo } from "./lib/providers.js";
 import { assertPublicUrl } from "./lib/safe-fetch.js";
 import { runAI, aiEnabled } from "./lib/ai.js";
-import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel } from "./lib/clips.js";
+import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel, clipSource } from "./lib/clips.js";
 import * as acct from "./lib/accounts.js";
 import { paypalEnabled, ensureSetup, clientConfig, confirmSubscription, cancelSubscription, createTopup, captureTopup, handleWebhook } from "./lib/paypal.js";
 
@@ -128,6 +128,12 @@ export const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, service: "reel-listing", import: true, provider: providerInfo() || "none", keyRequired: false, accounts: true, accountsSaved: acct.dbPersistent(), payments: paypalEnabled(), ai: aiEnabled(),
         clips: clipsEnabled(), clipModel: clipsEnabled() ? clipModel() : null, maxClips: MAX_CLIPS_PER_VIDEO, depth: fs.existsSync(DEPTH_MODEL) });
     }
+    if (req.method === "GET" && u.pathname.startsWith("/api/clip-src/")) {      // the photo fal downloads; unguessable, expires in 30 min
+      const tok = u.pathname.slice(14).replace(/\.(jpg|png|webp)$/, "");
+      const e = /^[0-9a-f]{48}$/.test(tok) && clipSource(tok);
+      if (!e) return json(res, 404, { error: "Not found." });
+      res.writeHead(200, { "content-type": e.type, "content-length": e.buf.length, "cache-control": "private, max-age=1800" }); return res.end(e.buf);
+    }
     if (u.pathname.startsWith("/api/clips")) {
       const user = needUser(req), owner = "u" + user.id;
       if (req.method === "POST" && u.pathname === "/api/clips") {
@@ -136,7 +142,9 @@ export const server = http.createServer(async (req, res) => {
         const charge = acct.spend(user.id, 1, "ai_clip", crypto.randomUUID());     // 1 credit per clip, refunded if the clip fails
         if (!allow(owner, clipHits, CLIPS_PER_HOUR)) { acct.refund(user.id, charge, "clip_refund", "limit-" + crypto.randomUUID()); return json(res, 429, { error: `You've made ${CLIPS_PER_HOUR} AI clips this hour. Wait a bit, then try again.` }); }
         let id;
-        try { id = startClip(body, owner, { onFail: jid => acct.refund(user.id, charge, "clip_refund", jid) }); }
+        const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
+        const publicBase = process.env.PUBLIC_URL || (process.env.TRUST_PROXY === "1" && /^[\w.-]+(:\d+)?$/.test(host) ? `${String(req.headers["x-forwarded-proto"] || "http").split(",")[0]}://${host}` : "");
+        try { id = startClip(body, owner, { publicBase, onFail: jid => acct.refund(user.id, charge, "clip_refund", jid) }); }
         catch (e) { acct.refund(user.id, charge, "clip_refund", "start-" + crypto.randomUUID()); throw e; }
         return json(res, 200, { id, credits: acct.publicUser(acct.getUser(user.id)).credits });
       }

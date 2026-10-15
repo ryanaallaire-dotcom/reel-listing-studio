@@ -2445,7 +2445,7 @@ function cropForClip(p){
 }
 async function clipOne(p,onState){
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
-  const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"truck";
+  const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["rpan","rtilt","rdiag","truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"rpan";
   const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"The AI video service couldn't start.");
   const t0=Date.now();

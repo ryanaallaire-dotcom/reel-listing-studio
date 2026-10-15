@@ -217,7 +217,7 @@ const F = 18916; const sf = await startServer(F, {});
 sf.kill();
 
 // ===== server G: AI motion clips + 3D depth files =====
-const Gp = 18917; const sg = await startServer(Gp, { FAL_KEY: "fal-test", FAL_QUEUE_BASE: `http://127.0.0.1:${FALM}`, CLIP_POLL_MS: "100", ALLOW_LOCAL_FETCH: "1", CLIPS_PER_HOUR: "3" });
+const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", FAL_KEY: "fal-test", FAL_QUEUE_BASE: `http://127.0.0.1:${FALM}`, CLIP_POLL_MS: "100", ALLOW_LOCAL_FETCH: "1", CLIPS_PER_HOUR: "3" });
 {
   const h = await (await fetch(`http://127.0.0.1:${Gp}/api/health`)).json();
   check("Clips: health reports AI motion and 3D depth", h.clips === true && h.depth === true && /kling/.test(h.clipModel), JSON.stringify(h));
@@ -239,6 +239,12 @@ const Gp = 18917; const sg = await startServer(Gp, { FAL_KEY: "fal-test", FAL_QU
   falCalls.length = 0; await postAs(Gp, "default", "/api/clips", { image: jpg, kind: "int", move: "truck" });
   await new Promise(r => setTimeout(r, 200));
   check("Clips: the planned camera move goes to the model, never a zoom", /sideways/.test(falCalls[0]?.body.prompt || "") && !/dolly/.test(falCalls[0]?.body.prompt || "") && /zoom/.test(falCalls[0]?.body.negative_prompt || ""), falCalls[0]?.body.prompt);
+  falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan" }, { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "reel.example.com" } });
+  await new Promise(r => setTimeout(r, 200));
+  const iu = falCalls[0]?.body.image_url || ""; const srcPath = iu.replace("https://reel.example.com", "");
+  const src = await fetch(`http://127.0.0.1:${Gp}${srcPath}`);
+  check("Clips: photo goes to fal as a short-lived web link that serves the JPG", /^https:\/\/reel\.example\.com\/api\/clip-src\/[0-9a-f]{48}\.jpg$/.test(iu) && src.status === 200 && src.headers.get("content-type") === "image/jpeg" && /pans slowly/.test(falCalls[0]?.body.prompt || ""), iu);
+  const guess = await fetch(`http://127.0.0.1:${Gp}/api/clip-src/${"0".repeat(48)}.jpg`); check("Clips: unknown photo links return nothing", guess.status === 404);
   const other = await api(Gp, `/api/clips/${id}/video`);
   check("Clips: other accounts can't download your clip", other.status === 404);
   const v = await api(Gp, `/api/clips/${id}/video`, undefined, { as: "u" });
