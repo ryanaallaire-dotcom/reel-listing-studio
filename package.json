@@ -1,0 +1,21 @@
+{
+  "name": "reel-listing-server",
+  "version": "1.0.0",
+  "description": "Reel Listing Studio server: hosts the Studio and imports listings from a link",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node test/run.mjs",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "undici": "^6.21.0"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}
