@@ -269,6 +269,10 @@ input[type=color]{width:42px;height:36px;border:1px solid var(--line);border-rad
           <div class="f"><span>Touch-up</span>
             <div class="seg" role="group" aria-label="Photo touch-up" id="enhSeg"><button data-v="off">Off</button><button data-v="natural">Natural</button><button data-v="punchy">Punchy</button></div>
           </div>
+          <div class="f"><span>Pace</span>
+            <small class="small" id="paceHint" style="display:block;margin-top:4px"></small>
+            <div class="seg" role="group" aria-label="Pace" id="paceSeg"><button data-v="auto">Auto</button><button data-v="relaxed">Relaxed</button><button data-v="standard">Standard</button><button data-v="fast">Fast</button></div>
+          </div>
           <div class="f clips-only" hidden><span>AI motion</span>
             <div class="seg" role="group" aria-label="AI motion clips" id="clipSeg"><button data-v="0">Off</button><button data-v="4">Top 4 shots</button><button data-v="6">Top 6 shots</button></div>
           </div>
@@ -365,6 +369,9 @@ input[type=color]{width:42px;height:36px;border:1px solid var(--line);border-rad
       <div class="opt-row">
         <div class="f"><span>Format</span>
           <div class="seg" role="group" aria-label="Format" id="fmtSeg"><button data-v="9:16">9:16 Reel</button><button data-v="4:5">4:5 Feed</button><button data-v="1:1">1:1</button><button data-v="16:9">16:9</button></div>
+        </div>
+        <div class="f"><span>Pace</span>
+          <div class="seg" role="group" aria-label="Pace" id="paceSeg2"><button data-v="auto">Auto</button><button data-v="relaxed">Relaxed</button><button data-v="standard">Standard</button><button data-v="fast">Fast</button></div>
         </div>
         <div class="f"><span>Camera</span>
           <div class="seg" role="group" aria-label="Camera movement" id="motionSeg"><button data-v="gentle">Gentle</button><button data-v="cine">Cinematic</button><button data-v="energetic">Energetic</button></div>
@@ -471,6 +478,28 @@ const GRADES={
   bright:{sat:1.06, con:.07, warm:.022, lift:[.018,.018,.02], gain:[1.03,1.015,1.0], bloom:.16, grain:.006, vig:.1},
   natural:{sat:1.0, con:.06, warm:0, lift:[0,0,0], gain:[1,1,1], bloom:.08, grain:.012, vig:.14}
 };
+// Pace: how long each shot holds, how many shots per room, and how calm the transitions are
+const PACE={
+  relaxed:{mul:1.85, label:"Relaxed", introMul:1.3, clipCap:5,   walkShots:n=>n<=5?2:1, walkTrans:[[1,.75],[4,.95],[2,.6],[1,.75],[3,.65]]},
+  standard:{mul:1.35, label:"Standard", introMul:1.15, clipCap:4, walkShots:n=>n<=8?2:1, walkTrans:[[6,.6],[1,.55],[2,.45],[4,.75],[3,.5]]},
+  fast:{mul:1, label:"Fast", introMul:1, clipCap:3.2,           walkShots:n=>n<=6?3:n<=10?2:1, walkTrans:null}
+};
+// Auto pace: read the listing (type, price, wording) and pick a tempo that fits the property
+function autoPace(){
+  const d=S.d||{}, txt=[d.headline,d.highlights,d.address,d.city].join(" ").toLowerCase();
+  const price=parseFloat(String(d.price||"").replace(/[^0-9.]/g,""))||0;
+  const calm=/luxury|estate|waterfront|lakefront|lakeside|oceanfront|custom[- ]built|gated|acres?\b|mansion|penthouse|panoramic|wine cellar|retreat|cabin|cottage|spa\b|serene|peaceful|secluded|quiet|cozy|chalet|mountain/;
+  const lively=/beach|party|game room|arcade|hot tub|downtown|nightlife|walk to|steps to|pool|theme park|disney|resort|\bcondo\b|\bloft\b|\bstudio\b|townho|starter|first home|urban|modern/;
+  if(d.type==="sale"&&price>=1200000) return {pace:"relaxed",why:"higher-end home"};
+  if(calm.test(txt)) return {pace:"relaxed",why:d.type==="stay"?"calm getaway":"upscale or peaceful property"};
+  if(lively.test(txt)) return {pace:"fast",why:d.type==="stay"?"fun getaway":"condo, city or starter home"};
+  if(d.type==="stay") return {pace:"standard",why:"vacation rental"};
+  if(d.type==="rental") return {pace:"fast",why:"rental"};
+  if(price>0&&price<300000) return {pace:"fast",why:"starter home"};
+  return {pace:"standard",why:"family home"};
+}
+const effPace=()=>S.o.pace in PACE?S.o.pace:autoPace().pace;
+const paceDur=(tpl,pace)=>Math.min(5,Math.round(TPL[tpl].dur*PACE[pace].mul*10)/10);
 const MOTION={gentle:.6, cine:1, energetic:1.5};
 const STATUS={
   sale:["Just Listed","Open House","Coming Soon","Price Improved","Under Contract","Just Sold"],
@@ -495,23 +524,24 @@ const MAX_PHOTOS=300, MAX_ZIP=2.5e9;
 const S={
   photos:[], head:null, sampleDetails:true, raw:[], left:[], track:null, trackName:"",
   d:{...SAMPLE_D},
-  o:{tpl:"walk", fmt:"9:16", dur:1.6, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
+  o:{pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
 };
 try{
   const saved=JSON.parse(localStorage.getItem("lr-draft-3")||"null");
   if(saved&&saved.d){ S.d={...EMPTY_D,...saved.d}; S.o={...S.o,...saved.o};
-    if(!saved.o||!saved.o.v6){ S.o.tpl="walk"; S.o.dur=1.6; S.o.stats=false; S.o.frame="fill"; } S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
+    if(!saved.o||!saved.o.v6){ S.o.tpl="walk"; S.o.dur=1.6; S.o.stats=false; S.o.frame="fill"; }
+    if(!saved.o||!saved.o.v8){ S.o.pace="auto"; } S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
 }catch(e){}
 (function validateSaved(){
-  const def={clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:1.6,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const def={pace:"auto",v8:true,v7:true,clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
+  const ok={pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
   for(const k in EMPTY_D){ if(k==="eho") S.d.eho=S.d.eho!==false; else S.d[k]=typeof S.d[k]==="string"?S.d[k].slice(0,500):""; }
   if(!STATUS[S.d.type]) S.d.type="sale";
 })();
-function persist(){ S.o.v5=true; S.o.v6=true; try{ localStorage.setItem("lr-draft-3",JSON.stringify({d:S.d,o:S.o,sample:S.sampleDetails,paste:($("#paste")?.value||"").slice(0,40000),tab:TAB_ID})); }catch(e){} }
+function persist(){ S.o.v5=true; S.o.v6=true; S.o.v7=true; S.o.v8=true; try{ localStorage.setItem("lr-draft-3",JSON.stringify({d:S.d,o:S.o,sample:S.sampleDetails,paste:($("#paste")?.value||"").slice(0,40000),tab:TAB_ID})); }catch(e){} }
 const TAB_ID=Math.random().toString(36).slice(2);
 /* last session's photos survive a refresh (this browser only) */
 const IDB={
@@ -1075,18 +1105,19 @@ const SHOT_NAMES={footage:"Video clip",walkIn:"Walk-in",pan:"Pan",detail:"Detail
 function build(){
   const t=T(), P=S.photos, beat=60/t.bpm, segs=[]; let at=0;
   if(!P.length){ SEGS=[]; TOTAL=0; return; }
-  const nb=Math.max(2,Math.round(S.o.dur/beat)), photoDur=nb*beat;
+  const nb=Math.max(2,Math.round((S.o.pace==="auto"?paceDur(S.o.tpl,effPace()):S.o.dur)/beat)), photoDur=nb*beat;
   const sa=FMT[S.o.fmt][0]/FMT[S.o.fmt][1];
+  const pc=PACE[effPace()]||PACE.standard, tlist=(t.walk&&pc.walkTrans)||t.trans;
   let ti=0, dirFlip=1;
-  const nextTrans=()=>{ const [ty,d]=t.trans[ti++%t.trans.length]; if(ty===2) dirFlip*=-1; return {type:ty,d,dir:dirFlip}; };
+  const nextTrans=()=>{ const [ty,d]=tlist[ti++%tlist.length]; if(ty===2) dirFlip*=-1; return {type:ty,d,dir:dirFlip}; };
   const push=(o)=>{ o.start=at; o.seed=segs.length*1.37+.5; segs.push(o); at+=o.dur; };
-  push({type:"intro",dur:t.introB*beat,img:P[0],tIn:null});
+  push({type:"intro",dur:Math.round(t.introB*pc.introMul)*beat,img:P[0],tIn:null});
   const rest=P.length>1?P.slice(1):[P[0]];
   const statAt=Math.min(2,rest.length);
-  const shotsPer = t.walk ? (rest.length<=6?3:rest.length<=10?2:1) : 1;
+  const shotsPer = t.walk ? pc.walkShots(rest.length) : 1;
   rest.forEach((ph,i)=>{
     if(ph.isVideo){
-      const avail=Math.max(.8,ph.duration-ph.inPoint), cap=t.walk?3.2:5;
+      const avail=Math.max(.8,ph.duration-ph.inPoint), cap=t.walk?pc.clipCap:5;
       const d=Math.max(beat*2,Math.min(avail,cap)); const nbv=Math.max(2,Math.floor(d/beat+1e-6));
       push({type:"photo",dur:Math.min(nbv*beat,avail),img:ph,tIn:nextTrans(),idx:i,sub:0,clip:true});
       if(S.o.stats && i+1===statAt && stats().length+highlights().length){ const [ty,dd]=t.toStats; push({type:"stats",dur:t.statsB*beat,img:rest[(i+1)%rest.length]||P[0],tIn:{type:ty,d:dd,dir:1}}); }
@@ -1752,19 +1783,19 @@ function syncType(){
   $("#bedsLbl").textContent=ty==="stay"?"Bedrooms":"Beds";
   $("#h-agent").textContent=ty==="stay"?"Host":"Agent"; $(".who-l").textContent=ty==="stay"?"Host name":"Agent name";
 }
-function fillFields(){ $$("[data-k]").forEach(el=>{ el.value=S.d[el.dataset.k]??""; }); $("#eho").checked=!!S.d.eho; syncType(); $("#sampleChip").hidden=!S.sampleDetails; }
-$$("[data-k]").forEach(el=>el.addEventListener("input",()=>{ S.d[el.dataset.k]=el.value; if(el.dataset.k==="url") urlChanged(); persist(); refresh(); }));
+function fillFields(){ $$("[data-k]").forEach(el=>{ el.value=S.d[el.dataset.k]??""; }); $("#eho").checked=!!S.d.eho; syncType(); $("#sampleChip").hidden=!S.sampleDetails; setTimeout(()=>{ try{ autoPaceCheck(); }catch(e){} },0); }
+$$("[data-k]").forEach(el=>el.addEventListener("input",()=>{ S.d[el.dataset.k]=el.value; if(el.dataset.k==="url") urlChanged(); persist(); refresh(); clearTimeout(window._apT); window._apT=setTimeout(autoPaceCheck,600); }));
 $("#status").onchange=e=>{ S.d.status=e.target.value; persist(); refresh(); };
 $("#eho").onchange=e=>{ S.d.eho=e.target.checked; persist(); refresh(); };
-$$("#typeSeg button").forEach(b=>b.onclick=()=>{ S.d.type=b.dataset.v; syncType(); persist(); refresh(); });
+$$("#typeSeg button").forEach(b=>b.onclick=()=>{ S.d.type=b.dataset.v; syncType(); persist(); refresh(); autoPaceCheck(); });
 $("#clearSample").onclick=()=>{ S.d={...EMPTY_D,type:S.d.type,url:S.d.url}; S.sampleDetails=false; fillFields(); persist(); refresh(); };
 
 /* ---------- direction UI ---------- */
-function setTpl(v){ S.o.tpl=v; S.o.dur=TPL[v].dur; tplDefaults(v); syncStyle(); persist(); build(); renderPhotos(); refresh(); }
+function setTpl(v){ S.o.tpl=v; S.o.dur=paceDur(v,effPace()); tplDefaults(v); syncStyle(); persist(); build(); renderPhotos(); refresh(); }
 function segSync(id,val){ $$(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(val)))); }
 function syncStyle(){
   $$("#tpls .tpl").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.o.tpl));
-  segSync("fmtSeg",S.o.fmt); segSync("fmtSeg2",S.o.fmt); segSync("clipSeg",S.o.clips); syncClipNote();
+  segSync("fmtSeg",S.o.fmt); segSync("fmtSeg2",S.o.fmt); segSync("paceSeg",S.o.pace); segSync("paceSeg2",S.o.pace); syncPaceHint(); segSync("clipSeg",S.o.clips); syncClipNote();
   $("#fmtHint").textContent={"9:16":"Fills a phone screen: Reels, TikTok, Shorts, Stories. Shows black sides on a computer.","16:9":"Fills a computer, TV, YouTube or MLS player. Shows black bars on a phone.","4:5":"Instagram and Facebook feed posts.","1:1":"Square posts for feeds and ads."}[S.o.fmt]||""; segSync("motionSeg",S.o.motion); segSync("fpsSeg",S.o.fps); segSync("musicSeg",S.o.music); segSync("enhSeg",S.o.enh);
   $("#dur").value=S.o.dur; $("#durV").textContent=(+S.o.dur).toFixed(1)+"s";
   $("#accent").value=ACC(); $("#grade").value=S.o.grade||""; $("#frame").value=S.o.frame;
@@ -1774,8 +1805,13 @@ function syncStyle(){
 }
 $$("#tpls .tpl").forEach(b=>b.onclick=()=>setTpl(b.dataset.v));
 function tplDefaults(v){ if(v==="walk"){ S.o.stats=false; } }
+function syncPaceHint(){ const h=$("#paceHint"); if(!h) return; const a=autoPace();
+  h.textContent=S.o.pace==="auto"?`Auto: ${PACE[a.pace].label.toLowerCase()} for this ${a.why}`:`Auto would pick ${PACE[a.pace].label.toLowerCase()} here`; }
+let lastAutoPace=null;
+function autoPaceCheck(){ if(S.o.pace!=="auto") return syncPaceHint(); const p=autoPace().pace; syncPaceHint(); if(lastAutoPace!==null&&p!==lastAutoPace&&!busy&&!building){ S.o.dur=paceDur(S.o.tpl,p); if(playing) pause(); build(); } lastAutoPace=p; }
 const segBind=(id,key,cast=v=>v)=>$$(`#${id} button`).forEach(b=>b.onclick=()=>{ if(busy||building) return; if(playing) pause(); S.o[key]=cast(b.dataset.v); syncStyle(); persist(); build(); renderPhotos(); refresh(); });
-segBind("fmtSeg","fmt"); segBind("fmtSeg2","fmt"); segBind("clipSeg","clips",Number); segBind("motionSeg","motion"); segBind("fpsSeg","fps",Number);
+segBind("fmtSeg","fmt"); segBind("fmtSeg2","fmt");
+["paceSeg","paceSeg2"].forEach(id=>$$(`#${id} button`).forEach(b=>b.onclick=()=>{ if(busy||building) return; if(playing) pause(); S.o.pace=b.dataset.v; S.o.dur=paceDur(S.o.tpl,effPace()); lastAutoPace=autoPace().pace; syncStyle(); persist(); build(); renderPhotos(); refresh(); })); segBind("clipSeg","clips",Number); segBind("motionSeg","motion"); segBind("fpsSeg","fps",Number);
 $$("#musicSeg button").forEach(b=>b.onclick=()=>{ if(playing) pause(); S.o.music=b.dataset.v; syncStyle(); persist(); if(S.o.music==="track"&&!S.track) $("#trackFile").click(); });
 $("#pickTrack").onclick=()=>$("#trackFile").click();
 async function decodeTrack(blob){ const oac=new OfflineAudioContext(2,1,48000); return await oac.decodeAudioData(await blob.arrayBuffer()); }
@@ -1783,7 +1819,7 @@ $("#trackFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""
   if(f.size>200e6){ $("#trackName").textContent="That file is over 200 MB. Use an MP3 or M4A."; return; }
   $("#trackName").textContent="Loading…"; try{ S.track=await decodeTrack(f); S.trackBlob=f; S.trackName=f.name; S.o.music="track"; }
   catch(err){ S.track=null; S.trackBlob=null; S.trackName=""; $("#trackName").textContent="That audio file couldn't be read. Try an MP3 or M4A."; return; } syncStyle(); persist(); saveSession(); };
-$("#dur").oninput=e=>{ S.o.dur=+e.target.value; $("#durV").textContent=S.o.dur.toFixed(1)+"s"; persist(); refresh(); };
+$("#dur").oninput=e=>{ if(S.o.pace==="auto"){ S.o.pace=autoPace().pace; segSync("paceSeg",S.o.pace); segSync("paceSeg2",S.o.pace); syncPaceHint(); } S.o.dur=+e.target.value; $("#durV").textContent=S.o.dur.toFixed(1)+"s"; persist(); refresh(); };
 $("#accent").oninput=e=>{ S.o.accent=e.target.value; persist(); refresh(); };
 $("#accentReset").onclick=()=>{ S.o.accent=null; syncStyle(); persist(); refresh(); };
 $("#grade").onchange=e=>{ S.o.grade=e.target.value; persist(); refresh(); };
@@ -2255,7 +2291,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={S,renderFrame,build,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={S,renderFrame,build,fillFields,autoPace,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
