@@ -415,7 +415,7 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
 
     <section class="step lockable" aria-labelledby="h-agent">
       <div class="step-h"><span class="num">STEP 3</span><h2 id="h-agent">Agent</h2></div>
-      <p class="hint">Shown on the closing card. Most states require the brokerage name on listing ads.</p>
+      <p class="hint">Used on the branded version: the closing card, plus your logo and contact on every shot. The unbranded MLS version leaves all of it out. Most states require the brokerage name on listing ads.</p>
       <div class="grid2">
         <label class="f"><span class="who-l">Agent name</span><input type="text" data-k="agent" maxlength="60"></label>
         <label class="f"><span>Brokerage / company</span><input type="text" data-k="brokerage" maxlength="70"></label>
@@ -424,8 +424,11 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
         <label class="f full"><span>Call to action</span><input type="text" data-k="cta" maxlength="50" placeholder="Book a private tour"></label>
       </div>
       <div class="row" style="margin-top:14px;gap:16px">
-        <button class="btn" id="pickHead">Add headshot or logo</button>
+        <button class="btn" id="pickHead">Add headshot</button>
         <button class="btn sm" id="clearHead" hidden>Remove</button>
+        <button class="btn" id="pickLogo">Add company logo</button>
+        <button class="btn sm" id="clearLogo" hidden>Remove logo</button>
+        <input type="file" id="logoFile" accept="image/jpeg,image/png,image/webp" hidden>
         <input type="file" id="headFile" accept="image/jpeg,image/png,image/webp" hidden>
         <label class="toggle sale-only"><input type="checkbox" id="eho"> Equal Housing Opportunity line</label>
         <span class="status" id="headStatus"></span>
@@ -502,6 +505,12 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
         <button data-v="9:16">Phone · 9:16</button><button data-v="16:9">Computer · 16:9</button><button data-v="4:5">Feed · 4:5</button><button data-v="1:1">Square</button>
       </div>
       <p class="small" id="fmtHint"></p>
+      <div class="seg" role="group" aria-label="Branding" id="brandSeg" style="margin-top:10px">
+        <button data-v="branded">Branded · social</button><button data-v="mls">Unbranded · MLS</button>
+      </div>
+      <label class="toggle" id="brandEveryRow" style="margin-top:8px"><input type="checkbox" id="brandEvery"> Logo and contact on every shot</label>
+      <p class="small" id="brandHint"></p>
+      <button class="btn" id="renderSet" style="margin-top:8px" title="Branded 9:16 for social, branded 16:9 for YouTube, unbranded 16:9 for the MLS">Render full set (social + YouTube + MLS)</button>
       <div class="bar" id="bar" hidden><i id="barFill"></i></div>
       <p class="status" id="expStatus" aria-live="polite">Renders frame by frame on your graphics card into a high-bitrate MP4.</p>
       <div class="renders" id="renders"><div class="renders-empty"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4"/><path d="M14 12.5v7l6-3.5z" fill="currentColor" stroke="none"/></svg><span>Your finished videos will show up here, ready to save and post.</span></div></div>
@@ -599,7 +608,7 @@ const MAX_PHOTOS=300, MAX_ZIP=2.5e9;
 const S={
   photos:[], head:null, sampleDetails:true, raw:[], left:[], track:null, trackName:"",
   d:{...SAMPLE_D},
-  o:{pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
+  o:{brand:"branded", brandEvery:true, pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
 };
 try{
   const saved=JSON.parse(localStorage.getItem("lr-draft-3")||"null");
@@ -608,8 +617,8 @@ try{
     if(!saved.o||!saved.o.v8){ S.o.pace="auto"; } S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
 }catch(e){}
 (function validateSaved(){
-  const def={pace:"auto",v8:true,v7:true,clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const def={brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
+  const ok={brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
@@ -629,7 +638,8 @@ let saveTimer=0, sessionReady=false;
 function saveSession(){ if(!sessionReady) return; clearTimeout(saveTimer); saveTimer=setTimeout(async ()=>{
   const items=S.photos.filter(p=>!p.sample&&(p.origBlob||(p.isVideo&&p.blobV&&p.blobV.size<200e6))).map(p=>p.isVideo?{video:true,blob:p.blobV,caption:p.caption,kind:p.kind}:{blob:p.origBlob,caption:p.caption,kind:p.kind,useFixed:p.useFixed});
   let head=null; if(S.head) head=await new Promise(r=>S.head.toBlob(r,"image/jpeg",.9));
-  await IDB.set("session",{v:1,items,head,track:S.trackBlob?{blob:S.trackBlob,name:S.trackName}:null,tab:TAB_ID});
+  let logo=null; if(S.logo) logo=await new Promise(r=>S.logo.toBlob(r,"image/png"));
+  await IDB.set("session",{v:1,items,head,logo,track:S.trackBlob?{blob:S.trackBlob,name:S.trackName}:null,tab:TAB_ID});
 },1200); }
 
 /* ---------- sample photos (drawn, so the page works before upload) ---------- */
@@ -1149,7 +1159,7 @@ function pillItem(text,size=30){
     ctx.fillStyle=ACC(); ctx.beginPath(); ctx.arc(x+h*.55+dot/2, y+dy+h/2, dot/2, 0, 7); ctx.fill();
     font(500,s,BODY); ctx.fillStyle="#1e2422"; ctx.textBaseline="middle"; ctx.textAlign="left"; ctx.fillText(text, x+h*.55+dot+s*.5, y+dy+h*.53); ctx.restore(); }};
 }
-function headItem(d=220){ if(!S.head) return null; const r=d*u/2;
+function headItem(d=220){ if(!S.head||mls()) return null; const r=d*u/2;
   return {h:d*u, draw(y,a,ao){ if(a<=0)return; ctx.save(); ctx.globalAlpha*=a*ao; const cx=T().align==="center"?W/2:pad+r, cy=y+r, rr=r*(.85+.15*a);
     ctx.beginPath(); ctx.arc(cx,cy,rr+5*u,0,7); ctx.fillStyle=ACC(); ctx.fill(); ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.clip();
     ctx.drawImage(S.head,cx-rr,cy-rr,rr*2,rr*2); ctx.restore(); }};
@@ -1161,7 +1171,9 @@ function layout(items,local,anchor,start=.35,stagger=.15,outAt=null){
 }
 
 /* listing helpers */
-const D=()=>S.d;
+// Unbranded (MLS): no agent, brokerage, phone, website, logo or headshot anywhere in the video
+const mls=()=>S.o.brand==="mls";
+const D=()=>mls()?{...S.d, agent:S.d.address||S.d.headline||"", brokerage:S.d.city||"", phone:"", web:"", url:"", cta:"Virtual tour"}:S.d;
 function priceText(){ const p=(D().price||"").trim(); if(!p) return ""; if(!/\d/.test(p)) return p; const suf=/\/|per\s|night|month|\bmo\b/i.test(p)?"":D().type==="stay"?" / night":D().type==="rental"?" / mo":""; return (/^\d/.test(p)?"$":"")+p+suf; }
 function locLine(){ return D().type==="stay"?(D().city||D().address):(D().city||""); }
 function highlights(){ return (D().highlights||"").split(/\n+/).map(s=>s.trim()).filter(Boolean).slice(0,4); }
@@ -1184,7 +1196,9 @@ function build(){
   const sa=FMT[S.o.fmt][0]/FMT[S.o.fmt][1];
   const pc=PACE[effPace()]||PACE.standard, tlist=(t.walk&&pc.walkTrans)||t.trans;
   let ti=0, dirFlip=1;
-  const nextTrans=()=>{ const [ty,d]=tlist[ti++%tlist.length]; if(ty===2) dirFlip*=-1; return {type:ty,d,dir:dirFlip}; };
+  let seed=2166136261; for(const ph of P) for(const ch of String(ph.name||ph.id)+":"+(ph.src?ph.src.width:0)) seed=Math.imul(seed^ch.charCodeAt(0),16777619);
+  const rnd=(()=>{ let a=seed>>>0; return ()=>{ a=(a+0x6D2B79F5)|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; })();
+  const nextTrans=()=>{ const [ty,d]=t.walk?tlist[Math.floor(rnd()*tlist.length)]:tlist[ti++%tlist.length]; if(ty===2) dirFlip*=-1; return {type:ty,d,dir:dirFlip}; };
   const push=(o)=>{ o.start=at; o.seed=segs.length*1.37+.5; segs.push(o); at+=o.dur; };
   push({type:"intro",dur:Math.round(t.introB*pc.introMul)*beat,img:P[0],tIn:null});
   const rest=P.length>1?P.slice(1):[P[0]];
@@ -1198,12 +1212,14 @@ function build(){
       if(S.o.stats && i+1===statAt && stats().length+highlights().length){ const [ty,dd]=t.toStats; push({type:"stats",dur:t.statsB*beat,img:rest[(i+1)%rest.length]||P[0],tIn:{type:ty,d:dd,dir:1}}); }
       return;
     }
-    for(let j=0;j<shotsPer;j++) push({type:"photo",dur:photoDur*(t.walk&&j===0?1.5:1),img:ph,tIn:nextTrans(),idx:i,sub:j});
+    for(let j=0;j<shotsPer;j++){ let dd=photoDur*(t.walk&&j===0?1.5:1);
+      if(t.walk){ const jit=[-1,0,0,1,1][Math.floor(rnd()*5)]; dd=Math.max(beat*2,Math.round(dd/beat+jit)*beat); }
+      push({type:"photo",dur:dd,img:ph,tIn:nextTrans(),idx:i,sub:j}); }
     if(S.o.stats && i+1===statAt && stats().length+highlights().length){ const [ty,d]=t.toStats; push({type:"stats",dur:t.statsB*beat,img:rest[(i+1)%rest.length]||P[0],tIn:{type:ty,d,dir:1}}); }
   });
   const [ty,d]=t.toOutro; push({type:"outro",dur:t.outroB*beat,img:P[0],tIn:{type:ty,d,dir:1}});
   // director: pick a camera move per shot so the film flows
-  let alt=0, walkPick={}, walkRun=0, lastMove="";
+  let alt=0, walkDir=1, lastMove="", prevMove="";
   segs.forEach((s,k)=>{
     const nx=segs[k+1]; s.outTr=nx?nx.tIn.d:0;
     const img=s.img.src, ia=img.width/img.height, wide=ia/sa>1.35, kind=s.img.kind||"int";
@@ -1218,12 +1234,13 @@ function build(){
       const pool = s.type==="intro" ? (kind==="ext"?["tilt","glide"]:["glide","truck"])
         : sub>=1 ? (sub===1?["macro","arc"]:["truck","arc"])
         : kind==="ext" ? ["truck","tilt","arc","glide"] : kind==="detail" ? ["macro","truck"]
-        : wide ? ["truck","glide","arc","pan"] : ["glide","truck","arc","tilt"];
-      const pk=pool.join(), nextOf=()=>pool[(walkPick[pk]=(walkPick[pk]||0)+1)%pool.length];
-      let m=nextOf(); if(m===lastMove) m=nextOf();
-      s.move=m; lastMove=m; s.mode = kind==="ext"?1:0;
-      // a real operator keeps moving the same way across a couple of cuts, then changes direction
-      if(!(nx && nx.tIn.type===2)) s.dir = (Math.floor(walkRun++/2)%2)?-1:1;
+        : wide ? ["truck","glide","arc","pan","pan","truck"] : ["glide","truck","arc","tilt","pan"];
+      let m, tries=0; do{ m=pool[Math.floor(rnd()*pool.length)]; tries++; } while(tries<12&&(m===lastMove||(m===prevMove&&pool.length>2)));
+      prevMove=lastMove; s.move=m; lastMove=m; s.mode = kind==="ext"?1:0;
+      // a real operator usually keeps moving the same way across cuts, then changes direction
+      s.dir = k===0||rnd()<.45 ? (rnd()<.5?-1:1)*(k===0?1:-walkDir) : walkDir; walkDir=s.dir;
+      if(nx && nx.tIn.type===2) nx.tIn.dir=s.dir;                 // whip pans continue the camera's direction
+      s.amp=.78+rnd()*.42; s.frameY=(rnd()-.5)*.7; s.seed=rnd()*100;
     }
     if(s.type!=="stats"&&s.type!=="outro") alt++;
     // framing: keep the whole photo when it doesn't fit the frame's shape (landscape photo in a vertical Reel)
@@ -1242,7 +1259,9 @@ function build(){
   SEGS=segs; TOTAL=at;
 }
 function camAt(seg,local,absT){
-  const k=T().move*MOTION[S.o.motion]; const span=seg.dur+seg.outTr; const p=clamp(local/span,-.1,1.15);
+  const span=seg.dur+seg.outTr;
+  const ref=SEGS.length&&SEGS[0].type==="intro"?SEGS[0].dur+SEGS[0].outTr:span;
+  const k=T().move*MOTION[S.o.motion]*(seg.amp||1)*(T().walk&&seg.type==="photo"?clamp(span/ref,.55,1):1); const p=clamp(local/span,-.1,1.15);
   const img=seg.img.src, ia=img.width/img.height, sa=seg.fit?seg.cardAsp:W/H, cs=ia>sa?[sa/ia,1]:[1,ia/sa];
   const dir=seg.dir||1, hasD=!!(seg.img.depth&&!seg.img.isVideo);
   const slackX=z=>.5-cs[0]/(2*z), slackY=z=>.5-cs[1]/(2*z);
@@ -1259,13 +1278,13 @@ function camAt(seg,local,absT){
     case "drift": z=1.16; px=lerp(-.02,.02,p); break;
     case "footage": z=1.0; break;          // real or AI footage already moves: add nothing
     case "walkIn": z=lerp(1.02,1.02+.17*k,p); dolly=lerp(0,.03*k,p); pitch=-.012*k*q; yaw=dir*.016*k*q; px=dir*slackX(1.1)*.25*q; break;
-    case "pan":{ z=1.03; const R=slackX(z)*.9; px=lerp(-dir*R,dir*R,p); yaw=-dir*.03*k*q; break; }
+    case "pan":{ z=1.03; const R=slackX(z)*clamp(.7*k,.25,.9); px=lerp(-dir*R,dir*R,p); py=slackY(z)*(seg.frameY||0)*.6; yaw=-dir*.03*k*q; break; }
     case "detail":{ const f=seg.img.focus||[.5,.5]; z=lerp(1.26,1.38+.05*k,p); px=(f[0]-.5)+dir*.02*q; py=(f[1]-.5)*.8; yaw=dir*.012*k*q; break; }
     case "pullBack": z=lerp(1.2+.06*k,1.03,p); dolly=lerp(.03*k,0,p); pitch=.01*k*q; break;
     // real-camera moves: the frame size stays fixed and the camera itself travels (no zooming)
-    case "truck":{ z=1.04; const R=slackX(z)*clamp(.55*k,.2,.9); px=lerp(-dir*R,dir*R,p); yaw=dir*.006*k*q; break; }
+    case "truck":{ z=1.04; const R=slackX(z)*clamp(.55*k,.2,.9); px=lerp(-dir*R,dir*R,p); py=slackY(z)*(seg.frameY||0); yaw=dir*.006*k*q; break; }
     case "glide":{ z=1.04; if(hasD){ dolly=lerp(0,.02*k,p); px=dir*slackX(z)*.18*q; } else { px=dir*slackX(z)*clamp(.4*k,.15,.7)*q; yaw=dir*.008*k*q; } break; }
-    case "arc":{ z=1.05; const R=slackX(z)*clamp(.42*k,.15,.8); px=lerp(-dir*R,dir*R,p); yaw=-dir*.045*k*q; break; }
+    case "arc":{ z=1.05; const R=slackX(z)*clamp(.42*k,.15,.8); px=lerp(-dir*R,dir*R,p); py=slackY(z)*(seg.frameY||0)*.7; yaw=-dir*.045*k*q; break; }
     case "tilt":{ z=1.05; const Ry=slackY(z)*.7; py=lerp(Ry,-Ry,p); pitch=-.028*k*q; px=dir*slackX(z)*.15*q; break; }
     case "reveal":{ z=1.04; dolly=lerp(.02*k,0,p); px=-dir*slackX(1.04)*.18*q; break; }
     case "macro":{ const f=seg.img.focus||[.5,.5]; z=1.24; px=(f[0]-.5)*.85+dir*.05*q; py=(f[1]-.5)*.65; yaw=dir*.008*k*q; break; }
@@ -1367,6 +1386,24 @@ function overlayShade(seg,alpha){
   if(S.o.tpl==="walk"){ if(seg.type==="intro") shade(H*.55,H,0,.62,alpha); return; }
   if(seg.type==="intro"){ shade(H*.32,H,0,.84,alpha); shade(0,H*.2,.4,0,alpha); }
   else if(seg.type==="photo"){ if(seg.fit) shade(0,H*.12,.25,0,alpha); else { shade(H*.66,H,0,.55,alpha); shade(0,H*.16,.38,0,alpha); } }
+}
+function brandOverlay(seg,local,alpha){
+  if(mls()||!S.o.brandEvery||alpha<=0) return;
+  if(seg.type!=="photo"&&!(seg.type==="intro"&&local>seg.dur*.55)) return;
+  const d=S.d, a=alpha*(seg.type==="intro"?clamp((local-seg.dur*.55)/.6):1); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  const m=Math.round(Math.min(W,H)*.035);
+  if(S.logo){ // logo on a soft white card, top-left, like broadcast branding
+    const maxW=Math.min(W,H)*.24, maxH=Math.min(W,H)*.1, r=Math.min(maxW/S.logo.width,maxH/S.logo.height), lw=S.logo.width*r, lh=S.logo.height*r, pd=12*u;
+    ctx.shadowColor="rgba(0,0,0,.25)"; ctx.shadowBlur=18*u; ctx.fillStyle="rgba(255,255,255,.94)";
+    ctx.beginPath(); ctx.roundRect(m,m,lw+pd*2,lh+pd*2,10*u); ctx.fill(); ctx.shadowBlur=0;
+    ctx.drawImage(S.logo,m+pd,m+pd,lw,lh);
+  }
+  const who=[d.agent,d.phone].filter(Boolean).join("  \u00b7  ");
+  if(who){ font(600,24*u,BODY); const tw=ctx.measureText(who).width, bh=50*u, bw=tw+40*u, x=m, y=H-m-bh-(W<H?110*u:0);
+    ctx.fillStyle="rgba(10,10,14,.55)"; ctx.beginPath(); ctx.roundRect(x,y,bw,bh,bh/2); ctx.fill();
+    ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(who,x+20*u,y+bh/2+1*u); }
+  ctx.restore();
 }
 function bug(alpha){
   const d=D(), txt=d.brokerage||d.agent; if(!txt||alpha<=0) return; const t=T();
@@ -1523,7 +1560,8 @@ function drawOverlay(seg,local,alpha){
   else if(seg.type==="photo"){ if(S.o.tpl!=="walk") caption(seg.img.caption,local,.3+(seg.tIn?seg.tIn.d*.45:0),seg.dur-.55,seg); }
   else if(seg.type==="stats") statsCard(local,out);
   else if(seg.type==="outro") outro(local);
-  if((seg.type==="photo"||seg.type==="stats")&&S.o.tpl!=="walk") bug(alpha);
+  if((seg.type==="photo"||seg.type==="stats")&&S.o.tpl!=="walk"&&!(S.o.brandEvery&&(S.logo||S.d.agent))) bug(alpha);
+  brandOverlay(seg,local,alpha);
 }
 function renderFrame(t,shutter){
   setFormat(); frameNo++;
@@ -1784,6 +1822,11 @@ $("#pickHead").onclick=()=>$("#headFile").click();
 async function setHead(blob){ const b=await decodeBitmap(blob); const {w,h}=dims(b); const s=Math.min(w,h); const c=mk(600,600); c.getContext("2d").drawImage(b,(w-s)/2,(h-s)/2,s,s,0,0,600,600); if(b.close) b.close(); S.head=c; $("#clearHead").hidden=false; refresh(); }
 $("#headFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; const st=$("#headStatus");
   try{ await setHead(f); st.className="status"; st.textContent=""; saveSession(); }catch(err){ st.className="status bad"; st.textContent="That image couldn't be read. Use a JPG or PNG."; } };
+$("#pickLogo").onclick=()=>$("#logoFile").click();
+async function setLogo(blob){ const b=await decodeBitmap(blob); const {w,h}=dims(b); const sc=Math.min(1,700/Math.max(w,h)); const c=mk(Math.round(w*sc),Math.round(h*sc)); c.getContext("2d").drawImage(b,0,0,c.width,c.height); if(b.close) b.close(); S.logo=c; $("#clearLogo").hidden=false; if(typeof syncBrand==="function") syncBrand(); refresh(); }
+$("#logoFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; const st=$("#headStatus");
+  try{ await setLogo(f); st.className="status"; st.textContent=""; saveSession(); }catch(err){ st.className="status bad"; st.textContent="That logo couldn't be read. Use a JPG or PNG."; } };
+$("#clearLogo").onclick=()=>{ S.logo=null; $("#clearLogo").hidden=true; syncBrand(); refresh(); saveSession(); };
 $("#clearHead").onclick=()=>{ S.head=null; $("#clearHead").hidden=true; refresh(); saveSession(); };
 
 /* ---------- listing import ---------- */
@@ -2040,7 +2083,7 @@ function setTpl(v){ S.o.tpl=v; S.o.dur=paceDur(v,effPace()); tplDefaults(v); syn
 function segSync(id,val){ $$(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(val)))); }
 function syncStyle(){
   $$("#tpls .tpl").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.o.tpl));
-  segSync("fmtSeg",S.o.fmt); segSync("fmtSeg2",S.o.fmt); segSync("paceSeg",S.o.pace); segSync("paceSeg2",S.o.pace); syncPaceHint(); segSync("clipSeg",S.o.clips); syncClipNote();
+  segSync("fmtSeg",S.o.fmt); segSync("fmtSeg2",S.o.fmt); segSync("paceSeg",S.o.pace); segSync("paceSeg2",S.o.pace); syncPaceHint(); if(typeof syncBrand==="function") syncBrand(); segSync("clipSeg",S.o.clips); syncClipNote();
   $("#fmtHint").textContent={"9:16":"Fills a phone screen: Reels, TikTok, Shorts, Stories. Shows black sides on a computer.","16:9":"Fills a computer, TV, YouTube or MLS player. Shows black bars on a phone.","4:5":"Instagram and Facebook feed posts.","1:1":"Square posts for feeds and ads."}[S.o.fmt]||""; segSync("motionSeg",S.o.motion); segSync("fpsSeg",S.o.fps); segSync("musicSeg",S.o.music); segSync("enhSeg",S.o.enh);
   $("#dur").value=S.o.dur; $("#durV").textContent=(+S.o.dur).toFixed(1)+"s";
   $("#accent").value=ACC(); $("#grade").value=S.o.grade||""; $("#frame").value=S.o.frame;
@@ -2171,7 +2214,7 @@ async function renderVideo(){
   if(!res){ st.className="status bad"; st.textContent="This browser can't export video"+(why?` (${why.slice(0,80)})`:"")+". Use current Chrome or Edge on a computer, and keep the tab in front."; refresh(); return false; }
   if(!res.blob||res.blob.size<1000){ st.className="status bad"; st.textContent="The export came out empty. Keep this tab in front while it renders and try again."; refresh(); return false; }
   lastBlob=res.blob; lastExt=res.ext;
-  addRender(S.o.fmt,res,`${res.ext.toUpperCase()} · ${W}×${H} · ${S.o.fps} fps · ${fmtT(TOTAL)} · ${(res.blob.size/1048576).toFixed(1)} MB`);
+  addRender(S.o.fmt+(mls()?"|mls":""),res,`${res.ext.toUpperCase()} · ${W}×${H} · ${S.o.fps} fps · ${fmtT(TOTAL)} · ${(res.blob.size/1048576).toFixed(1)} MB`);
   st.className="status ok";
   st.textContent= res.note==="vp9" ? "Done (VP9 MP4). This browser has no H.264 encoder; for the widest compatibility (Instagram, iPhone), render in Chrome or Edge on Mac or Windows."
     : res.note==="webm" ? "Done (WebM). YouTube and Facebook take WebM; for Instagram, render in Chrome or Edge to get MP4."
@@ -2182,7 +2225,7 @@ async function renderVideo(){
   curT=Math.min(2.2,TOTAL); renderFrame(curT,1/120); syncTC();
   return true;
 }
-const slugFor=fmt=>((S.d.address||S.d.headline||"listing").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,48)||"listing")+"-"+fmt.replace(":","x");
+const slugFor=fmt=>((S.d.address||S.d.headline||"listing").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,48)||"listing")+"-"+fmt.replace(":","x").replace("|mls","-mls-unbranded");
 const FMT_NAME={"9:16":"Phone · 9:16 (Reels, TikTok, Shorts)","16:9":"Computer · 16:9 (YouTube, MLS)","4:5":"Feed · 4:5","1:1":"Square · 1:1"};
 const RENDERS=new Map();
 function addRender(fmt,res,meta){
@@ -2192,7 +2235,7 @@ function addRender(fmt,res,meta){
   [...RENDERS.entries()].reverse().forEach(([f,r])=>{
     const el=document.createElement("div"); el.className="render-item";
     el.innerHTML=`<b></b><video controls playsinline></video><div class="row"><button class="btn primary">Save video</button><span class="small"></span></div>`;
-    el.querySelector("b").textContent=FMT_NAME[f]||f; el.querySelector("video").src=r.url; el.querySelector(".small").textContent=r.meta+(canSave()?"":" · Right-click the video to save it.");
+    const [ff,bb]=f.split("|"); el.querySelector("b").textContent=(FMT_NAME[ff]||ff)+(bb==="mls"?" · Unbranded (MLS)":" · Branded"); el.querySelector("video").src=r.url; el.querySelector(".small").textContent=r.meta+(canSave()?"":" · Right-click the video to save it.");
     const btn=el.querySelector("button"); btn.hidden=!canSave();
     btn.onclick=async ()=>{ const st=$("#expStatus");
       try{ await saveFile(`${slugFor(f)}.${r.ext}`,r.blob); st.className="status ok"; st.textContent="Saved to your downloads."; }
@@ -2209,6 +2252,20 @@ async function saveFile(name,data){
   const url=URL.createObjectURL(data instanceof Blob?data:new Blob([data])); const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 let bothRunning=false;
+function syncBrand(){
+  segSync("brandSeg",S.o.brand); $("#brandEvery").checked=!!S.o.brandEvery; $("#brandEveryRow").hidden=mls();
+  $("#brandHint").textContent=mls()?"MLS version: no agent name, brokerage, phone, website, logo or headshot. Most MLSs want 16:9.":
+    (S.logo||S.d.agent?"Branded version for social and sharing: your logo and contact show on the video.":"Add your logo and contact in Step 3 to brand the video.");
+}
+$$("#brandSeg button").forEach(b=>b.onclick=()=>{ if(busy||building) return; S.o.brand=b.dataset.v; if(mls()&&S.o.fmt!=="16:9"){ S.o.fmt="16:9"; syncStyle(); build(); renderPhotos(); } syncBrand(); persist(); refresh(); });
+$("#brandEvery").onchange=e=>{ S.o.brandEvery=e.target.checked; persist(); refresh(); };
+$("#renderSet").onclick=async ()=>{
+  if(busy||building||bothRunning) return; bothRunning=true; $("#renderSet").disabled=true; $("#renderBoth").disabled=true;
+  const keepF=S.o.fmt, keepB=S.o.brand; let ok=true;
+  try{ for(const [f,b] of [["9:16","branded"],["16:9","branded"],["16:9","mls"]]){ S.o.fmt=f; S.o.brand=b; syncStyle(); build(); renderPhotos(); ok=await renderVideo()&&ok; if(!ok) break; } }
+  finally{ S.o.fmt=keepF; S.o.brand=keepB; bothRunning=false; $("#renderSet").disabled=false; $("#renderBoth").disabled=false; syncStyle(); build(); renderPhotos(); refresh(); persist(); }
+  if(ok){ const st=$("#expStatus"); st.className="status ok"; st.textContent="Your set is ready: branded 9:16 for Reels and TikTok, branded 16:9 for YouTube, unbranded 16:9 for the MLS."; }
+};
 $("#renderBoth").onclick=async ()=>{
   if(busy||building||bothRunning) return; bothRunning=true; $("#renderBoth").disabled=true;
   const keep=S.o.fmt; let ok=true;
@@ -2491,6 +2548,7 @@ async function restoreSession(){
   const st=$("#goStatus");
   try{
     if(sess.head) await setHead(sess.head).catch(()=>{});
+    if(sess.logo) await setLogo(sess.logo).catch(()=>{});
     if(sess.track&&sess.track.blob){ try{ S.track=await decodeTrack(sess.track.blob); S.trackBlob=sess.track.blob; S.trackName=sess.track.name||"track"; }catch(e){} }
     if(Array.isArray(sess.items)&&sess.items.length){
       lock(true); st.className="status"; const out=[];
@@ -2545,7 +2603,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
