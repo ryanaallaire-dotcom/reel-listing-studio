@@ -2035,9 +2035,10 @@ function serverAI(){
     const imgs=opts.images?[...(opts.images instanceof Blob?[opts.images]:opts.images)].slice(0,8):[];
     const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
     let r; try{ r=await fetch("/api/ai",{method:"POST",headers,body:JSON.stringify({prompt,tier:opts.modelTier||"default",images:await Promise.all(imgs.map(toDataURL))})}); }
-    catch(e){ throw {code:"upstream_error",message:"network"}; }
+    catch(e){ throw {code:"server_said",message:"Couldn't reach the studio's server. If you just changed a setting in Render, wait a minute for it to restart, then try again."}; }
     let j={}; try{ j=await r.json(); }catch(e){}
     if(r.status===401&&IMPORT&&IMPORT.accounts){ setUser(null); throw {code:"server_said",message:"Your session ended. Sign in again to use the AI."}; }
+    if(!r.ok&&!j.error&&(r.status===502||r.status===503||r.status===504)) throw {code:"server_said",message:"The studio is restarting (an update or settings change is deploying). Wait a minute, then try again."};
     if(!r.ok) throw j.error?{code:"server_said",message:j.error}:{code:r.status===429?"rate_limited":r.status===413?"too_large":"upstream_error",message:""};
     return {text:j.text||"",truncated:!!j.truncated,modelTierApplied:opts.modelTier||"default"};
   }
