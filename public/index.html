@@ -276,6 +276,14 @@ details.fine-tune[open]>summary::before{transform:rotate(90deg)}
 details.fine-tune>summary small{font-family:var(--f-body);font-weight:500;font-size:14px;color:var(--muted)}
 details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .update-row{position:sticky;bottom:12px;margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+/* always-visible progress, pinned to the bottom of the screen */
+.activity{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;max-width:min(680px,calc(100vw - 32px));
+  background:#1d1830;border:1px solid var(--accent);border-radius:14px;padding:12px 16px;box-shadow:0 14px 40px rgba(0,0,0,.55);font-size:15px;font-weight:600}
+.activity .sp{width:18px;height:18px;flex:none;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--accent) 30%,transparent);border-top-color:var(--accent);animation:spin .8s linear infinite}
+.activity.done{border-color:var(--ok)} .activity.done .sp{animation:none;border-color:var(--ok);background:var(--ok)}
+.activity.warn{border-color:var(--warn)} .activity.warn .sp{animation:none;border-color:var(--warn);background:var(--warn)}
+.activity small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 .locked .lockable{opacity:.5;pointer-events:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -326,6 +334,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
   </div>
 </dialog>
 
+<div class="activity" id="activity" role="status" aria-live="polite" hidden><span class="sp"></span><div><span id="actText"></span><small id="actSub"></small></div></div>
 <main class="studio" id="app">
   <div class="steps">
 
@@ -2321,7 +2330,8 @@ async function renderVideo(){
   pause(); busy=true; lock(true); renderScale=1; $("#render").disabled=true; $("#renderBoth").disabled=true; $("#play").disabled=true; $("#bar").hidden=false; $("#barFill").style.width="0%";
   const st=$("#expStatus"); st.className="status"; st.textContent="Preparing…";
   try{ await document.fonts.ready; }catch(e){}
-  const onProg=(f,msg)=>{ $("#barFill").style.width=(f*100).toFixed(1)+"%"; if(msg) st.textContent=msg; if(renderProgress) renderProgress(f); };
+  const onProg=(f,msg)=>{ $("#barFill").style.width=(f*100).toFixed(1)+"%"; if(msg) st.textContent=msg; if(renderProgress) renderProgress(f);
+    if(!building) activity(`Rendering your video \u00b7 ${Math.round(f*100)}%\u2026`,"Keep this tab open until it finishes."); };
   let res=null, why="";
   // Safari and some phones can encode video but not audio: record in real time there so the music isn't lost
   const order = audioOn() && !(await pickAudioCfg()) ? [exportRealtime,exportWebCodecs] : [exportWebCodecs,exportRealtime];
@@ -2330,6 +2340,7 @@ async function renderVideo(){
   if(!res){ st.className="status bad"; st.textContent="This browser can't export video"+(why?` (${why.slice(0,80)})`:"")+". Use current Chrome or Edge on a computer, and keep the tab in front."; refresh(); return false; }
   if(!res.blob||res.blob.size<1000){ st.className="status bad"; st.textContent="The export came out empty. Keep this tab in front while it renders and try again."; refresh(); return false; }
   lastBlob=res.blob; lastExt=res.ext;
+  if(!building&&!bothRunning) activity("Your video is ready \u2713","Scroll to \u201cYour video is ready\u201d at the top to watch and save it.","done");
   addRender(S.o.fmt+(mls()?"|mls":""),res,`${res.ext.toUpperCase()} · ${W}×${H} · ${S.o.fps} fps · ${fmtT(TOTAL)} · ${(res.blob.size/1048576).toFixed(1)} MB`);
   st.className="status ok";
   st.textContent= res.note==="vp9" ? "Done (VP9 MP4). This browser has no H.264 encoder; for the widest compatibility (Instagram, iPhone), render in Chrome or Edge on Mac or Windows."
@@ -2389,7 +2400,7 @@ async function renderSetRun(fromPipeline){
   const keepF=S.o.fmt, keepB=S.o.brand; let ok=true, i=0;
   try{ for(const [f,b] of [["9:16","branded"],["16:9","branded"],["16:9","mls"]]){ i++; if(fromPipeline) stage("render","on",`${i} of 3`); S.o.fmt=f; S.o.brand=b; syncStyle(); build(); renderPhotos(); ok=await renderVideo()&&ok; if(!ok) break; } }
   finally{ S.o.fmt=keepF; S.o.brand=keepB; bothRunning=false; $("#renderSet").disabled=false; $("#renderBoth").disabled=false; syncStyle(); build(); renderPhotos(); refresh(); persist(); }
-  if(ok){ const st=$("#expStatus"); st.className="status ok"; st.textContent="Your set is ready: branded 9:16 for Reels and TikTok, branded 16:9 for YouTube, unbranded 16:9 for the MLS."; }
+  if(ok){ const st=$("#expStatus"); st.className="status ok"; st.textContent="Your set is ready: branded 9:16 for Reels and TikTok, branded 16:9 for YouTube, unbranded 16:9 for the MLS."; if(!fromPipeline) activity("All three videos are ready \u2713","Scroll to \u201cYour video is ready\u201d at the top to watch and save them.","done"); }
   return ok;
 }
 $("#renderSet").onclick=()=>renderSetRun(false);
@@ -2611,16 +2622,25 @@ async function makeClips(n,onProg){
 $("#aiMotionBtn").onclick=async ()=>{
   if(building||busy) return; const btn=$("#aiMotionBtn"), st=$("#aiLabelStatus");
   busyBtn(btn,true,"Making AI clips…"); lock(true); st.className="status"; st.textContent="Making AI motion clips. This takes 2–5 minutes.";
-  if(IMPORT&&IMPORT.accounts&&!signedIn()){ busyBtn(btn,false,"Add AI motion to top shots"); lock(false); openAuth("Sign in to use AI motion.","login"); return; }
-  if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion to top shots"); lock(false); openPlans("You're out of AI credits. Pick a plan or add credits to use AI motion."); return; }
-  try{ const r=await makeClips(S.o.clips||4,(d,n)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; });
+  if(IMPORT&&IMPORT.accounts&&!signedIn()){ busyBtn(btn,false,"Add AI motion again"); lock(false); openAuth("Sign in to use AI motion.","login"); return; }
+  if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion again"); lock(false); openPlans("You're out of AI credits. Pick a plan or add credits to use AI motion."); return; }
+  activity("Making AI motion clips\u2026","AI motion takes 2\u20135 minutes. You can keep this tab open and wait.");
+  try{ const r=await makeClips(S.o.clips||4,(d,n)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,"AI motion takes 2\u20135 minutes. You can keep this tab open and wait."); });
+    activity(r.ok?`AI motion added to ${r.ok} shot${r.ok>1?"s":""} \u2713`:"AI motion didn't work", r.ok?(r.fail?`${r.fail} didn't work: ${r.err}`:"Press Update my video to render it."):(r.err||"Add your own photos first."), r.ok&&!r.fail?"done":"warn");
     st.className=r.fail?"status warn":"status ok"; st.textContent=r.ok?`Added AI motion to ${r.ok} shot${r.ok>1?"s":""}.`+(r.fail?` ${r.fail} didn't work and stay as stills: ${r.err}`:""):(r.fail?`The AI clips didn't work: ${r.err}`:"Add your own photos first."); }
-  finally{ lock(false); busyBtn(btn,false,"Add AI motion to top shots"); }
+  finally{ lock(false); busyBtn(btn,false,"Add AI motion again"); }
 };
 
 /* ---------- one-click pipeline ---------- */
 let building=false, aiWhy="";
-function stage(s,state,note){ const li=$(`#pipe li[data-s="${s}"]`); if(!li) return; li.classList.remove("on","done","skip"); if(state) li.classList.add(state); li.querySelector("small").textContent=note||""; }
+let actTimer=0;
+function activity(text,sub,kind){ const a=$("#activity"); if(!a) return; clearTimeout(actTimer);
+  if(!text){ a.hidden=true; return; }
+  a.hidden=false; a.className="activity"+(kind?" "+kind:""); $("#actText").textContent=text; $("#actSub").textContent=sub||"";
+  if(kind) actTimer=setTimeout(()=>{ a.hidden=true; },kind==="warn"?12000:6000); }
+const STAGE_NAME={read:"Reading the listing",pick:"Picking the best shots",fix:"Touching up photos",depth:"Adding 3D depth",ai:"Writing labels and shot order",clips:"Making AI motion clips",render:"Rendering your video"};
+function stage(s,state,note){ const li=$(`#pipe li[data-s="${s}"]`); if(!li) return; li.classList.remove("on","done","skip"); if(state) li.classList.add(state); li.querySelector("small").textContent=note||"";
+  if(state==="on") activity(STAGE_NAME[s]+(note?` \u00b7 ${note}`:"")+"\u2026", s==="clips"?"AI motion takes 2\u20135 minutes. You can keep this tab open and wait.":s==="render"?"Keep this tab open until it finishes.":""); }
 async function autoBuild(files){
   if(building||busy||fixing) return; building=true; pause(); lock(true);
   const st=$("#goStatus"), go=$("#go"); go.disabled=true; st.className="status"; st.textContent="";
@@ -2681,7 +2701,8 @@ async function autoBuild(files){
       if(ok) setTimeout(()=>$("#heroResults").scrollIntoView({behavior:"smooth",block:"center"}),150);
     } else { stage("render","skip"); st.className="status ok"; st.textContent="Shots are ready. Press play to preview, then Render video."; }
   }catch(e){ console.error(e); st.className="status bad"; st.textContent="The build stopped partway. Try again; if it happens again, use fewer photos or remove any unusual files."; }
-  finally{ building=false; go.disabled=false; lock(false); }
+  finally{ building=false; go.disabled=false; lock(false);
+    const st2=$("#goStatus"); activity(st2.className.includes("ok")?"Your video is ready \u2713":"Finished with a note",st2.className.includes("ok")?"Scroll to \u201cYour video is ready\u201d to watch and save it.":st2.textContent,st2.className.includes("ok")?"done":"warn"); }
 }
 $("#go").onclick=()=>{
   const link=($("#url").value||"").trim(), hasOwn=S.raw.length||S.photos.some(p=>!p.sample);
