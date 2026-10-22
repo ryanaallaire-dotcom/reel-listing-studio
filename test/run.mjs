@@ -234,7 +234,7 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", FAL_KEY: 
   check("Credits: each clip uses 1 credit", left === 1, left);
   let st; for (let k = 0; k < 40; k++) { await new Promise(r => setTimeout(r, 100)); st = await (await api(Gp, `/api/clips/${id}`, undefined, { as: "u" })).json(); if (st.status === "done" || st.status === "failed") break; }
   const c = falCalls[0] || {};
-  check("Clips: sends the photo to the video model with your key", c.auth === "Key fal-test" && /kling-video/.test(c.path) && c.body.image_url.startsWith("data:image/jpeg") && /dolly/.test(c.body.prompt) && /people/.test(c.body.negative_prompt), c.path);
+  check("Clips: sends the photo to the video model with your key", c.auth === "Key fal-test" && /kling-video/.test(c.path) && c.body.image_url.startsWith("data:image/jpeg") && /dolly/.test(c.body.prompt) && /ceiling fan turns/.test(c.body.prompt) && /people/.test(c.body.negative_prompt), c.path);
   check("Clips: finishes and the video downloads", st.status === "done", JSON.stringify(st));
   falCalls.length = 0; await postAs(Gp, "default", "/api/clips", { image: jpg, kind: "int", move: "truck" });
   await new Promise(r => setTimeout(r, 200));

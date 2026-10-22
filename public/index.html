@@ -2494,14 +2494,14 @@ $("#aiMotionBtn").onclick=async ()=>{
 };
 
 /* ---------- one-click pipeline ---------- */
-let building=false;
+let building=false, aiWhy="";
 function stage(s,state,note){ const li=$(`#pipe li[data-s="${s}"]`); if(!li) return; li.classList.remove("on","done","skip"); if(state) li.classList.add(state); li.querySelector("small").textContent=note||""; }
 async function autoBuild(files){
   if(building||busy||fixing) return; building=true; pause(); lock(true);
   const st=$("#goStatus"), go=$("#go"); go.disabled=true; st.className="status"; st.textContent="";
   $("#pipe").hidden=false; ["read","pick","fix","depth","ai","clips","render"].forEach(s=>stage(s,""));
   try{
-    let gotListing=false;
+    let gotListing=false; aiWhy="";
     if(files&&files.length){
       stage("read","on","");
       const {items,zipFail,listing,capped,total}=await expand(files);
@@ -2533,14 +2533,16 @@ async function autoBuild(files){
     if(SAMPLE){
       stage("ai","on"); const notes=[];
       if($("#paste").value.trim()) notes.push(await doFill()?"details":"");
-      notes.push(await doLabel()?"shot list":"");
-      stage("ai","done",notes.filter(Boolean).join(" + ")||"skipped");
-    } else stage("ai","skip");
+      const labeled=await doLabel(); notes.push(labeled?"shot list":"");
+      if(!labeled) aiWhy=($("#aiLabelStatus").textContent||"").trim();
+      stage("ai",labeled?"done":"skip",notes.filter(Boolean).join(" + ")||"didn't run");
+    } else { stage("ai","skip",IMPORT&&IMPORT.accounts&&!signedIn()?"sign in":"off"); if(IMPORT&&IMPORT.accounts&&!signedIn()) aiWhy="Sign in to use AI labels and AI motion."; }
 
     if(IMPORT&&IMPORT.clips&&S.o.clips>0&&S.photos.some(p=>!p.isVideo&&!p.sample)){
       stage("clips","on","starting");
       const r=await makeClips(S.o.clips,(d,n)=>stage("clips","on",`${d}/${n}`));
       stage("clips",r.ok?"done":"skip",r.ok?`${r.ok} clips`:r.skipped==="signin"?"sign in":r.skipped==="credits"?"no credits":"stills");
+      if(!r.fail&&!r.skipped&&aiWhy){ st.className="status warn"; st.textContent="AI labels didn't run: "+aiWhy; }
       if(r.skipped){ st.className="status"; st.textContent=r.skipped==="signin"?"Sign in and pick a plan to add AI motion. This video uses free 3D camera moves.":"You're out of AI credits, so this video uses free 3D camera moves. Open Plans to add credits."; }
       if(r.fail){ st.className="status warn"; st.textContent=`${r.fail} AI clip${r.fail>1?"s":""} didn't work, so ${r.fail>1?"those shots stay":"that shot stays"} as a still: ${r.err}`; }
     }
