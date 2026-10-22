@@ -243,6 +243,13 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   await new Promise(r => setTimeout(r, 200));
   const lp = falCalls[0]?.body.prompt || "";
   check("Clips: fans spin and fires flicker when the photo has them (unknown items ignored)", /fan blades turn/.test(lp) && /flames flicker/.test(lp) && /nothing new appears/.test(lp) && !/rocket/.test(lp) && !/(^|, )flicker,/.test(falCalls[0]?.body.negative_prompt || ""), lp.slice(-200));
+  falCalls.length = 0;
+  await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", live: ["trees", "sky", "ceiling_fan"] }, { headers: {} });
+  await api(Gp, "/api/clips", { image: jpg, kind: "ext", move: "rpan", live: ["trees", "sky", "pool"] }, { headers: {} });
+  await new Promise(r => setTimeout(r, 250));
+  const inP = falCalls[0]?.body || {}, exP = falCalls[1]?.body || {};
+  check("Clips: trees and sky move outdoors, never in rooms", !/trees|Clouds/.test(inP.prompt || "") && /fan blades/.test(inP.prompt || "") && /hanging into view/.test(inP.negative_prompt || "")
+    && /trees already in the scene sway/.test(exP.prompt || "") && /Clouds drift/.test(exP.prompt || "") && !/foliage/.test(exP.negative_prompt || ""), (inP.prompt || "").slice(0, 80));
   falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan" }, { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "reel.example.com" } });
   await new Promise(r => setTimeout(r, 200));
   const iu = falCalls[0]?.body.image_url || ""; const srcPath = iu.replace("https://reel.example.com", "");

@@ -140,7 +140,7 @@ export const server = http.createServer(async (req, res) => {
         if (!clipsEnabled()) return json(res, 404, { error: "AI motion isn't set up on this server." });
         const body = await readJson(req, 6e6);
         const charge = acct.spend(user.id, 1, "ai_clip", crypto.randomUUID());     // 1 credit per clip, refunded if the clip fails
-        if (!allow(owner, clipHits, CLIPS_PER_HOUR)) { acct.refund(user.id, charge, "clip_refund", "limit-" + crypto.randomUUID()); return json(res, 429, { error: `You've made ${CLIPS_PER_HOUR} AI clips this hour. Wait a bit, then try again.` }); }
+        if (!acct.isAdmin(user) && !allow(owner, clipHits, CLIPS_PER_HOUR)) { acct.refund(user.id, charge, "clip_refund", "limit-" + crypto.randomUUID()); return json(res, 429, { error: `You've made ${CLIPS_PER_HOUR} AI clips this hour. Wait a bit, then try again.` }); }
         let id;
         const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
         const publicBase = process.env.PUBLIC_URL || (process.env.TRUST_PROXY === "1" && /^[\w.-]+(:\d+)?$/.test(host) ? `${String(req.headers["x-forwarded-proto"] || "http").split(",")[0]}://${host}` : "");
