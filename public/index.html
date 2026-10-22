@@ -254,6 +254,28 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
 .fine{font-size:12.5px;color:var(--faint);margin:14px 0 0}
 .admin-box{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
 .admin-box form{flex-direction:row;flex-wrap:wrap;align-items:flex-end}
+/* guided 1-2-3 flow */
+.wz{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:19px;font-weight:700;margin:22px 0 10px}
+.wz:first-of-type{margin-top:6px}
+.wz span{width:30px;height:30px;flex:none;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:15px}
+.wz small{font-family:var(--f-body);font-weight:500;font-size:13.5px;color:var(--muted)}
+details.mini{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--panel-2)}
+details.mini>summary{cursor:pointer;color:var(--muted);font-size:14px;font-weight:600}
+details.mini[open]>summary{margin-bottom:10px}
+.target-seg button{min-width:0}
+.brand-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end;margin-top:12px}
+.results{margin-top:18px;border:1px solid color-mix(in srgb,var(--ok) 50%,var(--line));background:var(--ok-bg);border-radius:14px;padding:16px}
+.results .wz{margin-top:0}
+.res-item{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line)}
+.res-item:first-of-type{border-top:0}
+details.fine-tune{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 22px}
+details.fine-tune>summary{cursor:pointer;font-family:var(--f-display);font-size:20px;font-weight:700;list-style:none;display:flex;align-items:center;gap:10px}
+details.fine-tune>summary::-webkit-details-marker{display:none}
+details.fine-tune>summary::before{content:"▸";color:var(--accent);transition:transform .15s}
+details.fine-tune[open]>summary::before{transform:rotate(90deg)}
+details.fine-tune>summary small{font-family:var(--f-body);font-weight:500;font-size:14px;color:var(--muted)}
+details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
+.update-row{position:sticky;bottom:12px;margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 [hidden]{display:none!important}
 .locked .lockable{opacity:.5;pointer-events:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -308,22 +330,11 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
   <div class="steps">
 
     <section class="step hero" aria-labelledby="h-auto">
-      <div class="step-h"><h2 id="h-auto">Make it automatic</h2></div>
-      <p class="hint">Bring in the listing and every photo. Reel Listing Studio keeps the best shots, touches them up, writes the details and labels, directs the camera moves, and renders the film.</p>
+      <div class="step-h"><h2 id="h-auto">Make your video in 3 steps</h2></div>
+      <p class="hint">Add the listing, choose where it's going, press <b>Make my video</b>. Picking shots, touch-ups, labels, camera moves, AI motion and rendering all happen for you.</p>
       <p class="notice" id="tabNotice" hidden></p>
       <div class="stack">
-        <div class="grab lockable">
-          <div class="grab-ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 2.5v11l9-5.5z"/></svg></div>
-          <div>
-            <div class="row" style="justify-content:space-between"><b>Pull a listing straight from Airbnb, VRBO, Zillow, Realtor.com, Redfin or your MLS</b><button class="btn sm" id="getGrabber">Get the Chrome Grabber</button></div>
-            <ol>
-              <li>Open the listing page in Chrome and click the Reel Listing Grabber.</li>
-              <li>It saves every full-size photo plus the listing details as one ZIP.</li>
-              <li>Drop that ZIP below. The details fill in and the video builds itself.</li>
-            </ol>
-            <p class="small" id="grabNote" hidden></p>
-          </div>
-        </div>
+        <h3 class="wz"><span>1</span>Add your listing <small>a link, or the photos</small></h3>
         <div class="f lockable"><label class="lbl" for="url">Listing link</label>
           <div class="link-row"><input type="url" id="url" data-k="url" maxlength="500" placeholder="Zillow, Realtor.com, MLS, Airbnb or VRBO link"><button class="btn primary" id="importBtn" hidden>Import listing</button></div>
           <div class="key-row" id="keyRow" hidden><label class="lbl" for="accessKey">Access key</label><input type="password" id="accessKey" maxlength="200" placeholder="The private key you were given (not the listing link)" autocomplete="off"></div>
@@ -338,21 +349,55 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
             <input type="file" id="autoDir" webkitdirectory multiple hidden>
           </div>
         </div>
-        <label class="f ai-only lockable"><span>Listing description (paste, optional)</span><textarea id="paste" maxlength="40000" placeholder="Paste the listing text if you're not using the Grabber: price, beds, baths, square feet, features, agent info."></textarea></label>
-        <div class="opt-row lockable" style="margin-top:0">
-          <label class="f"><span>Shots in video</span><select id="count"><option value="8">Up to 8</option><option value="10">Up to 10</option><option value="12">Up to 12</option><option value="15">Up to 15</option><option value="20">Up to 20</option></select></label>
-          <div class="f"><span>Touch-up</span>
-            <div class="seg" role="group" aria-label="Photo touch-up" id="enhSeg"><button data-v="off">Off</button><button data-v="natural">Natural</button><button data-v="punchy">Punchy</button></div>
+        <details class="mini lockable"><summary>Zillow, Airbnb or VRBO link won't import? Use the free Chrome Grabber</summary>
+        <div class="grab">
+          <div class="grab-ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 2.5v11l9-5.5z"/></svg></div>
+          <div>
+            <div class="row" style="justify-content:space-between"><b>Pull a listing straight from Airbnb, VRBO, Zillow, Realtor.com, Redfin or your MLS</b><button class="btn sm" id="getGrabber">Get the Chrome Grabber</button></div>
+            <ol>
+              <li>Open the listing page in Chrome and click the Reel Listing Grabber.</li>
+              <li>It saves every full-size photo plus the listing details as one ZIP.</li>
+              <li>Drop that ZIP below. The details fill in and the video builds itself.</li>
+            </ol>
+            <p class="small" id="grabNote" hidden></p>
           </div>
+        </div>
+        </details>
+        <details class="mini ai-only lockable"><summary>Have the listing description? Paste it here (optional)</summary>
+        <label class="f"><span>Listing description (paste, optional)</span><textarea id="paste" maxlength="40000" placeholder="Paste the listing text if you're not using the Grabber: price, beds, baths, square feet, features, agent info."></textarea></label>
+        </details>
+        <h3 class="wz"><span>2</span>Choose your video</h3>
+        <div class="f lockable"><span>Where will you post it?</span>
+          <div class="seg target-seg" role="group" aria-label="Where you'll post it" id="targetSeg">
+            <button data-v="social">Social · 9:16</button><button data-v="youtube">YouTube · 16:9</button><button data-v="mls">MLS · unbranded</button><button data-v="all">All three</button>
+          </div>
+          <p class="small" id="targetHint" style="margin:6px 0 0"></p>
+        </div>
+        <div class="opt-row lockable">
+          <label class="f"><span>Style</span><select id="styleSel"><option value="walk">Walkthrough (real camera pans)</option><option value="luxe">Estate (slow, elegant)</option><option value="bold">Momentum (fast, punchy)</option><option value="stay">Getaway (bright, airy)</option></select></label>
           <div class="f"><span>Pace</span>
-            <small class="small" id="paceHint" style="display:block;margin-top:4px"></small>
             <div class="seg" role="group" aria-label="Pace" id="paceSeg"><button data-v="auto">Auto</button><button data-v="relaxed">Relaxed</button><button data-v="standard">Standard</button><button data-v="fast">Fast</button></div>
+            <small class="small" id="paceHint" style="display:block;margin-top:6px"></small>
           </div>
           <div class="f clips-only" hidden><span>AI motion</span>
             <div class="seg" role="group" aria-label="AI motion clips" id="clipSeg"><button data-v="0">Off</button><button data-v="4">Top 4 shots</button><button data-v="6">Top 6 shots</button></div>
           </div>
-          <label class="toggle"><input type="checkbox" id="autoRender"> Render the video when done</label>
         </div>
+        <div class="brand-mini lockable" id="brandMini">
+          <label class="f"><span>Your name (shown on the video)</span><input type="text" data-k="agent" maxlength="60" placeholder="Agent or host name"></label>
+          <label class="f"><span>Phone</span><input type="tel" data-k="phone" maxlength="30" placeholder="(555) 555-0123"></label>
+          <div class="f"><span>Logo</span><button class="btn" id="quickLogo" type="button">Add logo</button></div>
+        </div>
+        <details class="mini lockable" style="margin-top:12px"><summary>More options: number of shots, photo touch-up</summary>
+          <div class="opt-row" style="margin-top:0">
+          <label class="f"><span>Shots in video</span><select id="count"><option value="8">Up to 8</option><option value="10">Up to 10</option><option value="12">Up to 12</option><option value="15">Up to 15</option><option value="20">Up to 20</option></select></label>
+          <div class="f"><span>Touch-up</span>
+            <div class="seg" role="group" aria-label="Photo touch-up" id="enhSeg"><button data-v="off">Off</button><button data-v="natural">Natural</button><button data-v="punchy">Punchy</button></div>
+          </div>
+          </div>
+        </details>
+        <label class="toggle" hidden><input type="checkbox" id="autoRender"> Render the video when done</label>
+        <h3 class="wz"><span>3</span>Make it</h3>
         <p class="small clips-only" id="clipNote" hidden></p>
         <div class="row"><button class="btn primary big" id="go">Make my video</button><span class="status" id="goStatus" aria-live="polite"></span></div>
         <ol class="pipe" id="pipe" hidden>
@@ -364,11 +409,18 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
           <li data-s="clips" hidden>AI motion<small></small></li>
           <li data-s="render">Rendering film<small></small></li>
         </ol>
+        <div class="results" id="heroResults" hidden>
+          <h3 class="wz"><span>✓</span>Your video is ready</h3>
+          <div id="heroRenders"></div>
+          <p class="small" style="margin:10px 0 0">Want to change something? Open <b>Fine-tune</b> below (reorder shots, edit text, branding, style, music), then press <b>Update my video</b>.</p>
+        </div>
       </div>
     </section>
 
+    <details class="fine-tune" id="fineTune">
+    <summary>Fine-tune <small>optional: reorder shots, edit details, branding, style &amp; music</small></summary>
     <section class="step lockable" aria-labelledby="h-photos">
-      <div class="step-h"><span class="num">STEP 1</span><h2 id="h-photos">Shots</h2></div>
+      <div class="step-h"><span class="num">SHOTS</span><h2 id="h-photos">Shots</h2></div>
       <p class="hint">The shots in your video, in order. The first is the opening hero shot. Drag to reorder, rename labels, and tap ◐ to compare the touch-up with the original. Sample photos disappear once you add your own.</p>
       <div class="drop" id="drop">
         <p><strong>Add more photos or clips</strong> to the end of the video. JPG, PNG, WebP, MP4, MOV, WebM, a folder or a ZIP.</p>
@@ -380,14 +432,14 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
       <div class="photos" id="photos"></div>
       <details class="left-wrap" id="leftWrap" hidden><summary id="leftSum">Left out</summary><div class="left" id="left"></div></details>
       <div class="row ai-only" style="margin-top:14px">
-        <button class="btn ai" id="aiLabel">Label &amp; order with AI</button>
-        <button class="btn ai clips-only" id="aiMotionBtn" hidden>Add AI motion to top shots</button>
+        <button class="btn ai" id="aiLabel">Redo AI labels &amp; order</button>
+        <button class="btn ai clips-only" id="aiMotionBtn" hidden>Add AI motion again</button>
         <span class="status" id="aiLabelStatus"></span>
       </div>
     </section>
 
     <section class="step lockable" aria-labelledby="h-listing">
-      <div class="step-h"><span class="num">STEP 2</span><h2 id="h-listing">Listing details</h2><span class="chip" id="sampleChip">Sample listing <button class="btn sm" id="clearSample" style="margin-left:4px">Clear</button></span></div>
+      <div class="step-h"><span class="num">DETAILS</span><h2 id="h-listing">Listing details</h2><span class="chip" id="sampleChip">Sample listing <button class="btn sm" id="clearSample" style="margin-left:4px">Clear</button></span></div>
       <p class="hint">Filled in from the Grabber ZIP or the pasted description. Check the numbers before you post.</p>
       <div class="row ai-only" style="margin:0 0 18px">
         <button class="btn ai" id="aiFill">Fill fields from description</button>
@@ -414,7 +466,7 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
     </section>
 
     <section class="step lockable" aria-labelledby="h-agent">
-      <div class="step-h"><span class="num">STEP 3</span><h2 id="h-agent">Agent</h2></div>
+      <div class="step-h"><span class="num">BRANDING</span><h2 id="h-agent">Agent</h2></div>
       <p class="hint">Used on the branded version: the closing card, plus your logo and contact on every shot. The unbranded MLS version leaves all of it out. Most states require the brokerage name on listing ads.</p>
       <div class="grid2">
         <label class="f"><span class="who-l">Agent name</span><input type="text" data-k="agent" maxlength="60"></label>
@@ -436,7 +488,7 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
     </section>
 
     <section class="step lockable" aria-labelledby="h-style">
-      <div class="step-h"><span class="num">STEP 4</span><h2 id="h-style">Direction</h2></div>
+      <div class="step-h"><span class="num">STYLE</span><h2 id="h-style">Direction</h2></div>
       <p class="hint">Each style sets its own camera language, transitions, type, color grade and score. Cuts land on the beat.</p>
       <div class="tpls" id="tpls">
         <button class="tpl" data-v="walk"><div class="tpl-sw walk">Walkthrough</div><div class="tpl-t"><b>Walkthrough</b><small>Full-screen, fast and moving: push-ins, detail shots, spin and whip transitions. Like a gimbal home tour.</small></div></button>
@@ -479,6 +531,8 @@ dialog.dlg::backdrop{background:rgba(8,6,12,.72);backdrop-filter:blur(3px)}
         <label class="toggle"><input type="checkbox" id="optBars"> Cinema bars (16:9)</label>
       </div>
     </section>
+    <div class="update-row"><button class="btn primary big" id="updateBtn">Update my video</button><span class="status" id="updateStatus" aria-live="polite">Re-renders with your changes. AI motion clips you already made are kept.</span></div>
+    </details>
   </div>
 
   <aside class="stage" aria-label="Preview and export">
@@ -608,17 +662,18 @@ const MAX_PHOTOS=300, MAX_ZIP=2.5e9;
 const S={
   photos:[], head:null, sampleDetails:true, raw:[], left:[], track:null, trackName:"",
   d:{...SAMPLE_D},
-  o:{brand:"branded", brandEvery:true, pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
+  o:{target:"social", brand:"branded", brandEvery:true, pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
 };
 try{
   const saved=JSON.parse(localStorage.getItem("lr-draft-3")||"null");
   if(saved&&saved.d){ S.d={...EMPTY_D,...saved.d}; S.o={...S.o,...saved.o};
     if(!saved.o||!saved.o.v6){ S.o.tpl="walk"; S.o.dur=1.6; S.o.stats=false; S.o.frame="fill"; }
-    if(!saved.o||!saved.o.v8){ S.o.pace="auto"; } S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
+    if(!saved.o||!saved.o.v8){ S.o.pace="auto"; }
+    S.o.autoRender=true; if(!saved.o||!saved.o.target) applyTarget(S.o.brand==="mls"?"mls":S.o.fmt==="16:9"?"youtube":"social"); S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
 }catch(e){}
 (function validateSaved(){
-  const def={brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
+  const ok={target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
@@ -1835,7 +1890,7 @@ async function setHead(blob){ const b=await decodeBitmap(blob); const {w,h}=dims
 $("#headFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; const st=$("#headStatus");
   try{ await setHead(f); st.className="status"; st.textContent=""; saveSession(); }catch(err){ st.className="status bad"; st.textContent="That image couldn't be read. Use a JPG or PNG."; } };
 $("#pickLogo").onclick=()=>$("#logoFile").click();
-async function setLogo(blob){ const b=await decodeBitmap(blob); const {w,h}=dims(b); const sc=Math.min(1,700/Math.max(w,h)); const c=mk(Math.round(w*sc),Math.round(h*sc)); c.getContext("2d").drawImage(b,0,0,c.width,c.height); if(b.close) b.close(); S.logo=c; $("#clearLogo").hidden=false; if(typeof syncBrand==="function") syncBrand(); refresh(); }
+async function setLogo(blob){ const b=await decodeBitmap(blob); const {w,h}=dims(b); const sc=Math.min(1,700/Math.max(w,h)); const c=mk(Math.round(w*sc),Math.round(h*sc)); c.getContext("2d").drawImage(b,0,0,c.width,c.height); if(b.close) b.close(); S.logo=c; $("#clearLogo").hidden=false; if(typeof syncBrand==="function") syncBrand(); if(typeof syncTarget==="function") syncTarget(); refresh(); }
 $("#logoFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; const st=$("#headStatus");
   try{ await setLogo(f); st.className="status"; st.textContent=""; saveSession(); }catch(err){ st.className="status bad"; st.textContent="That logo couldn't be read. Use a JPG or PNG."; } };
 $("#clearLogo").onclick=()=>{ S.logo=null; $("#clearLogo").hidden=true; syncBrand(); refresh(); saveSession(); };
@@ -2095,7 +2150,25 @@ $("#clearSample").onclick=()=>{ S.d={...EMPTY_D,type:S.d.type,url:S.d.url}; S.sa
 /* ---------- direction UI ---------- */
 function setTpl(v){ S.o.tpl=v; S.o.dur=paceDur(v,effPace()); tplDefaults(v); syncStyle(); persist(); build(); renderPhotos(); refresh(); }
 function segSync(id,val){ $$(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(val)))); }
+const TARGET_HINT={social:"One vertical video for Reels, TikTok, Shorts and Stories, with your name and logo.",
+  youtube:"One widescreen video for YouTube, Facebook and your website, with your name and logo.",
+  mls:"One widescreen video with no agent name, phone, logo or website, so the MLS accepts it.",
+  all:"Three videos in one go: vertical for social, widescreen for YouTube, and an unbranded one for the MLS. Takes about 3\u00d7 as long."};
+function applyTarget(v){
+  S.o.target=v;
+  if(v==="social"){ S.o.fmt="9:16"; S.o.brand="branded"; }
+  else if(v==="youtube"){ S.o.fmt="16:9"; S.o.brand="branded"; }
+  else if(v==="mls"){ S.o.fmt="16:9"; S.o.brand="mls"; }
+  else { S.o.fmt="9:16"; S.o.brand="branded"; }
+}
+function syncTarget(){
+  segSync("targetSeg",S.o.target); const h=$("#targetHint"); if(h) h.textContent=TARGET_HINT[S.o.target]||"";
+  const bm=$("#brandMini"); if(bm) bm.hidden=S.o.target==="mls";
+  const ql=$("#quickLogo"); if(ql) ql.textContent=S.logo?"Logo added \u2713 (change)":"Add logo";
+  const ss=$("#styleSel"); if(ss) ss.value=S.o.tpl;
+}
 function syncStyle(){
+  syncTarget();
   $$("#tpls .tpl").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.o.tpl));
   segSync("fmtSeg",S.o.fmt); segSync("fmtSeg2",S.o.fmt); segSync("paceSeg",S.o.pace); segSync("paceSeg2",S.o.pace); syncPaceHint(); if(typeof syncBrand==="function") syncBrand(); segSync("clipSeg",S.o.clips); syncClipNote();
   $("#fmtHint").textContent={"9:16":"Fills a phone screen: Reels, TikTok, Shorts, Stories. Shows black sides on a computer.","16:9":"Fills a computer, TV, YouTube or MLS player. Shows black bars on a phone.","4:5":"Instagram and Facebook feed posts.","1:1":"Square posts for feeds and ads."}[S.o.fmt]||""; segSync("motionSeg",S.o.motion); segSync("fpsSeg",S.o.fps); segSync("musicSeg",S.o.music); segSync("enhSeg",S.o.enh);
@@ -2246,6 +2319,14 @@ function addRender(fmt,res,meta){
   const old=RENDERS.get(fmt); if(old) URL.revokeObjectURL(old.url);
   RENDERS.delete(fmt); RENDERS.set(fmt,{blob:res.blob,ext:res.ext,meta,url:URL.createObjectURL(res.blob)});
   const box=$("#renders"); box.innerHTML="";
+  const hr=$("#heroRenders"); if(hr){ hr.innerHTML=""; $("#heroResults").hidden=!RENDERS.size;
+    [...RENDERS.entries()].reverse().forEach(([f,r])=>{ const [ff,bb]=f.split("|"); const el=document.createElement("div"); el.className="res-item";
+      el.innerHTML=`<div><b></b><div class="small"></div></div><span class="row" style="gap:8px"><button class="btn">Watch</button><button class="btn primary">Save video</button></span>`;
+      el.querySelector("b").textContent=(FMT_NAME[ff]||ff)+(bb==="mls"?" \u00b7 Unbranded (MLS)":" \u00b7 Branded"); el.querySelector(".small").textContent=r.meta;
+      const [watch,save]=el.querySelectorAll("button"); save.hidden=!canSave();
+      watch.onclick=()=>{ const v=[...$$("#renders video")].find(x=>x.src===r.url); if(v){ v.scrollIntoView({behavior:"smooth",block:"center"}); try{ v.play(); }catch(e){} } };
+      save.onclick=async ()=>{ try{ await saveFile(`${slugFor(f)}.${r.ext}`,r.blob); save.textContent="Saved \u2713"; }catch(e){ if(e.code!=="declined") save.textContent="Couldn't save"; } };
+      hr.appendChild(el); }); }
   [...RENDERS.entries()].reverse().forEach(([f,r])=>{
     const el=document.createElement("div"); el.className="render-item";
     el.innerHTML=`<b></b><video controls playsinline></video><div class="row"><button class="btn primary">Save video</button><span class="small"></span></div>`;
@@ -2273,12 +2354,25 @@ function syncBrand(){
 }
 $$("#brandSeg button").forEach(b=>b.onclick=()=>{ if(busy||building) return; S.o.brand=b.dataset.v; if(mls()&&S.o.fmt!=="16:9"){ S.o.fmt="16:9"; syncStyle(); build(); renderPhotos(); } syncBrand(); persist(); refresh(); });
 $("#brandEvery").onchange=e=>{ S.o.brandEvery=e.target.checked; persist(); refresh(); };
-$("#renderSet").onclick=async ()=>{
-  if(busy||building||bothRunning) return; bothRunning=true; $("#renderSet").disabled=true; $("#renderBoth").disabled=true;
-  const keepF=S.o.fmt, keepB=S.o.brand; let ok=true;
-  try{ for(const [f,b] of [["9:16","branded"],["16:9","branded"],["16:9","mls"]]){ S.o.fmt=f; S.o.brand=b; syncStyle(); build(); renderPhotos(); ok=await renderVideo()&&ok; if(!ok) break; } }
+// the full set: branded vertical, branded widescreen, unbranded MLS
+async function renderSetRun(fromPipeline){
+  if(busy||bothRunning||(building&&!fromPipeline)) return false; bothRunning=true; $("#renderSet").disabled=true; $("#renderBoth").disabled=true;
+  const keepF=S.o.fmt, keepB=S.o.brand; let ok=true, i=0;
+  try{ for(const [f,b] of [["9:16","branded"],["16:9","branded"],["16:9","mls"]]){ i++; if(fromPipeline) stage("render","on",`${i} of 3`); S.o.fmt=f; S.o.brand=b; syncStyle(); build(); renderPhotos(); ok=await renderVideo()&&ok; if(!ok) break; } }
   finally{ S.o.fmt=keepF; S.o.brand=keepB; bothRunning=false; $("#renderSet").disabled=false; $("#renderBoth").disabled=false; syncStyle(); build(); renderPhotos(); refresh(); persist(); }
   if(ok){ const st=$("#expStatus"); st.className="status ok"; st.textContent="Your set is ready: branded 9:16 for Reels and TikTok, branded 16:9 for YouTube, unbranded 16:9 for the MLS."; }
+  return ok;
+}
+$("#renderSet").onclick=()=>renderSetRun(false);
+const renderForTarget=fromPipeline=>S.o.target==="all"?renderSetRun(fromPipeline):renderVideo();
+$$("#targetSeg button").forEach(b=>b.onclick=()=>{ if(busy||building) return; if(playing) pause(); applyTarget(b.dataset.v); syncStyle(); build(); renderPhotos(); refresh(); persist(); });
+$("#styleSel").onchange=e=>{ if(busy||building){ e.target.value=S.o.tpl; return; } setTpl(e.target.value); };
+$("#quickLogo").onclick=()=>$("#logoFile").click();
+$("#updateBtn").onclick=async ()=>{
+  if(busy||building) return; const st=$("#updateStatus"); st.className="status"; st.textContent="Rendering your updated video\u2026";
+  build(); const ok=await renderForTarget(false);
+  st.className=ok?"status ok":"status warn"; st.textContent=ok?"Updated. Your new video is ready at the top.":"The video couldn't render. See the message by the preview.";
+  if(ok) $("#heroResults").scrollIntoView({behavior:"smooth",block:"center"});
 };
 $("#renderBoth").onclick=async ()=>{
   if(busy||building||bothRunning) return; bothRunning=true; $("#renderBoth").disabled=true;
@@ -2549,12 +2643,13 @@ async function autoBuild(files){
       if(r.fail){ st.className="status warn"; st.textContent=`${r.fail} AI clip${r.fail>1?"s":""} didn't work, so ${r.fail>1?"those shots stay":"that shot stays"} as a still: ${r.err}`; }
     }
 
-    if(S.o.autoRender){
-      stage("render","on","0%"); renderProgress=f=>stage("render","on",Math.round(f*100)+"%");
-      const ok=await renderVideo(); renderProgress=null;
+    if(true){
+      const warn=st.className.includes("warn")?st.textContent:"";
+      stage("render","on","0%"); if(S.o.target!=="all") renderProgress=f=>stage("render","on",Math.round(f*100)+"%");
+      const ok=await renderForTarget(true); renderProgress=null;
       stage("render",ok?"done":"",ok?"ready":"");
-      st.className=ok?"status ok":"status warn"; st.textContent=ok?"Your film is ready. Preview it and save it on the right.":"The video couldn't render here. See the message by the preview.";
-      if(ok&&matchMedia("(max-width:1060px)").matches) $(".stage").scrollIntoView({behavior:"smooth"});
+      st.className=ok&&!warn?"status ok":"status warn"; st.textContent=ok?("Done! Your video is ready below."+(warn?" Note: "+warn:"")):"The video couldn't render here. See the message by the preview.";
+      if(ok) setTimeout(()=>$("#heroResults").scrollIntoView({behavior:"smooth",block:"center"}),150);
     } else { stage("render","skip"); st.className="status ok"; st.textContent="Shots are ready. Press play to preview, then Render video."; }
   }catch(e){ console.error(e); st.className="status bad"; st.textContent="The build stopped partway. Try again; if it happens again, use fewer photos or remove any unusual files."; }
   finally{ building=false; go.disabled=false; lock(false); }
