@@ -858,7 +858,35 @@ function seekTo(v,t){
   return new Promise(res=>{ if(Math.abs(v.currentTime-t)<.004&&v.readyState>=2) return res(); let done=false; const fin=()=>{ if(done) return; done=true; v.removeEventListener("seeked",fin); res(); };
     v.addEventListener("seeked",fin); try{ v.currentTime=t; }catch(e){ fin(); } setTimeout(fin,2000); });
 }
-function snapVideo(v,maxSide){ const s=Math.min(1,maxSide/Math.max(v.videoWidth,v.videoHeight)); const c=mk(v.videoWidth*s,v.videoHeight*s); const g=c.getContext("2d"); g.imageSmoothingQuality="high"; g.drawImage(v,0,0,c.width,c.height); return c; }
+function snapVideo(v,maxSide,crop){ const cr=crop||{x:0,y:0,w:v.videoWidth,h:v.videoHeight}; const s=Math.min(1,maxSide/Math.max(cr.w,cr.h)); const c=mk(cr.w*s,cr.h*s); const g=c.getContext("2d"); g.imageSmoothingQuality="high"; g.drawImage(v,cr.x,cr.y,cr.w,cr.h,0,0,c.width,c.height); return c; }
+// AI clips sometimes come back with black bars baked in; find them so the footage can always fill the frame
+async function findBars(v){
+  const W0=192, H0=Math.max(8,Math.round(W0*v.videoHeight/v.videoWidth)); const c=mk(W0,H0), g=c.getContext("2d",{willReadFrequently:true});
+  let box=null;
+  for(const f of [.3,.7]){
+    await seekTo(v,v.duration*f); g.drawImage(v,0,0,W0,H0); const d=g.getImageData(0,0,W0,H0).data;
+    const lum=(x,y)=>{ const i=(y*W0+x)*4; return .2126*d[i]+.7152*d[i+1]+.0722*d[i+2]; };
+    const dark=(vals)=>{ let m=0; for(const q of vals) m+=q; m/=vals.length; let sd=0; for(const q of vals) sd+=(q-m)*(q-m); return m<18&&Math.sqrt(sd/vals.length)<7; };
+    const col=x=>{ const a=[]; for(let y=0;y<H0;y+=2) a.push(lum(x,y)); return a; }, row=y=>{ const a=[]; for(let x=0;x<W0;x+=2) a.push(lum(x,y)); return a; };
+    let l=0; while(l<W0*.4&&dark(col(l))) l++; let r=W0-1; while(r>W0*.6&&dark(col(r))) r--;
+    let t=0; while(t<H0*.4&&dark(row(t))) t++; let b=H0-1; while(b>H0*.6&&dark(row(b))) b--;
+    const fb={l,r,t,b}; box=box?{l:Math.min(box.l,fb.l),r:Math.max(box.r,fb.r),t:Math.min(box.t,fb.t),b:Math.max(box.b,fb.b)}:fb;   // keep only bars present in both frames
+  }
+  const sx=v.videoWidth/W0, sy=v.videoHeight/H0, pad=2;
+  const x=Math.max(0,(box.l+(box.l?pad:0))*sx), y=Math.max(0,(box.t+(box.t?pad:0))*sy);
+  const x2=Math.min(v.videoWidth,(box.r+1-(box.r<W0-1?pad:0))*sx), y2=Math.min(v.videoHeight,(box.b+1-(box.b<H0-1?pad:0))*sy);
+  const w=x2-x, h=y2-y;
+  if(w>=v.videoWidth*.985&&h>=v.videoHeight*.985) return null;          // no bars
+  if(w<v.videoWidth*.4||h<v.videoHeight*.4) return null;                  // probably a dark scene, not bars
+  return {x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h)};
+}
+// the current video frame without any bars, for drawing
+function clipFrame(p){
+  const v=p.video, cr=p.crop; if(!cr) return v;
+  const s=Math.min(1,1920/Math.max(cr.w,cr.h));
+  if(!p.cropCv) p.cropCv=mk(Math.round(cr.w*s),Math.round(cr.h*s));
+  p.cropCv.getContext("2d").drawImage(v,cr.x,cr.y,cr.w,cr.h,0,0,p.cropCv.width,p.cropCv.height); return p.cropCv;
+}
 async function analyzeVideo(item){
   const v=await openVideo(item.blob); await seekTo(v,Math.min(.6,v.duration/3));
   const small=snapVideo(v,256); const m=analyze(small);
@@ -868,8 +896,9 @@ async function analyzeVideo(item){
 }
 async function makeVideoPhoto(blob,extra){
   const v=await openVideo(blob); const dur=v.duration;
-  await seekTo(v,Math.min(.6,dur/3)); const snap=snapVideo(v,1920);
-  const p={id:++uid, raw:null, isVideo:true, video:v, blobV:blob, duration:dur, inPoint:dur>2.5?Math.min(.35,dur*.08):0, orig:snap, origBlob:null, fixed:null, useFixed:false, caption:"", sample:false, kind:"int", ...(extra||{})};
+  let crop=null; try{ crop=await findBars(v); }catch(e){}
+  await seekTo(v,Math.min(.6,dur/3)); const snap=snapVideo(v,1920,crop);
+  const p={id:++uid, raw:null, isVideo:true, video:v, crop, blobV:blob, duration:dur, inPoint:dur>2.5?Math.min(.35,dur*.08):0, orig:snap, origBlob:null, fixed:null, useFixed:false, caption:"", sample:false, kind:"int", ...(extra||{})};
   await seekTo(v,p.inPoint);
   return derive(p);
 }
@@ -1112,10 +1141,10 @@ function videoTex(p){
   if(!e){ gl.activeTexture(gl.TEXTURE2); const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    e={t,w:v.videoWidth,h:v.videoHeight,last:0,vt:-1,fresh:false}; TEX.set(key,e); }
+    e={t,w:p.crop?p.crop.w:v.videoWidth,h:p.crop?p.crop.h:v.videoHeight,last:0,vt:-1,fresh:false}; TEX.set(key,e); }
   if(v.readyState>=2 && (e.vt!==v.currentTime||!e.fresh)){
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,e.t); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
-    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v); gl.generateMipmap(gl.TEXTURE_2D); e.vt=v.currentTime; e.fresh=true; }catch(err){}
+    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,clipFrame(p)); gl.generateMipmap(gl.TEXTURE_2D); e.vt=v.currentTime; e.fresh=true; }catch(err){}
   }
   if(!e.fresh){ // no frame yet: show the snapshot
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,e.t); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,p.src); gl.generateMipmap(gl.TEXTURE_2D); e.fresh=true;
@@ -1434,7 +1463,7 @@ function drawGL(t,A,lA,B,lB,tr,m0,m1,sh){
   ctx.drawImage(GLC,0,0,W,H);
 }
 function draw2D(t,A,lA,B,lB,m0){
-  const one=(seg,local,alpha)=>{ const c=camAt(seg,local,t), src=seg.type==="stats"||seg.type==="outro"?seg.img.blur:(seg.img.isVideo&&seg.img.video&&seg.img.video.readyState>=2?seg.img.video:seg.img.src);
+  const one=(seg,local,alpha)=>{ const c=camAt(seg,local,t), src=seg.type==="stats"||seg.type==="outro"?seg.img.blur:(seg.img.isVideo&&seg.img.video&&seg.img.video.readyState>=2?clipFrame(seg.img):seg.img.src);
     ctx.save(); ctx.globalAlpha=alpha; ctx.filter="none";
     if(seg.fit){ const b=seg.img.blur, bs=Math.max(W/b.width,H/b.height)*1.1; ctx.drawImage(b,(W-b.width*bs)/2,(H-b.height*bs)/2,b.width*bs,b.height*bs);
       ctx.fillStyle="rgba(0,0,0,.58)"; ctx.fillRect(0,0,W,H);
@@ -2721,7 +2750,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
