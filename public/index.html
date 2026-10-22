@@ -276,6 +276,8 @@ details.fine-tune[open]>summary::before{transform:rotate(90deg)}
 details.fine-tune>summary small{font-family:var(--f-body);font-weight:500;font-size:14px;color:var(--muted)}
 details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .update-row{position:sticky;bottom:12px;margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#go.pulse{box-shadow:0 0 0 0 color-mix(in srgb,var(--brand) 70%,transparent);animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--brand) 65%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
 /* always-visible progress, pinned to the bottom of the screen */
 .activity{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;max-width:min(680px,calc(100vw - 32px));
   background:#1d1830;border:1px solid var(--accent);border-radius:14px;padding:12px 16px;box-shadow:0 14px 40px rgba(0,0,0,.55);font-size:15px;font-weight:600}
@@ -358,6 +360,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
             <input type="file" id="autoDir" webkitdirectory multiple hidden>
           </div>
         </div>
+        <div class="status ok" id="pendingNote" hidden style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span id="pendingText"></span><button class="btn sm" id="pendingClear" type="button">Clear</button></div>
         <details class="mini lockable"><summary>Zillow, Airbnb or VRBO link won't import? Use the free Chrome Grabber</summary>
         <div class="grab">
           <div class="grab-ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 2.5v11l9-5.5z"/></svg></div>
@@ -389,7 +392,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
             <small class="small" id="paceHint" style="display:block;margin-top:6px"></small>
           </div>
           <div class="f clips-only" hidden><span>AI motion</span>
-            <div class="seg" role="group" aria-label="AI motion clips" id="clipSeg"><button data-v="0">Off</button><button data-v="4">Top 4 shots</button><button data-v="6">Top 6 shots</button></div>
+            <div class="seg" role="group" aria-label="AI motion clips" id="clipSeg"><button data-v="0">Off</button><button data-v="4">Top 4 shots</button><button data-v="6">Top 6 shots</button><button data-v="99">Every shot</button></div>
           </div>
         </div>
         <div class="brand-mini lockable" id="brandMini">
@@ -622,7 +625,7 @@ const GRADES={
   cine:{sat:1.0, con:.24, warm:.035, lift:[-.012,.012,.035], gain:[1.05,1.0,.94], bloom:.24, grain:.035, vig:.36},
   punch:{sat:1.14, con:.32, warm:.02, lift:[-.01,.008,.028], gain:[1.04,1.0,.96], bloom:.2, grain:.03, vig:.42},
   airy:{sat:1.04, con:.08, warm:.03, lift:[.03,.03,.034], gain:[1.03,1.02,1.0], bloom:.32, grain:.018, vig:.16},
-  bright:{sat:1.06, con:.07, warm:.022, lift:[.018,.018,.02], gain:[1.03,1.015,1.0], bloom:.16, grain:.006, vig:.1},
+  bright:{sat:1.06, con:.08, warm:.022, lift:[.012,.012,.014], gain:[1.03,1.015,1.0], bloom:.05, grain:.005, vig:.1},
   natural:{sat:1.0, con:.06, warm:0, lift:[0,0,0], gain:[1,1,1], bloom:.08, grain:.012, vig:.14}
 };
 // Pace: how long each shot holds, how many shots per room, and how calm the transitions are
@@ -682,7 +685,7 @@ try{
 }catch(e){}
 (function validateSaved(){
   const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const ok={target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
@@ -1019,7 +1022,7 @@ uniform vec2 uRes,uSzA,uSzB,uLeakPos;
 uniform vec4 uCA0,uCA1,uCB0,uCB1,uPA0,uPA1,uPB0,uPB1;
 uniform float uModeA,uModeB,uBlurA,uBlurB,uExpA,uExpB,uM0,uM1,uDir,uHasB;
 uniform int uTr,uTaps;
-uniform float uSat,uCon,uWarm,uBloom,uGrain,uVig,uFade,uBars,uTime,uLeak;
+uniform float uSat,uCon,uWarm,uBloom,uGrain,uVig,uFade,uBars,uTime,uLeak,uSharp;
 uniform vec3 uLift,uGain,uLeakCol;
 uniform float uFitA,uFitB,uRad; uniform vec4 uCardA,uCardB;
 uniform sampler2D uDA,uDB; uniform float uHasDA,uHasDB; uniform vec4 uXA0,uXA1,uXB0,uXB1;
@@ -1049,7 +1052,11 @@ vec2 mapUV(vec2 uv, vec4 C, vec4 P, float mode, vec2 sz, vec2 off, float zx, flo
   vec2 i=.5+cs*p/(C.x*(1.+P.z*n))+C.yz;
   return clamp(i,vec2(.0005),vec2(.9995));
 }
-vec3 tx(sampler2D t, vec2 i, float lod){ return lod>.01 ? textureLod(t,i,lod).rgb : texture(t,i).rgb; }
+vec3 tx(sampler2D t, vec2 i, float lod){
+  if(lod>.01) return textureLod(t,i,lod).rgb;
+  vec3 c=texture(t,i).rgb; if(uSharp<=0.) return c;
+  vec3 b=textureLod(t,i,1.).rgb; return clamp(c+(c-b)*uSharp,0.,1.);   // unsharp mask: crisper detail on enlarged photos
+}
 // one shot: either fills the frame, or (full-photo framing) sits as a framed photo over a soft blurred copy of itself
 vec3 shot(sampler2D t, vec2 uv, vec4 C, vec4 P, float mode, vec2 sz, vec2 off, float zx, float fit, vec4 card, float blur, float ex, inout vec2 iuv, sampler2D dm, float hasD, vec4 X){
   float sa=uRes.x/uRes.y;
@@ -1410,13 +1417,16 @@ function camAt(seg,local,absT){
   }
     return {z,px,py,rot,yaw,pitch,dolly,tx,ty,dz,foc,hasD};
   };
-  let {z,px,py,rot,yaw,pitch,dolly,tx,ty,dz,foc}=core(p);
+  const sd=seg.seed||0, hp=(f,o)=>Math.sin(absT*f+sd*o);
+  const pOp=T().walk&&seg.type==="photo"?clamp(p+.018*hp(1.37,2.1)+.009*hp(2.71,.7),-.1,1.15):p;   // a person's hand never moves at a perfectly even speed
+  let {z,px,py,rot,yaw,pitch,dolly,tx,ty,dz,foc}=core(pOp);
   // edge cover is worked out from the biggest movement in the whole shot and held steady,
   // so the picture never quietly zooms out and back in while the camera moves
   const e0=core(-.1), e1=core(1.15), mx_=(k_)=>Math.max(Math.abs(e0[k_]),Math.abs(e1[k_]));
   const s=seg.seed||0;
-  rot+=.0024*Math.sin(absT*.83+s)+.001*Math.sin(absT*1.9+s*2.1);
-  yaw+=.0035*Math.sin(absT*.71+s*1.3); pitch+=.0028*Math.sin(absT*.93+s*.4);
+  rot+=.0019*Math.sin(absT*.83+s)+.0009*Math.sin(absT*1.9+s*2.1)+.0004*Math.sin(absT*4.3+s*3.3);
+  yaw+=.0028*Math.sin(absT*.71+s*1.3)+.0012*Math.sin(absT*1.73+s*.9)+.0005*Math.sin(absT*3.9+s*1.7);
+  pitch+=.0022*Math.sin(absT*.93+s*.4)+.001*Math.sin(absT*2.17+s*2.6)+.0004*Math.sin(absT*4.7+s*.2);
   px+=.0018*Math.sin(absT*1.13+s*1.7); py+=.0015*Math.sin(absT*.97+s*.6);
   if(e0.hasD) z+=(mx_("tx")+mx_("ty"))*(1-foc)*2.4;
   // how much to enlarge so no edge ever shows: projected frame corners for every rotation this shot reaches
@@ -1459,7 +1469,7 @@ function drawGL(t,A,lA,B,lB,tr,m0,m1,sh){
   gl.uniform2f(U.uRes,W,H); gl.uniform1f(U.uRad,(A.card&&A.card[2]>=.99)||(B&&B.card&&B.card[2]>=.99)?0:18*u);
   gl.uniform1i(U.uTr,tr?tr.type:0); gl.uniform1f(U.uM0,m0); gl.uniform1f(U.uM1,m1); gl.uniform1f(U.uDir,tr?tr.dir:1);
   gl.uniform1i(U.uTaps, tr&&(tr.type===2||tr.type===3||tr.type===6)?12:5);
-  const g=G(); gl.uniform1f(U.uSat,g.sat); gl.uniform1f(U.uCon,g.con); gl.uniform1f(U.uWarm,g.warm); gl.uniform1f(U.uBloom,g.bloom);
+  const g=G(); gl.uniform1f(U.uSat,g.sat); gl.uniform1f(U.uCon,g.con); gl.uniform1f(U.uWarm,g.warm); gl.uniform1f(U.uBloom,g.bloom); if(U.uSharp) gl.uniform1f(U.uSharp,S.o.enh==="off"?.25:.6);
   gl.uniform1f(U.uGrain,g.grain); gl.uniform1f(U.uVig,g.vig); gl.uniform3f(U.uLift,...g.lift); gl.uniform3f(U.uGain,...g.gain);
   let leak=0, lp=[.85,.12];
   if(tr&&tr.type===4){ leak=Math.sin(Math.PI*m0)*.85; lp=[lerp(-.15,1.15,m0),.28]; }
@@ -1916,12 +1926,23 @@ function dropZone(el,handler){
   el.addEventListener("drop",async e=>{ if(!e.dataTransfer.types.includes("Files")) return; e.preventDefault(); e.stopPropagation(); handler(await fromDataTransfer(e.dataTransfer)); });
 }
 dropZone($("#drop"),addFiles);
-dropZone($("#autoDrop"),files=>autoBuild(files));
+// Step 1 only collects files; nothing starts until Make my video
+let PENDING=[];
+function queueFiles(files){ if(!files||!files.length) return; if(building||busy){ return; } PENDING.push(...files); updatePending(); }
+function updatePending(){
+  const box=$("#pendingNote"); if(!box) return;
+  if(!PENDING.length){ box.hidden=true; $("#go").classList.remove("pulse"); return; }
+  const zips=PENDING.filter(f=>/\.zip$/i.test(f.name)||f.type==="application/zip").length, vids=PENDING.filter(f=>/^video\//.test(f.type)||/\.(mp4|mov|m4v|webm)$/i.test(f.name)).length, pics=PENDING.length-zips-vids;
+  const parts=[pics?`${pics} photo${pics>1?"s":""}`:"",vids?`${vids} video clip${vids>1?"s":""}`:"",zips?`${zips} ZIP${zips>1?"s":""}`:""].filter(Boolean).join(", ");
+  box.hidden=false; $("#pendingText").textContent=`\u2713 ${parts} added. Add more if you like, then press Make my video.`;
+  $("#go").classList.add("pulse");
+}
+dropZone($("#autoDrop"),files=>queueFiles(files));
 document.addEventListener("dragover",e=>{ if(e.dataTransfer.types.includes("Files")) e.preventDefault(); });
-document.addEventListener("drop",async e=>{ if(e.dataTransfer.types.includes("Files")){ e.preventDefault(); autoBuild(await fromDataTransfer(e.dataTransfer)); }});
+document.addEventListener("drop",async e=>{ if(e.dataTransfer.types.includes("Files")){ e.preventDefault(); queueFiles(await fromDataTransfer(e.dataTransfer)); }});
 $("#autoPick").onclick=()=>$("#autoFile").click();
 $("#autoPickDir").onclick=()=>$("#autoDir").click();
-["autoFile","autoDir"].forEach(id=>$("#"+id).onchange=e=>{ const f=[...e.target.files]; e.target.value=""; autoBuild(f); });
+["autoFile","autoDir"].forEach(id=>$("#"+id).onchange=e=>{ const f=[...e.target.files]; e.target.value=""; queueFiles(f); });
 
 $("#pickHead").onclick=()=>$("#headFile").click();
 async function setHead(blob){ const b=await decodeBitmap(blob); const {w,h}=dims(b); const s=Math.min(w,h); const c=mk(600,600); c.getContext("2d").drawImage(b,(w-s)/2,(h-s)/2,s,s,0,0,600,600); if(b.close) b.close(); S.head=c; $("#clearHead").hidden=false; refresh(); }
@@ -2569,10 +2590,10 @@ function queueDepth(){
 const CLIP_COST=.35;
 function syncClipNote(){
   const n=$("#clipNote"); if(!n) return;
-  const k=S.o.clips;
-  if(IMPORT&&IMPORT.accounts&&k){ if(!signedIn()){ n.textContent=`AI motion turns your top ${k} shots into real moving footage. Sign in and pick a plan to use it (1 credit per shot).`; return; }
-    const c=credits(); n.textContent=c>=k?`AI motion turns your top ${k} shots into real moving footage. Uses ${k} of your ${ACCT.user.admin?"unlimited":c} AI credits and takes 2–5 minutes.`:c>0?`You have ${c} AI credit${c>1?"s":""}, so AI motion will animate your top ${c} shot${c>1?"s":""}. Open Plans for more.`:"You're out of AI credits, so every shot uses free 3D camera moves. Open Plans to add credits."; return; }
-  n.textContent=k?`AI motion turns your top ${k} shots into real moving footage. Takes 2–5 minutes and costs about $${(k*CLIP_COST).toFixed(2)} per video in AI credits. It's made for the video shape you've picked.`:"AI motion is off: every shot uses free camera moves with 3D depth.";
+  const nReal=S.photos.filter(p=>!p.isVideo&&!p.sample).length, k=S.o.clips===99?(nReal||Math.min(S.o.count,12)):S.o.clips, all=S.o.clips===99;
+  if(IMPORT&&IMPORT.accounts&&k){ if(!signedIn()){ n.textContent=`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Sign in and pick a plan to use it (1 credit per shot).`; return; }
+    const c=credits(); n.textContent=c>=k?`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Uses ${k} of your ${ACCT.user.admin?"unlimited":c} AI credits and takes 2–5 minutes.`:c>0?`You have ${c} AI credit${c>1?"s":""}, so AI motion will animate your top ${c} shot${c>1?"s":""}. Open Plans for more.`:"You're out of AI credits, so every shot uses free 3D camera moves. Open Plans to add credits."; return; }
+  n.textContent=k?`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Takes 2–5 minutes and costs about $${(k*CLIP_COST).toFixed(2)} per video in AI credits. It's made for the video shape you've picked.`:"AI motion is off: every shot uses free camera moves with 3D depth.";
 }
 function cropForClip(p){
   const [fw,fh]=FMT[S.o.fmt], ta=fw/fh, src=p.src, ia=src.width/src.height;
@@ -2692,7 +2713,7 @@ async function autoBuild(files){
       if(r.fail){ st.className="status warn"; st.textContent=`${r.fail} AI clip${r.fail>1?"s":""} didn't work, so ${r.fail>1?"those shots stay":"that shot stays"} as a still: ${r.err}`; }
     }
 
-    if(true){
+    if(S.o.autoRender!==false){
       const warn=st.className.includes("warn")?st.textContent:"";
       stage("render","on","0%"); if(S.o.target!=="all") renderProgress=f=>stage("render","on",Math.round(f*100)+"%");
       const ok=await renderForTarget(true); renderProgress=null;
@@ -2704,7 +2725,9 @@ async function autoBuild(files){
   finally{ building=false; go.disabled=false; lock(false);
     const st2=$("#goStatus"); activity(st2.className.includes("ok")?"Your video is ready \u2713":"Finished with a note",st2.className.includes("ok")?"Scroll to \u201cYour video is ready\u201d to watch and save it.":st2.textContent,st2.className.includes("ok")?"done":"warn"); }
 }
+$("#pendingClear").onclick=()=>{ PENDING=[]; updatePending(); };
 $("#go").onclick=()=>{
+  if(PENDING.length){ const f=PENDING; PENDING=[]; updatePending(); return autoBuild(f); }
   const link=($("#url").value||"").trim(), hasOwn=S.raw.length||S.photos.some(p=>!p.sample);
   if(IMPORT&&link&&!hasOwn) return importFromLink();
   autoBuild(null);
