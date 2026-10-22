@@ -128,7 +128,7 @@ export const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, service: "reel-listing", import: true, provider: providerInfo() || "none", keyRequired: false, accounts: true, accountsSaved: acct.dbPersistent(), payments: paypalEnabled(), ai: aiEnabled(),
         clips: clipsEnabled(), clipModel: clipsEnabled() ? clipModel() : null, maxClips: MAX_CLIPS_PER_VIDEO, depth: fs.existsSync(DEPTH_MODEL) });
     }
-    if (req.method === "GET" && u.pathname.startsWith("/api/clip-src/")) {      // the photo fal downloads; unguessable, expires in 30 min
+    if ((req.method === "GET" || req.method === "HEAD") && u.pathname.startsWith("/api/clip-src/")) {      // the photo fal downloads; unguessable, expires in 30 min
       const tok = u.pathname.slice(14).replace(/\.(jpg|png|webp)$/, "");
       const e = /^[0-9a-f]{48}$/.test(tok) && clipSource(tok);
       if (!e) return json(res, 404, { error: "Not found." });

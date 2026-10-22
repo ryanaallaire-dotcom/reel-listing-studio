@@ -217,7 +217,7 @@ const F = 18916; const sf = await startServer(F, {});
 sf.kill();
 
 // ===== server G: AI motion clips + 3D depth files =====
-const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", FAL_KEY: "fal-test", FAL_QUEUE_BASE: `http://127.0.0.1:${FALM}`, CLIP_POLL_MS: "100", ALLOW_LOCAL_FETCH: "1", CLIPS_PER_HOUR: "3" });
+const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAGE_MODE: "url", FAL_KEY: "fal-test", FAL_QUEUE_BASE: `http://127.0.0.1:${FALM}`, CLIP_POLL_MS: "100", ALLOW_LOCAL_FETCH: "1", CLIPS_PER_HOUR: "3" });
 {
   const h = await (await fetch(`http://127.0.0.1:${Gp}/api/health`)).json();
   check("Clips: health reports AI motion and 3D depth", h.clips === true && h.depth === true && /kling/.test(h.clipModel), JSON.stringify(h));
