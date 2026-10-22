@@ -2483,7 +2483,7 @@ async function doLabel(){
 1) Label each photo, 2-4 words, Title Case, accurate to what is visible, lightly marketing-flavored (e.g. "Sun-Filled Living Room", "Chef's Kitchen", "Primary Suite"). Describe the space, never people.
 2) Classify each: "ext" (exterior, yard, pool, view, aerial), "int" (a room), or "detail" (close-up of a fixture, finish or decor).
 3) Order them like a home tour film: strongest exterior hero first, then flow through living, kitchen, bedrooms and baths, best view or outdoor living near the end.
-4) For each photo, list which of these are clearly visible (only if you're sure): "ceiling_fan", "fireplace", "pool", "hot_tub", "faucet" (a kitchen or bathroom faucet clearly in view), "water" (lake, ocean, pond, fountain), "trees" (trees or plants visible outdoors or through windows), "curtains", "sky".
+4) For each photo, list which of these are clearly visible (only if you're sure): "ceiling_fan", "fireplace", "pool", "hot_tub", "faucet" (a kitchen or bathroom faucet clearly in view), "water" (lake, ocean, pond, fountain), "curtains".
 Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|"detail", ...],"live":[["ceiling_fan","fireplace"], ...],"order":[photo numbers in recommended order]}`,{images:P.map(p=>p.aiBlob),modelTier:"default"});
     if(!r||typeof r!=="object"||Array.isArray(r)) throw {code:"invalid_json"};
     let used=0;
@@ -2601,7 +2601,7 @@ async function clipOne(p,onState){
   return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,live:p.live,aiClip:true});
 }
 // things in a photo that move in real life: the AI clip brings them to life (fans spin, fires flicker, water ripples)
-const LIVE_KEYS=["ceiling_fan","fireplace","pool","hot_tub","faucet","water","trees","curtains","sky"];
+const LIVE_KEYS=["ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains"];
 const liveScore=p=>(p.live||[]).reduce((a,k)=>a+({ceiling_fan:3,fireplace:3,pool:2,hot_tub:2,faucet:2,water:2,trees:1,curtains:1,sky:.5}[k]||0),0);
 async function makeClips(n,onProg){
   if(IMPORT&&IMPORT.accounts){ if(!signedIn()) return {ok:0,fail:0,err:"",skipped:"signin"}; n=Math.min(n,credits()); if(n<=0) return {ok:0,fail:0,err:"",skipped:"credits"}; }
