@@ -2037,7 +2037,8 @@ function serverAI(){
     let r; try{ r=await fetch("/api/ai",{method:"POST",headers,body:JSON.stringify({prompt,tier:opts.modelTier||"default",images:await Promise.all(imgs.map(toDataURL))})}); }
     catch(e){ throw {code:"upstream_error",message:"network"}; }
     let j={}; try{ j=await r.json(); }catch(e){}
-    if(!r.ok) throw {code:r.status===401?"needs_key":r.status===429?"rate_limited":r.status===413?"too_large":"upstream_error",message:j.error||""};
+    if(r.status===401&&IMPORT&&IMPORT.accounts){ setUser(null); throw {code:"server_said",message:"Your session ended. Sign in again to use the AI."}; }
+    if(!r.ok) throw j.error?{code:"server_said",message:j.error}:{code:r.status===429?"rate_limited":r.status===413?"too_large":"upstream_error",message:""};
     return {text:j.text||"",truncated:!!j.truncated,modelTierApplied:opts.modelTier||"default"};
   }
   const parse=t=>{ try{ return JSON.parse(t); }catch(e){} const f=t.match(/```(?:json)?\s*([\s\S]*?)```/); if(f){ try{ return JSON.parse(f[1]); }catch(e){} }
@@ -2301,7 +2302,7 @@ $("#getGrabber").onclick=async ()=>{
 let SAMPLE=null;
 const aStr=(v,max)=>(typeof v==="string"||typeof v==="number")?String(v).replace(/[\u0000-\u001f]+/g," ").replace(/\s{2,}/g," ").trim().slice(0,max):"";
 const aNum=v=>{ const x=aStr(v,12).replace(/\s/g,""); return /^\d{1,5}(\.\d{1,2})?\+?$|^\d{1,3}(,\d{3})+$/.test(x)?x:""; };
-const aiErr=e=>({not_granted:"AI isn't allowed on this page yet. Allow it when your browser asks, or from the page's Permissions menu, then try again.",rate_limited:"You've hit your AI usage limit for now. Wait a few minutes, then try again.",session_expired:"You've been signed out of Claude. Sign in again, then try again.",invalid_json:"The AI's answer came back unreadable. Try again; it usually works the second time.",image_rejected:"One of the photos couldn't be sent to the AI. Remove very large or unusual files and try again.",refused:"The AI declined that text. Edit the description and try again.",sampling_disabled:"AI features are turned off for your account. Everything else still works.",needs_key:"Enter your access key next to the listing link, then try again.",too_large:"That's too much for one AI request. Use fewer photos or a shorter description.",upstream_error:"The AI service didn't respond. Check your connection and try again."}[e?.code]||"The AI couldn't finish that. Check your connection and try again.");
+const aiErr=e=>(e&&e.code==="server_said"&&e.message)?e.message:({not_granted:"AI isn't allowed on this page yet. Allow it when your browser asks, or from the page's Permissions menu, then try again.",rate_limited:"You've hit your AI usage limit for now. Wait a few minutes, then try again.",session_expired:"You've been signed out of Claude. Sign in again, then try again.",invalid_json:"The AI's answer came back unreadable. Try again; it usually works the second time.",image_rejected:"One of the photos couldn't be sent to the AI. Remove very large or unusual files and try again.",refused:"The AI declined that text. Edit the description and try again.",sampling_disabled:"AI features are turned off for your account. Everything else still works.",needs_key:"Enter your access key next to the listing link, then try again.",too_large:"That's too much for one AI request. Use fewer photos or a shorter description.",upstream_error:"The AI service didn't respond. Check your connection and try again."}[e?.code]||"The AI couldn't finish that. Check your connection and try again.");
 function busyBtn(btn,on,label){ btn.disabled=on; btn.setAttribute("aria-busy",on?"true":"false"); if(label) btn.textContent=label; }
 $("#aiFill").onclick=()=>doFill();
 async function doFill(){
