@@ -278,6 +278,10 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .update-row{position:sticky;bottom:12px;margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 #go.pulse{box-shadow:0 0 0 0 color-mix(in srgb,var(--brand) 70%,transparent);animation:pulse 1.6s ease-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--brand) 65%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
+.pending{margin-top:10px}
+.pthumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.pthumbs img{width:72px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.pthumbs span{font-size:13px;color:var(--muted);padding:0 6px}
 /* always-visible progress, pinned to the bottom of the screen */
 .activity{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;max-width:min(680px,calc(100vw - 32px));
   background:#1d1830;border:1px solid var(--accent);border-radius:14px;padding:12px 16px;box-shadow:0 14px 40px rgba(0,0,0,.55);font-size:15px;font-weight:600}
@@ -360,7 +364,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
             <input type="file" id="autoDir" webkitdirectory multiple hidden>
           </div>
         </div>
-        <div class="status ok" id="pendingNote" hidden style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span id="pendingText"></span><button class="btn sm" id="pendingClear" type="button">Clear</button></div>
+        <div class="pending" id="pendingNote" hidden><div class="status ok" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0"><span id="pendingText"></span><button class="btn sm" id="pendingClear" type="button">Clear</button></div><div class="pthumbs" id="pendingThumbs"></div></div>
         <details class="mini lockable"><summary>Zillow, Airbnb or VRBO link won't import? Use the free Chrome Grabber</summary>
         <div class="grab">
           <div class="grab-ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 2.5v11l9-5.5z"/></svg></div>
@@ -1934,7 +1938,10 @@ function updatePending(){
   if(!PENDING.length){ box.hidden=true; $("#go").classList.remove("pulse"); return; }
   const zips=PENDING.filter(f=>/\.zip$/i.test(f.name)||f.type==="application/zip").length, vids=PENDING.filter(f=>/^video\//.test(f.type)||/\.(mp4|mov|m4v|webm)$/i.test(f.name)).length, pics=PENDING.length-zips-vids;
   const parts=[pics?`${pics} photo${pics>1?"s":""}`:"",vids?`${vids} video clip${vids>1?"s":""}`:"",zips?`${zips} ZIP${zips>1?"s":""}`:""].filter(Boolean).join(", ");
-  box.hidden=false; $("#pendingText").textContent=`\u2713 ${parts} added. Add more if you like, then press Make my video.`;
+  box.hidden=false; $("#pendingText").textContent=`${parts} added. Add more if you like, then press Make my video.`;
+  const th=$("#pendingThumbs"); if(th){ th.querySelectorAll("img").forEach(im=>URL.revokeObjectURL(im.src)); th.innerHTML="";
+    PENDING.filter(f=>/^image\/(jpeg|png|webp)/.test(f.type)||/\.(jpe?g|png|webp)$/i.test(f.name)).slice(0,24).forEach(f=>{ const im=document.createElement("img"); im.src=URL.createObjectURL(f); im.alt=""; th.appendChild(im); });
+    const more=PENDING.length-th.children.length; if(more>0){ const sp=document.createElement("span"); sp.textContent=zips&&!pics?"Photos inside the ZIP appear once you press Make my video":`+${more} more`; th.appendChild(sp); } }
   $("#go").classList.add("pulse");
 }
 dropZone($("#autoDrop"),files=>queueFiles(files));
@@ -2299,7 +2306,8 @@ async function renderAudioOffline(){
   buildAudio(oac,oac.destination,0,true);
   return await oac.startRendering();
 }
-async function exportWebCodecs(onProg){
+let blackRun=0;
+async function exportWebCodecs(onProg){ blackRun=0;
   const fps=S.o.fps; setFormat();
   const vcfg=await pickVideoCfg(fps); if(!vcfg||!window.Mp4Muxer) return null;
   let acfg=null, abuf=null;
@@ -2314,6 +2322,7 @@ async function exportWebCodecs(onProg){
     if(err) throw err;
     await syncClipsExact(i/fps);
     renderFrame(i/fps,.5/fps);
+    if(glOK&&i%(fps*2)===fps){ const sg=SEGS.find(s=>i/fps>=s.start&&i/fps<s.start+s.dur); if(sg&&sg.type==="photo"&&!sg.img.isVideo&&frameIsBlack()){ blackRun=(blackRun||0)+1; if(blackRun>=2) throw new Error("black-frames"); } else blackRun=0; }
     const vf=new VideoFrame(cv,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});
     ve.encode(vf,{keyFrame:i%(fps*2)===0}); vf.close();
     while(ve.encodeQueueSize>6) await new Promise(r=>setTimeout(r,2));
@@ -2345,8 +2354,20 @@ async function exportRealtime(onProg){
   return {blob:new Blob(chunks,{type:chunks[0]?.type||"video/"+ext}), ext, note:ext==="webm"?"webm":""};
 }
 $("#render").onclick=()=>renderVideo();
+// If the graphics card stops drawing (it happens on some computers under load), frames come out black.
+// Check a few real shots first; if they're black, switch to the backup 2D renderer instead of exporting a black video.
+const probeCv=mk(24,24);
+function frameIsBlack(){ const g=probeCv.getContext("2d",{willReadFrequently:true}); g.drawImage(cv,0,0,24,24); const d=g.getImageData(0,0,24,24).data, L=[];
+  for(let i=0;i<d.length;i+=4) L.push(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]); L.sort((a,b)=>a-b); return L[L.length>>1]<6; }
+function glLooksBroken(){
+  if(!glOK) return false; const shots=SEGS.filter(s=>s.type==="photo"&&!s.img.isVideo).slice(0,3); if(!shots.length) return false;
+  let black=0; for(const s of shots){ renderFrame(s.start+s.dur*.5,1/120); if(frameIsBlack()) black++; }
+  return black===shots.length;
+}
+function fallbackTo2D(){ glOK=false; console.warn("Graphics card returned black frames; using the 2D renderer."); }
 async function renderVideo(){
   if(busy) return false;
+  if(glLooksBroken()){ fallbackTo2D(); activity("Switched to backup rendering","Your graphics card stopped drawing frames, so this render uses a simpler method. It still works.","warn"); }
   if(!SEGS.length){ const st=$("#expStatus"); st.className="status warn"; st.textContent="Add at least one photo before rendering."; return false; }
   pause(); busy=true; lock(true); renderScale=1; $("#render").disabled=true; $("#renderBoth").disabled=true; $("#play").disabled=true; $("#bar").hidden=false; $("#barFill").style.width="0%";
   const st=$("#expStatus"); st.className="status"; st.textContent="Preparing…";
@@ -2356,7 +2377,9 @@ async function renderVideo(){
   let res=null, why="";
   // Safari and some phones can encode video but not audio: record in real time there so the music isn't lost
   const order = audioOn() && !(await pickAudioCfg()) ? [exportRealtime,exportWebCodecs] : [exportWebCodecs,exportRealtime];
-  for(const fn of order){ try{ res=await fn(onProg); }catch(e){ console.warn(fn.name,"failed",e); why=String(e&&e.message||e); res=null; } if(res) break; }
+  for(const fn of order){ try{ res=await fn(onProg); }catch(e){ console.warn(fn.name,"failed",e); why=String(e&&e.message||e); res=null;
+      if(why==="black-frames"){ fallbackTo2D(); onProg(0,"Your graphics card stopped drawing frames. Re-rendering with the backup method\u2026"); try{ res=await fn(onProg); }catch(e2){ why=String(e2&&e2.message||e2); res=null; } } }
+    if(res) break; }
   busy=false; renderScale=PREVIEW_SCALE; lock(false); $("#render").disabled=false; $("#renderBoth").disabled=bothRunning; $("#play").disabled=false; $("#bar").hidden=true;
   if(!res){ st.className="status bad"; st.textContent="This browser can't export video"+(why?` (${why.slice(0,80)})`:"")+". Use current Chrome or Edge on a computer, and keep the tab in front."; refresh(); return false; }
   if(!res.blob||res.blob.size<1000){ st.className="status bad"; st.textContent="The export came out empty. Keep this tab in front while it renders and try again."; refresh(); return false; }
@@ -2794,7 +2817,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
