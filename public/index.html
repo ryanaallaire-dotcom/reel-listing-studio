@@ -278,6 +278,10 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .update-row{position:sticky;bottom:12px;margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 #go.pulse{box-shadow:0 0 0 0 color-mix(in srgb,var(--brand) 70%,transparent);animation:pulse 1.6s ease-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--brand) 65%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
+.report{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.report ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px;font-size:14px}
+.report li{display:flex;gap:8px;align-items:baseline}
+.report .ok{color:var(--ok)} .report .low{color:var(--warn)} .report .bad{color:var(--bad)}
 .pending{margin-top:10px}
 .pthumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
 .pthumbs img{width:72px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
@@ -396,7 +400,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
             <small class="small" id="paceHint" style="display:block;margin-top:6px"></small>
           </div>
           <div class="f clips-only" hidden><span>AI motion</span>
-            <div class="seg" role="group" aria-label="AI motion clips" id="clipSeg"><button data-v="0">Off</button><button data-v="4">Top 4 shots</button><button data-v="6">Top 6 shots</button><button data-v="99">Every shot</button></div>
+            <div class="seg" role="group" aria-label="AI motion clips" id="clipSeg"><button data-v="0">Off</button><button data-v="99">Every shot (recommended)</button><button data-v="6">Top 6 only</button></div>
           </div>
         </div>
         <div class="brand-mini lockable" id="brandMini">
@@ -428,6 +432,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         <div class="results" id="heroResults" hidden>
           <h3 class="wz"><span>✓</span>Your video is ready</h3>
           <div id="heroRenders"></div>
+          <div class="report" id="shotReport" hidden></div>
           <p class="small" style="margin:10px 0 0">Want to change something? Open <b>Fine-tune</b> below (reorder shots, edit text, branding, style, music), then press <b>Update my video</b>.</p>
         </div>
       </div>
@@ -678,25 +683,25 @@ const MAX_PHOTOS=300, MAX_ZIP=2.5e9;
 const S={
   photos:[], head:null, sampleDetails:true, raw:[], left:[], track:null, trackName:"",
   d:{...SAMPLE_D},
-  o:{target:"social", brand:"branded", brandEvery:true, pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:4}
+  o:{target:"social", brand:"branded", brandEvery:true, pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:99}
 };
 try{
   const saved=JSON.parse(localStorage.getItem("lr-draft-3")||"null");
   if(saved&&saved.d){ S.d={...EMPTY_D,...saved.d}; S.o={...S.o,...saved.o};
     if(!saved.o||!saved.o.v6){ S.o.tpl="walk"; S.o.dur=1.6; S.o.stats=false; S.o.frame="fill"; }
     if(!saved.o||!saved.o.v8){ S.o.pace="auto"; }
-    S.o.autoRender=true; if(!saved.o||!saved.o.target) applyTarget(S.o.brand==="mls"?"mls":S.o.fmt==="16:9"?"youtube":"social"); S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
+    S.o.autoRender=true; if(!saved.o||!saved.o.v9){ if(S.o.clips>0) S.o.clips=99; } if(!saved.o||!saved.o.target) applyTarget(S.o.brand==="mls"?"mls":S.o.fmt==="16:9"?"youtube":"social"); S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
 }catch(e){}
 (function validateSaved(){
-  const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:4,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:99,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
+  const ok={target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v9:v=>true,v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
   for(const k in EMPTY_D){ if(k==="eho") S.d.eho=S.d.eho!==false; else S.d[k]=typeof S.d[k]==="string"?S.d[k].slice(0,500):""; }
   if(!STATUS[S.d.type]) S.d.type="sale";
 })();
-function persist(){ S.o.v5=true; S.o.v6=true; S.o.v7=true; S.o.v8=true; try{ localStorage.setItem("lr-draft-3",JSON.stringify({d:S.d,o:S.o,sample:S.sampleDetails,paste:($("#paste")?.value||"").slice(0,40000),tab:TAB_ID})); }catch(e){} }
+function persist(){ S.o.v5=true; S.o.v6=true; S.o.v7=true; S.o.v8=true; S.o.v9=true; try{ localStorage.setItem("lr-draft-3",JSON.stringify({d:S.d,o:S.o,sample:S.sampleDetails,paste:($("#paste")?.value||"").slice(0,40000),tab:TAB_ID})); }catch(e){} }
 const TAB_ID=Math.random().toString(36).slice(2);
 /* last session's photos survive a refresh (this browser only) */
 const IDB={
@@ -2625,10 +2630,10 @@ function cropForClip(p){
   const c=mk(sw*sc,sh*sc); c.getContext("2d").drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height);
   return c.toDataURL("image/jpeg",.9);
 }
-async function clipOne(p,onState){
+async function clipOne(p,onState,retry){
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
   const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["rpan","rtilt","rdiag","truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"rpan";
-  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[]})});
+  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[],retry:!!retry})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"The AI video service couldn't start.");
   const t0=Date.now();
   for(;;){
@@ -2642,22 +2647,67 @@ async function clipOne(p,onState){
   }
   const v=await fetch(`/api/clips/${j.id}/video`,{headers}); if(!v.ok) throw new Error("Couldn't download the AI clip.");
   const blob=await v.blob();
-  return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,live:p.live,aiClip:true});
+  return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,live:p.live,aiClip:true,srcPhoto:p});
 }
+function renderReport(){
+  const box=$("#shotReport"); if(!box) return; if(!CLIP_REPORT.length){ box.hidden=true; return; }
+  const good=CLIP_REPORT.filter(r=>r.status==="ok").length, weak=CLIP_REPORT.filter(r=>r.status!=="ok");
+  const stills=S.photos.filter(p=>!p.isVideo&&!p.sample).length;
+  box.hidden=false;
+  box.innerHTML=`<b>AI motion: ${good} of ${CLIP_REPORT.length} shots look right</b>${stills&&S.o.clips>0?`<div class="small">${stills} shot${stills>1?"s use":" uses"} camera moves instead of AI footage.</div>`:""}<ul></ul>${weak.length?`<div class="row" style="margin-top:10px;gap:10px"><button class="btn primary" id="retryWeak">Re-make ${weak.length} shot${weak.length>1?"s":""} and update the video</button><span class="small">Uses ${weak.length} AI credit${weak.length>1?"s":""}.</span></div>`:""}`;
+  const ul=box.querySelector("ul");
+  CLIP_REPORT.forEach(r=>{ const li=document.createElement("li"); const icon=r.status==="ok"?"\u2713":r.status==="low"?"!":"\u2715";
+    li.innerHTML=`<span class="${r.status==="ok"?"ok":r.status==="low"?"low":"bad"}">${icon}</span><span></span>`;
+    li.lastChild.textContent=r.name+(r.status==="ok"?(r.remade?": moving (re-made once)":": moving"):r.status==="low"?": barely moves, even after a re-make":`: no AI clip (${String(r.reason||"").replace(/\s*The photo will stay as a still shot\.?/,"").replace(/\.$/,"")})`);
+    ul.appendChild(li); });
+  const rb=$("#retryWeak"); if(rb) rb.onclick=async ()=>{
+    if(building||busy) return; rb.disabled=true; lock(true);
+    const list=weak.map(r=>r.photo.srcPhoto&&!S.photos.includes(r.photo)?r.photo.srcPhoto:r.photo).map(p=>p.srcPhoto||p).filter(Boolean);
+    // put the original photos back for the weak shots so they can be animated again
+    weak.forEach(r=>{ if(r.photo.isVideo&&r.photo.srcPhoto){ const i=S.photos.indexOf(r.photo); if(i>=0) S.photos[i]=r.photo.srcPhoto; } });
+    try{ await makeClips(list.length,(d,n,note)=>activity(`Re-making AI shots \u00b7 ${d} of ${n} done\u2026`,note?`Quality check: ${note}`:"Takes 2\u20135 minutes."),list); renderReport(); build(); await renderForTarget(false); }
+    finally{ lock(false); }
+  };
+}
+// How much a clip actually moves: average pixel change between early, middle and late frames (0-255 scale).
+// A real camera move scores well above 2; a near-frozen clip scores under 1.5.
+async function motionScore(vp){
+  const v=vp.video; if(!v||!isFinite(v.duration)) return 99;
+  const c=mk(64,Math.max(8,Math.round(64*v.videoHeight/v.videoWidth))), g=c.getContext("2d",{willReadFrequently:true}); const frames=[];
+  for(const f of [.12,.5,.88]){ await seekTo(v,v.duration*f); g.drawImage(clipFrame(vp),0,0,c.width,c.height); const d=g.getImageData(0,0,c.width,c.height).data, a=new Float32Array(d.length/4);
+    for(let i=0;i<a.length;i++) a[i]=.2126*d[i*4]+.7152*d[i*4+1]+.0722*d[i*4+2]; frames.push(a); }
+  const diff=(a,b)=>{ let t=0; for(let i=0;i<a.length;i++) t+=Math.abs(a[i]-b[i]); return t/a.length; };
+  await seekTo(v,vp.inPoint||0);
+  return (diff(frames[0],frames[1])+diff(frames[1],frames[2]))/2;
+}
+const MOTION_MIN=1.5;
+let CLIP_REPORT=[];   // shot-by-shot result of the last AI motion run
 // things in a photo that move in real life: the AI clip brings them to life (fans spin, fires flicker, water ripples)
 const LIVE_KEYS=["ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains","trees","sky"];
 const liveScore=p=>(p.live||[]).reduce((a,k)=>a+({ceiling_fan:3,fireplace:3,pool:2,hot_tub:2,faucet:2,water:2,trees:1,curtains:1,sky:.5}[k]||0),0);
-async function makeClips(n,onProg){
+async function makeClips(n,onProg,only){
   if(IMPORT&&IMPORT.accounts){ if(!signedIn()) return {ok:0,fail:0,err:"",skipped:"signin"}; n=Math.min(n,credits()); if(n<=0) return {ok:0,fail:0,err:"",skipped:"credits"}; }
   // spend AI motion where it shows most: shots with a fan, fire or water first, then the best of the rest
   const pool=S.photos.filter(p=>!p.isVideo&&!p.sample);
-  const cands=[...pool.filter(p=>liveScore(p)>=2).sort((a,b)=>liveScore(b)-liveScore(a)),...pool.filter(p=>liveScore(p)<2)].slice(0,n);
+  const cands=only?only.filter(p=>S.photos.includes(p)).slice(0,n):[...pool.filter(p=>liveScore(p)>=2).sort((a,b)=>liveScore(b)-liveScore(a)),...pool.filter(p=>liveScore(p)<2)].slice(0,n);
+  if(!only) CLIP_REPORT=[];
   if(!cands.length) return {ok:0,fail:0,err:""};
   let done=0, ok=0, fail=0, err=""; onProg&&onProg(0,cands.length);
   const queue=[...cands];
   const worker=async()=>{ while(queue.length){ const p=queue.shift();
-    try{ const vp=await clipOne(p); const i=S.photos.indexOf(p); if(i>=0){ S.photos[i]=vp; ok++; build(); renderPhotos(); refresh(); } }
-    catch(e){ fail++; err=e.message; }
+    const name=p.caption||`Shot ${S.photos.indexOf(p)+1}`; let vp=null, why="", remade=false;
+    try{ vp=await clipOne(p); }catch(e){ why=e.message; }
+    // quality check: a clip that barely moves (or failed) gets one automatic re-make with stronger instructions
+    let score=vp?await motionScore(vp).catch(()=>99):0;
+    if((!vp||score<MOTION_MIN)&&!/credit|key|sign in|session/i.test(why)&&(IMPORT&&IMPORT.accounts?credits()>0:true)){
+      remade=true; onProg&&onProg(done,cands.length,`re-making \u201c${name}\u201d`);
+      try{ const v2=await clipOne(p,null,true); const s2=await motionScore(v2).catch(()=>99); if(!vp||s2>score){ vp=v2; score=s2; why=""; } }catch(e){ if(!vp) why=e.message; }
+    }
+    const i=S.photos.indexOf(p);
+    if(vp&&i>=0){ S.photos[i]=vp; ok++; build(); renderPhotos(); refresh();
+      CLIP_REPORT=CLIP_REPORT.filter(r=>r.photo!==p&&r.photo.srcPhoto!==p).concat([{name,photo:vp,status:score<MOTION_MIN?"low":"ok",remade}]); }
+    else { fail++; err=why||"The AI clip failed."; p.aiFail=err;
+      CLIP_REPORT=CLIP_REPORT.filter(r=>r.photo!==p&&r.photo.srcPhoto!==p).concat([{name,photo:p,status:"failed",reason:err,remade}]); }
     onProg&&onProg(++done,cands.length); } };
   await Promise.all([worker(),worker(),worker()]);
   if(IMPORT&&IMPORT.accounts) loadMe();
@@ -2669,7 +2719,8 @@ $("#aiMotionBtn").onclick=async ()=>{
   if(IMPORT&&IMPORT.accounts&&!signedIn()){ busyBtn(btn,false,"Add AI motion again"); lock(false); openAuth("Sign in to use AI motion.","login"); return; }
   if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion again"); lock(false); openPlans("You're out of AI credits. Pick a plan or add credits to use AI motion."); return; }
   activity("Making AI motion clips\u2026","AI motion takes 2\u20135 minutes. You can keep this tab open and wait.");
-  try{ const r=await makeClips(S.o.clips||4,(d,n)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,"AI motion takes 2\u20135 minutes. You can keep this tab open and wait."); });
+  try{ const r=await makeClips(S.o.clips||99,(d,n,note)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,note?`Quality check: ${note}`:"AI motion takes 2\u20135 minutes. You can keep this tab open and wait."); });
+    renderReport();
     activity(r.ok?`AI motion added to ${r.ok} shot${r.ok>1?"s":""} \u2713`:"AI motion didn't work", r.ok?(r.fail?`${r.fail} didn't work: ${r.err}`:"Press Update my video to render it."):(r.err||"Add your own photos first."), r.ok&&!r.fail?"done":"warn");
     st.className=r.fail?"status warn":"status ok"; st.textContent=r.ok?`Added AI motion to ${r.ok} shot${r.ok>1?"s":""}.`+(r.fail?` ${r.fail} didn't work and stay as stills: ${r.err}`:""):(r.fail?`The AI clips didn't work: ${r.err}`:"Add your own photos first."); }
   finally{ lock(false); busyBtn(btn,false,"Add AI motion again"); }
@@ -2729,7 +2780,7 @@ async function autoBuild(files){
 
     if(IMPORT&&IMPORT.clips&&S.o.clips>0&&S.photos.some(p=>!p.isVideo&&!p.sample)){
       stage("clips","on","starting");
-      const r=await makeClips(S.o.clips,(d,n)=>stage("clips","on",`${d}/${n}`));
+      const r=await makeClips(S.o.clips,(d,n,note)=>{ stage("clips","on",`${d}/${n}`); if(note) activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,`Quality check: ${note}`); });
       stage("clips",r.ok?"done":"skip",r.ok?`${r.ok} clips`:r.skipped==="signin"?"sign in":r.skipped==="credits"?"no credits":"stills");
       if(!r.fail&&!r.skipped&&aiWhy){ st.className="status warn"; st.textContent="AI labels didn't run: "+aiWhy; }
       if(r.skipped){ st.className="status"; st.textContent=r.skipped==="signin"?"Sign in and pick a plan to add AI motion. This video uses free 3D camera moves.":"You're out of AI credits, so this video uses free 3D camera moves. Open Plans to add credits."; }
@@ -2742,6 +2793,7 @@ async function autoBuild(files){
       const ok=await renderForTarget(true); renderProgress=null;
       stage("render",ok?"done":"",ok?"ready":"");
       st.className=ok&&!warn?"status ok":"status warn"; st.textContent=ok?("Done! Your video is ready below."+(warn?" Note: "+warn:"")):"The video couldn't render here. See the message by the preview.";
+      renderReport();
       if(ok) setTimeout(()=>$("#heroResults").scrollIntoView({behavior:"smooth",block:"center"}),150);
     } else { stage("render","skip"); st.className="status ok"; st.textContent="Shots are ready. Press play to preview, then Render video."; }
   }catch(e){ console.error(e); st.className="status bad"; st.textContent="The build stopped partway. Try again; if it happens again, use fewer photos or remove any unusual files."; }
@@ -2817,7 +2869,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={clipReport:()=>CLIP_REPORT.map(r=>({name:r.name,status:r.status,remade:r.remade,reason:r.reason})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");

@@ -243,6 +243,9 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   await new Promise(r => setTimeout(r, 200));
   const lp = falCalls[0]?.body.prompt || "";
   check("Clips: fans spin and fires flicker when the photo has them (unknown items ignored)", /fan blades turn/.test(lp) && /flames flicker/.test(lp) && /nothing new appears/.test(lp) && !/rocket/.test(lp) && !/(^|, )flicker,/.test(falCalls[0]?.body.negative_prompt || ""), lp.slice(-200));
+  falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", retry: true }, { headers: {} });
+  await new Promise(r => setTimeout(r, 200));
+  check("Clips: a re-make asks for clearly visible movement", /clearly visible from the first second/.test(falCalls[0]?.body.prompt || ""));
   falCalls.length = 0;
   await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", live: ["trees", "sky", "ceiling_fan"] }, { headers: {} });
   await api(Gp, "/api/clips", { image: jpg, kind: "ext", move: "rpan", live: ["trees", "sky", "pool"] }, { headers: {} });
