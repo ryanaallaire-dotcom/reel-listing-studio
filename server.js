@@ -144,7 +144,7 @@ export const server = http.createServer(async (req, res) => {
         let id;
         const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
         const publicBase = process.env.PUBLIC_URL || (process.env.TRUST_PROXY === "1" && /^[\w.-]+(:\d+)?$/.test(host) ? `${String(req.headers["x-forwarded-proto"] || "http").split(",")[0]}://${host}` : "");
-        try { id = startClip(body, owner, { publicBase, onFail: jid => acct.refund(user.id, charge, "clip_refund", jid) }); }
+        try { id = startClip(body, owner, { publicBase, admin: acct.isAdmin(user), onFail: jid => acct.refund(user.id, charge, "clip_refund", jid) }); }
         catch (e) { acct.refund(user.id, charge, "clip_refund", "start-" + crypto.randomUUID()); throw e; }
         return json(res, 200, { id, credits: acct.publicUser(acct.getUser(user.id)).credits });
       }

@@ -243,6 +243,14 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   await new Promise(r => setTimeout(r, 200));
   const lp = falCalls[0]?.body.prompt || "";
   check("Clips: fans spin and fires flicker when the photo has them (unknown items ignored)", /fan blades turn/.test(lp) && /flames flicker/.test(lp) && /nothing new appears/.test(lp) && !/rocket/.test(lp) && !/(^|, )flicker,/.test(falCalls[0]?.body.negative_prompt || ""), lp.slice(-200));
+  falCalls.length = 0;
+  await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", movers: "The two white ceiling fans on the ceiling spin steadily.<script>", model: "kling26" }, { headers: {} });
+  await signIn(Gp, "viewer@test.com", "v"); await postAs(Gp, "default", "/api/account/admin", { email: "viewer@test.com", credits: 1 });
+  await postAs(Gp, "v", "/api/clips", { image: jpg, kind: "int", move: "rpan", model: "kling26" });
+  await new Promise(r => setTimeout(r, 250));
+  const mp = falCalls[0]?.body.prompt || "";
+  check("Clips: the photo's own 'what moves' sentence leads the prompt (cleaned), camera stays gentle", mp.startsWith("The two white ceiling fans on the ceiling spin steadily") && !/script|[<>]/.test(mp) && /moves only a little/.test(mp), mp.slice(0, 120));
+  check("Clips: only the owner can switch models", /v2\.6\/pro/.test(falCalls[0]?.path || "") && falCalls[0]?.body.generate_audio === false && /v2\.5-turbo/.test(falCalls[1]?.path || ""), `${falCalls[0]?.path} | ${falCalls[1]?.path}`);
   falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", retry: true }, { headers: {} });
   await new Promise(r => setTimeout(r, 200));
   check("Clips: a re-make asks for clearly visible movement", /clearly visible from the first second/.test(falCalls[0]?.body.prompt || ""));

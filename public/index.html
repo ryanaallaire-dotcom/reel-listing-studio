@@ -418,6 +418,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         </details>
         <label class="toggle" hidden><input type="checkbox" id="autoRender"> Render the video when done</label>
         <h3 class="wz"><span>3</span>Make it</h3>
+        <label class="f lockable" id="modelRow" hidden style="margin-top:10px"><span>AI video model (owner test)</span><select id="aiModel"><option value="">Kling 2.5 Turbo Pro (default)</option><option value="kling26">Kling 2.6 Pro</option><option value="kling3">Kling 3.0 Pro</option></select></label>
         <p class="small clips-only" id="clipNote" hidden></p>
         <div class="row"><button class="btn primary big" id="go">Make my video</button><span class="status" id="goStatus" aria-live="polite"></span></div>
         <ol class="pipe" id="pipe" hidden>
@@ -694,7 +695,7 @@ try{
 }catch(e){}
 (function validateSaved(){
   const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:99,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v9:v=>true,v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const ok={aiModel:v=>["","kling26","kling3"].includes(v),target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v9:v=>true,v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
@@ -712,7 +713,7 @@ const IDB={
 };
 let saveTimer=0, sessionReady=false;
 function saveSession(){ if(!sessionReady) return; clearTimeout(saveTimer); saveTimer=setTimeout(async ()=>{
-  const items=S.photos.filter(p=>!p.sample&&(p.origBlob||(p.isVideo&&p.blobV&&p.blobV.size<200e6))).map(p=>p.isVideo?{video:true,blob:p.blobV,caption:p.caption,kind:p.kind}:{blob:p.origBlob,caption:p.caption,kind:p.kind,useFixed:p.useFixed,live:p.live||[]});
+  const items=S.photos.filter(p=>!p.sample&&(p.origBlob||(p.isVideo&&p.blobV&&p.blobV.size<200e6))).map(p=>p.isVideo?{video:true,blob:p.blobV,caption:p.caption,kind:p.kind}:{blob:p.origBlob,caption:p.caption,kind:p.kind,useFixed:p.useFixed,live:p.live||[],movers:p.movers||""});
   let head=null; if(S.head) head=await new Promise(r=>S.head.toBlob(r,"image/jpeg",.9));
   let logo=null; if(S.logo) logo=await new Promise(r=>S.logo.toBlob(r,"image/png"));
   await IDB.set("session",{v:1,items,head,logo,track:S.trackBlob?{blob:S.trackBlob,name:S.trackName}:null,tab:TAB_ID});
@@ -2034,6 +2035,7 @@ function renderAcct(){
   $("#creditPill").hidden=!u; if(u) $("#creditNum").textContent=u.admin?"∞":u.credits;
   $("#plansBtn").textContent=u&&u.tier!=="free"?u.tierLabel:"Plans";
   if(IMPORT&&IMPORT.ai&&!window.claude){ if(u){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); } }
+  const mr=$("#modelRow"); if(mr){ mr.hidden=!(u&&u.admin&&IMPORT&&IMPORT.clips); $("#aiModel").value=S.o.aiModel||""; }
   syncClipNote(); if(typeof refresh==="function"&&SEGS.length) refresh();
 }
 function dlgOpen(d){ try{ d.showModal(); }catch(e){ d.setAttribute("open",""); } }
@@ -2457,6 +2459,7 @@ const renderForTarget=fromPipeline=>S.o.target==="all"?renderSetRun(fromPipeline
 $$("#targetSeg button").forEach(b=>b.onclick=()=>{ if(busy||building) return; if(playing) pause(); applyTarget(b.dataset.v); syncStyle(); build(); renderPhotos(); refresh(); persist(); });
 $("#styleSel").onchange=e=>{ if(busy||building){ e.target.value=S.o.tpl; return; } setTpl(e.target.value); };
 $("#quickLogo").onclick=()=>$("#logoFile").click();
+$("#aiModel").onchange=e=>{ S.o.aiModel=e.target.value; persist(); };
 $("#updateBtn").onclick=async ()=>{
   if(busy||building) return; const st=$("#updateStatus"); st.className="status"; st.textContent="Rendering your updated video\u2026";
   build(); const ok=await renderForTarget(false);
@@ -2533,15 +2536,24 @@ async function doLabel(){
 2) Classify each: "ext" (exterior, yard, pool, view, aerial), "int" (a room), or "detail" (close-up of a fixture, finish or decor).
 3) Order them like a home tour film: strongest exterior hero first, then flow through living, kitchen, bedrooms and baths, best view or outdoor living near the end.
 4) For each photo, list which of these are clearly visible (only if you're sure): "ceiling_fan", "fireplace", "pool", "hot_tub", "faucet" (a kitchen or bathroom faucet clearly in view), "water" (lake, ocean, pond, fountain), "curtains", "trees" (trees or palms that are part of an outdoor scene), "sky".
-Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|"detail", ...],"live":[["ceiling_fan","fireplace"], ...],"order":[photo numbers in recommended order]}`,{images:P.map(p=>p.aiBlob),modelTier:"default"});
+5) For each photo, write ONE short sentence (max 20 words) for a video animator saying exactly what visibly moves in real life and where it is, e.g. "The two white ceiling fans on the ceiling spin steadily." or "Flames flicker in the stone fireplace on the left." Only ceiling fans, fireplaces, running faucets, pools, hot tubs, water, curtains; for outdoor photos also trees and clouds. Never mention trees seen through a window. Use "" if nothing moves.
+Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|"detail", ...],"live":[["ceiling_fan","fireplace"], ...],"movers":["sentence for photo 1", ...],"order":[photo numbers in recommended order]}`,{images:P.map(p=>p.aiBlob),modelTier:"default"});
     if(!r||typeof r!=="object"||Array.isArray(r)) throw {code:"invalid_json"};
     let used=0;
     if(Array.isArray(r.labels)) P.forEach((p,i)=>{ const l=aStr(r.labels[i],40); if(l){ p.caption=l; used++; } });
     if(Array.isArray(r.kinds)) P.forEach((p,i)=>{ const k=r.kinds[i]; if(["ext","int","detail"].includes(k)) p.kind=k; });
     if(Array.isArray(r.live)) P.forEach((p,i)=>{ const L=Array.isArray(r.live[i])?r.live[i]:[]; p.live=[...new Set(L.filter(x=>LIVE_KEYS.includes(x)))]; });
+    if(Array.isArray(r.movers)) P.forEach((p,i)=>{ p.movers=cleanMovers(r.movers[i]); });
     if(!used && !Array.isArray(r.order)) throw {code:"invalid_json"};
     if(Array.isArray(r.order)){ const idx=r.order.map(n=>Math.round(+n)-1).filter((n,i,a)=>n>=0&&n<P.length&&a.indexOf(n)===i);
       if(idx.length){ const used=new Set(idx); const ordered=[...idx.map(i=>P[i]),...P.filter((_,i)=>!used.has(i))]; S.photos=[...ordered,...S.photos.slice(P.length)]; } }
+    const restP=S.photos.filter(p=>!P.includes(p)&&!p.isVideo&&!p.sample);
+    for(let k=0;k<restP.length;k+=max){ const B=restP.slice(k,k+max); st.textContent=`Labeling more photos: ${Math.min(k+max,restP.length)} of ${restP.length}\u2026`;
+      try{ const r2=await SAMPLE.json(`These are ${B.length} more photos from the same ${S.d.type==="stay"?"vacation rental":"listing"}, numbered 1 to ${B.length}.
+For each: a 2-4 word Title Case label; "ext"|"int"|"detail"; which of "ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains","trees","sky" are clearly visible (trees/sky only for outdoor photos); and ONE short sentence (max 20 words) saying exactly what visibly moves and where (only fans, fireplaces, faucets, pools, hot tubs, water, curtains, and for outdoor photos trees and clouds; never trees seen through a window; "" if nothing).
+Reply with only JSON: {"labels":[...],"kinds":[...],"live":[[...], ...],"movers":[...]}`,{images:B.map(p=>p.aiBlob),modelTier:"default"});
+        if(r2&&typeof r2==="object"){ B.forEach((p,i)=>{ const l=aStr(r2.labels?.[i],40); if(l) p.caption=l; const kd=r2.kinds?.[i]; if(["ext","int","detail"].includes(kd)) p.kind=kd;
+          const L=Array.isArray(r2.live?.[i])?r2.live[i]:[]; p.live=[...new Set(L.filter(x=>LIVE_KEYS.includes(x)))]; p.movers=cleanMovers(r2.movers?.[i]); }); } }catch(e){ break; } }
     build(); renderPhotos(); refresh(); st.className="status ok"; st.textContent="Labeled, classified and ordered into a tour. Tweak anything you like.";
     busyBtn(btn,false,"Label & order with AI"); return true;
   }catch(e){ st.className="status bad"; st.textContent=aiErr(e); }
@@ -2633,7 +2645,7 @@ function cropForClip(p){
 async function clipOne(p,onState,retry){
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
   const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["rpan","rtilt","rdiag","truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"rpan";
-  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[],retry:!!retry})});
+  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[],movers:p.movers||"",retry:!!retry,model:S.o.aiModel||""})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"The AI video service couldn't start.");
   const t0=Date.now();
   for(;;){
@@ -2647,7 +2659,7 @@ async function clipOne(p,onState,retry){
   }
   const v=await fetch(`/api/clips/${j.id}/video`,{headers}); if(!v.ok) throw new Error("Couldn't download the AI clip.");
   const blob=await v.blob();
-  return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,live:p.live,aiClip:true,srcPhoto:p});
+  return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,live:p.live,movers:p.movers,aiClip:true,srcPhoto:p});
 }
 function renderReport(){
   const box=$("#shotReport"); if(!box) return; if(!CLIP_REPORT.length){ box.hidden=true; return; }
@@ -2682,6 +2694,8 @@ async function motionScore(vp){
 }
 const MOTION_MIN=1.5;
 let CLIP_REPORT=[];   // shot-by-shot result of the last AI motion run
+// the labeler's "what moves" sentence: plain words only, short
+const cleanMovers=x=>typeof x==="string"?x.replace(/<[^>]*>?/g," ").replace(/[^\p{L}\p{N}\s,.'\-]/gu,"").replace(/\s+/g," ").trim().slice(0,140):"";
 // things in a photo that move in real life: the AI clip brings them to life (fans spin, fires flicker, water ripples)
 const LIVE_KEYS=["ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains","trees","sky"];
 const liveScore=p=>(p.live||[]).reduce((a,k)=>a+({ceiling_fan:3,fireplace:3,pool:2,hot_tub:2,faucet:2,water:2,trees:1,curtains:1,sky:.5}[k]||0),0);
@@ -2819,7 +2833,7 @@ async function restoreSession(){
     if(Array.isArray(sess.items)&&sess.items.length){
       lock(true); st.className="status"; const out=[];
       for(let i=0;i<sess.items.length;i++){ const it=sess.items[i]; st.textContent=`Restoring your last session: ${i+1} of ${sess.items.length}…`;
-        try{ const p=it.video?await makeVideoPhoto(it.blob,{caption:aStr(it.caption,40),kind:["ext","int","detail"].includes(it.kind)?it.kind:"int"}):await materialize({blob:it.blob,kind:it.kind},it.useFixed===false?"off":S.o.enh,{live:Array.isArray(it.live)?it.live.filter(x=>LIVE_KEYS.includes(x)):[],caption:aStr(it.caption,40),kind:["ext","int","detail"].includes(it.kind)?it.kind:"int"}); out.push(p); }catch(e){} }
+        try{ const p=it.video?await makeVideoPhoto(it.blob,{caption:aStr(it.caption,40),kind:["ext","int","detail"].includes(it.kind)?it.kind:"int"}):await materialize({blob:it.blob,kind:it.kind},it.useFixed===false?"off":S.o.enh,{live:Array.isArray(it.live)?it.live.filter(x=>LIVE_KEYS.includes(x)):[],movers:cleanMovers(it.movers),caption:aStr(it.caption,40),kind:["ext","int","detail"].includes(it.kind)?it.kind:"int"}); out.push(p); }catch(e){} }
       if(out.length){ S.photos=out; build(); renderPhotos(); refresh(); queueDepth(); st.className="status ok"; st.textContent=`Restored your last session (${out.length} photos).`; }
       else st.textContent="";
       lock(false);
