@@ -255,6 +255,13 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   await new Promise(r => setTimeout(r, 200));
   check("Clips: a re-make asks for clearly visible movement", /clearly visible from the first second/.test(falCalls[0]?.body.prompt || ""));
   falCalls.length = 0;
+  await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", live: ["ceiling_fan"], movers: "The ceiling fan spins.", lockCam: true }, { headers: {} });
+  await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", live: ["ceiling_fan"], lockCam: true, retry: true }, { headers: {} });
+  await new Promise(r => setTimeout(r, 250));
+  const lk = falCalls[0]?.body || {}, lk2 = falCalls[1]?.body || {};
+  check("Clips: fan shots lock the AI camera so it only animates the fan (our engine adds the pan)", /locked off on a tripod/.test(lk.prompt || "") && !/sideways/.test(lk.prompt || "") && /camera pan/.test(lk.negative_prompt || "") && /fan blades turn/.test(lk.prompt || ""), (lk.prompt || "").slice(0, 160));
+  check("Clips: a locked-camera re-make insists the fan visibly spins", /fan blades must be clearly spinning/.test(lk2.prompt || "") && !/camera keeps moving/.test(lk2.prompt || ""));
+  falCalls.length = 0;
   await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", live: ["trees", "sky", "ceiling_fan"] }, { headers: {} });
   await api(Gp, "/api/clips", { image: jpg, kind: "ext", move: "rpan", live: ["trees", "sky", "pool"] }, { headers: {} });
   await new Promise(r => setTimeout(r, 250));
