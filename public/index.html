@@ -285,6 +285,16 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .pending{margin-top:10px}
 .pthumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
 .pthumbs img{width:72px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.pthumbs{gap:8px}
+.pt{position:relative;width:112px;height:84px;border-radius:8px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .12s}
+.pt img{width:100%;height:100%;border-radius:8px;pointer-events:none;display:block}
+.pt .n{position:absolute;left:5px;top:5px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:rgba(0,0,0,.72);color:#fff;font:600 12px/20px system-ui;text-align:center}
+.pt .x{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:13px;border:0;background:rgba(0,0,0,.75);color:#fff;font:700 15px/26px system-ui;cursor:pointer;padding:0}
+.pt .x:hover{background:#c0392b}
+.pt.drag{opacity:.9;transform:scale(1.06);z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.5);cursor:grabbing}
+.pt.over{outline:3px solid var(--accent,#8b7cf6);outline-offset:2px}
+.pt .vid{position:absolute;left:0;right:0;bottom:0;height:84px;border-radius:8px;background:#222;color:#ddd;display:flex;align-items:center;justify-content:center;font:600 12px system-ui}
+.pthint{flex-basis:100%;font-size:13px;color:var(--muted)}
 .pthumbs span{font-size:13px;color:var(--muted);padding:0 6px}
 /* always-visible progress, pinned to the bottom of the screen */
 .activity{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;max-width:min(680px,calc(100vw - 32px));
@@ -829,7 +839,7 @@ async function expand(list){
     else if(/^image\//.test(f.type)||IMG_RE.test(name)) out.push({blob:f, name:f.webkitRelativePath||name});
     else if(/^video\//.test(f.type)||VID_RE.test(name)){ if(f.size<=MAX_CLIP) out.push({blob:f, name:f.webkitRelativePath||name, video:true}); }
   }
-  out.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:"base"}));
+  if(!BUILD_USER_ORDER) out.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:"base"}));   // keep the order the user dragged
   const capped=out.length>MAX_PHOTOS;
   return {items:out.slice(0,MAX_PHOTOS), zipFail, listing, capped, total:out.length};
 }
@@ -943,7 +953,7 @@ function selectBest(raw,N){
   const chosen=new Set([...keepClips,...pool.slice(0,N)]); pool.slice(N).forEach(p=>why.set(p,"Lower quality"));
   let use=raw.filter(p=>chosen.has(p));
   // open on the best exterior if the first shot isn't one
-  const firstExt=use.find(p=>p.kind==="ext"); if(firstExt && use[0]!==firstExt){ use=[firstExt,...use.filter(p=>p!==firstExt)]; }
+  const firstExt=use.find(p=>p.kind==="ext"); if(firstExt && use[0]!==firstExt && !BUILD_USER_ORDER){ use=[firstExt,...use.filter(p=>p!==firstExt)]; }
   return {use, left:raw.filter(p=>!chosen.has(p)).map(p=>({p,why:why.get(p)||"Not used"}))};
 }
 
@@ -1943,16 +1953,49 @@ function dropZone(el,handler){
 dropZone($("#drop"),addFiles);
 // Step 1 only collects files; nothing starts until Make my video
 let PENDING=[];
-function queueFiles(files){ if(!files||!files.length) return; if(building||busy){ return; } PENDING.push(...files); updatePending(); }
+function queueFiles(files){ if(!files||!files.length) return; if(building||busy){ return; } PENDING.push(...files);
+  if(!USER_ORDER) PENDING.sort((a,b)=>(a.name||"").localeCompare(b.name||"",undefined,{numeric:true,sensitivity:"base"}));
+  updatePending(); }
+// Queued photos: numbered in tour order, × removes one, drag to change the order (mouse or finger).
+let USER_ORDER=false, BUILD_USER_ORDER=false;
+const isImg=f=>/^image\/(jpeg|png|webp)/.test(f.type)||/\.(jpe?g|png|webp)$/i.test(f.name);
+const isVid=f=>/^video\//.test(f.type)||/\.(mp4|mov|m4v|webm)$/i.test(f.name);
+const thumbURL=new WeakMap(); const urlFor=f=>{ let u=thumbURL.get(f); if(!u){ u=URL.createObjectURL(f); thumbURL.set(f,u); } return u; };
+function renderPendingThumbs(th,zips,pics){
+  th.innerHTML="";
+  PENDING.forEach((f,i)=>{ if(!isImg(f)&&!isVid(f)) return;
+    const t=document.createElement("div"); t.className="pt"; t.dataset.i=i; t.title="Drag to change the order";
+    t.innerHTML=`${isImg(f)?`<img alt="">`:`<div class="vid">Video</div>`}<span class="n">${i+1}</span><button class="x" type="button" aria-label="Remove this photo" title="Remove">\u00d7</button>`;
+    if(isImg(f)) t.querySelector("img").src=urlFor(f);
+    t.querySelector(".x").onclick=e=>{ e.stopPropagation(); PENDING.splice(i,1); updatePending(); };
+    t.querySelector(".x").onpointerdown=e=>e.stopPropagation();
+    t.onpointerdown=e=>startThumbDrag(e,t,th);
+    th.appendChild(t); });
+  if(zips){ const sp=document.createElement("span"); sp.textContent="Photos inside the ZIP appear once you press Make my video"; th.appendChild(sp); }
+  if(th.querySelectorAll(".pt").length>1){ const h=document.createElement("div"); h.className="pthint"; h.textContent=USER_ORDER?"Your order will be kept: photo 1 opens the video. Drag to rearrange, \u00d7 removes one.":"Drag photos to set the order yourself (otherwise we pick the best tour order). \u00d7 removes one."; th.appendChild(h); }
+}
+function startThumbDrag(e,t,th){
+  if(e.button>0) return; e.preventDefault();
+  const from=+t.dataset.i, x0=e.clientX, y0=e.clientY; let moved=false, over=null;
+  t.setPointerCapture(e.pointerId);
+  const tiles=()=>[...th.querySelectorAll(".pt")];
+  const move=ev=>{ const dx=ev.clientX-x0, dy=ev.clientY-y0; if(!moved&&Math.hypot(dx,dy)<6) return; moved=true;
+    t.classList.add("drag"); t.style.transform=`translate(${dx}px,${dy}px) scale(1.06)`;
+    t.style.pointerEvents="none"; const el=document.elementFromPoint(ev.clientX,ev.clientY); t.style.pointerEvents="";
+    const tgt=el&&el.closest?el.closest(".pt"):null; tiles().forEach(x=>x.classList.toggle("over",x===tgt&&x!==t)); over=tgt&&tgt!==t?tgt:null; };
+  const end=()=>{ t.removeEventListener("pointermove",move); t.removeEventListener("pointerup",end); t.removeEventListener("pointercancel",end);
+    t.classList.remove("drag"); t.style.transform="";
+    if(moved&&over){ const to=+over.dataset.i; const [f]=PENDING.splice(from,1); PENDING.splice(to,0,f); USER_ORDER=true; }
+    updatePending(); };
+  t.addEventListener("pointermove",move); t.addEventListener("pointerup",end); t.addEventListener("pointercancel",end);
+}
 function updatePending(){
   const box=$("#pendingNote"); if(!box) return;
-  if(!PENDING.length){ box.hidden=true; $("#go").classList.remove("pulse"); return; }
+  if(!PENDING.length){ box.hidden=true; USER_ORDER=false; $("#go").classList.remove("pulse"); return; }
   const zips=PENDING.filter(f=>/\.zip$/i.test(f.name)||f.type==="application/zip").length, vids=PENDING.filter(f=>/^video\//.test(f.type)||/\.(mp4|mov|m4v|webm)$/i.test(f.name)).length, pics=PENDING.length-zips-vids;
   const parts=[pics?`${pics} photo${pics>1?"s":""}`:"",vids?`${vids} video clip${vids>1?"s":""}`:"",zips?`${zips} ZIP${zips>1?"s":""}`:""].filter(Boolean).join(", ");
   box.hidden=false; $("#pendingText").textContent=`${parts} added. Add more if you like, then press Make my video.`;
-  const th=$("#pendingThumbs"); if(th){ th.querySelectorAll("img").forEach(im=>URL.revokeObjectURL(im.src)); th.innerHTML="";
-    PENDING.filter(f=>/^image\/(jpeg|png|webp)/.test(f.type)||/\.(jpe?g|png|webp)$/i.test(f.name)).slice(0,24).forEach(f=>{ const im=document.createElement("img"); im.src=URL.createObjectURL(f); im.alt=""; th.appendChild(im); });
-    const more=PENDING.length-th.children.length; if(more>0){ const sp=document.createElement("span"); sp.textContent=zips&&!pics?"Photos inside the ZIP appear once you press Make my video":`+${more} more`; th.appendChild(sp); } }
+  const th=$("#pendingThumbs"); if(th) renderPendingThumbs(th,zips,pics);
   $("#go").classList.add("pulse");
 }
 dropZone($("#autoDrop"),files=>queueFiles(files));
@@ -2550,7 +2593,7 @@ Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|
     if(Array.isArray(r.live)) P.forEach((p,i)=>{ const L=Array.isArray(r.live[i])?r.live[i]:[]; p.live=[...new Set(L.filter(x=>LIVE_KEYS.includes(x)))]; });
     if(Array.isArray(r.movers)) P.forEach((p,i)=>{ p.movers=cleanMovers(r.movers[i]); });
     if(!used && !Array.isArray(r.order)) throw {code:"invalid_json"};
-    if(Array.isArray(r.order)){ const idx=r.order.map(n=>Math.round(+n)-1).filter((n,i,a)=>n>=0&&n<P.length&&a.indexOf(n)===i);
+    if(Array.isArray(r.order)&&!BUILD_USER_ORDER){ const idx=r.order.map(n=>Math.round(+n)-1).filter((n,i,a)=>n>=0&&n<P.length&&a.indexOf(n)===i);
       if(idx.length){ const used=new Set(idx); const ordered=[...idx.map(i=>P[i]),...P.filter((_,i)=>!used.has(i))]; S.photos=[...ordered,...S.photos.slice(P.length)]; } }
     const restP=S.photos.filter(p=>!P.includes(p)&&!p.isVideo&&!p.sample);
     for(let k=0;k<restP.length;k+=max){ const B=restP.slice(k,k+max); st.textContent=`Labeling more photos: ${Math.min(k+max,restP.length)} of ${restP.length}\u2026`;
@@ -2770,6 +2813,7 @@ const LIVE_KEYS=["ceiling_fan","fireplace","pool","hot_tub","faucet","water","cu
 const liveScore=p=>(p.live||[]).reduce((a,k)=>a+({ceiling_fan:3,fireplace:3,pool:2,hot_tub:2,faucet:2,water:2,trees:1,curtains:1,sky:.5}[k]||0),0);
 // The first shot sells the video. If its fan/fire/water didn't come out moving, open on a shot that did.
 function fixOpener(){
+  if(BUILD_USER_ORDER) return;   // the user picked the opening photo themselves
   const first=S.photos.findIndex(p=>!p.sample); if(first<0) return;
   const r0=CLIP_REPORT.find(r=>r.photo===S.photos[first]||r.photo.srcPhoto===S.photos[first]);
   if(!r0||r0.status==="ok") return;
@@ -2891,12 +2935,12 @@ async function autoBuild(files){
       if(ok) setTimeout(()=>$("#heroResults").scrollIntoView({behavior:"smooth",block:"center"}),150);
     } else { stage("render","skip"); st.className="status ok"; st.textContent="Shots are ready. Press play to preview, then Render video."; }
   }catch(e){ console.error(e); st.className="status bad"; st.textContent="The build stopped partway. Try again; if it happens again, use fewer photos or remove any unusual files."; }
-  finally{ building=false; go.disabled=false; lock(false);
+  finally{ building=false; BUILD_USER_ORDER=false; go.disabled=false; lock(false);
     const st2=$("#goStatus"); activity(st2.className.includes("ok")?"Your video is ready \u2713":"Finished with a note",st2.className.includes("ok")?"Scroll to \u201cYour video is ready\u201d to watch and save it.":st2.textContent,st2.className.includes("ok")?"done":"warn"); }
 }
 $("#pendingClear").onclick=()=>{ PENDING=[]; updatePending(); };
 $("#go").onclick=()=>{
-  if(PENDING.length){ const f=PENDING; PENDING=[]; updatePending(); return autoBuild(f); }
+  if(PENDING.length){ const f=PENDING, keep=USER_ORDER; PENDING=[]; updatePending(); BUILD_USER_ORDER=keep; return autoBuild(f); }
   const link=($("#url").value||"").trim(), hasOwn=S.raw.length||S.photos.some(p=>!p.sample);
   if(IMPORT&&link&&!hasOwn) return importFromLink();
   autoBuild(null);
@@ -2963,7 +3007,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={activityScore,boxMotion,clipReport:()=>CLIP_REPORT.map(r=>({check:r.photo.aiCheck||null,name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={get PENDING(){return PENDING;},activityScore,boxMotion,clipReport:()=>CLIP_REPORT.map(r=>({check:r.photo.aiCheck||null,name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
