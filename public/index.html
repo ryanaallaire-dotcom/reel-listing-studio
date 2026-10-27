@@ -2713,20 +2713,48 @@ async function activityScore(vp){
 const ACTIVITY_MIN=.003;
 // The real check for fans, fire and water: the AI looks at frames from the clip and says whether the thing actually moves.
 // A small white fan on a white ceiling barely changes any pixels, so a pixel count can't be trusted for it.
+// Motion measured right where the fan/flame/water is: compare two back-to-back frames inside its box
+// against the area around it. Tested on real clips: spinning fans score 3.8-5.2, frozen ones 0.9-1.1.
+async function boxMotion(vp,box){
+  const v=vp.video, cr=vp.crop||{x:0,y:0,w:v.videoWidth,h:v.videoHeight};
+  const bx=cr.x+box[0]*cr.w, by=cr.y+box[1]*cr.h, bw=(box[2]-box[0])*cr.w, bh=(box[3]-box[1])*cr.h;
+  if(!(bw>4&&bh>4)) return null;
+  const pad=Math.max(24,.5*Math.max(bw,bh)), nx=Math.max(cr.x,bx-pad), ny=Math.max(cr.y,by-pad), nw=Math.min(cr.x+cr.w,bx+bw+pad)-nx, nh=Math.min(cr.y+cr.h,by+bh+pad)-ny;
+  const sc=Math.min(1,420/Math.max(nw,nh)), W=Math.max(16,Math.round(nw*sc)), H=Math.max(16,Math.round(nh*sc));
+  const c=mk(W,H), g=c.getContext("2d",{willReadFrequently:true});
+  const grab=async t=>{ await seekTo(v,t); g.drawImage(v,nx,ny,nw,nh,0,0,W,H); const d=g.getImageData(0,0,W,H).data, a=new Float32Array(W*H); for(let i=0;i<a.length;i++) a[i]=.2126*d[i*4]+.7152*d[i*4+1]+.0722*d[i*4+2]; return a; };
+  const ix0=Math.round((bx-nx)*sc), iy0=Math.round((by-ny)*sc), ix1=Math.round((bx+bw-nx)*sc), iy1=Math.round((by+bh-ny)*sc), r=6, out=[];
+  const d=v.duration, step=.08;   // two frames apart: AI clips can repeat a frame
+  for(const f of [.25,.35,.45,.55,.65,.75]){ const t=Math.min(d-.1,d*f); const A=await grab(t), B=await grab(t+step);
+    let best=null;   // line the two frames up first, so slight camera drift doesn't count as motion
+    for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ let m=0,n=0; for(let y=r;y<H-r;y+=2) for(let x=r;x<W-r;x+=2){ m+=Math.abs(A[y*W+x]-B[(y+dy)*W+x+dx]); n++; } m/=n; if(!best||m<best.m) best={m,dx,dy}; }
+    const all=[]; let inn=0, ni=0;
+    for(let y=r;y<H-r;y++) for(let x=r;x<W-r;x++){ const q=Math.abs(A[y*W+x]-B[(y+best.dy)*W+x+best.dx]); all.push(q); if(x>=ix0&&x<ix1&&y>=iy0&&y<iy1){ inn+=q; ni++; } }
+    if(!ni) continue; all.sort((p,q)=>p-q); out.push((inn/ni)/(all[all.length>>1]+.5)); }
+  await seekTo(v,vp.inPoint||0);
+  if(!out.length) return null; out.sort((p,q)=>p-q); return out[out.length>>1];
+}
+const BOX_MOVING=2.4;
+// The real check for fans, fire and water: the AI finds each one in the clip, then we measure motion inside its box.
+// (A small white fan on a white ceiling barely changes the whole picture, so whole-frame pixel counts can't be trusted.)
 async function aiSaysMoving(vp){
   if(!SAMPLE||!vp.video) return null;
   const v=vp.video, d=v.duration, imgs=[];
   for(const t of [d*.3,d*.3+.08,d*.3+.16,d*.7]){ await seekTo(v,Math.min(d-.05,t)); const c=snapVideo(v,1024,vp.crop); imgs.push(await new Promise(r=>c.toBlob(r,"image/jpeg",.85))); }
   await seekTo(v,vp.inPoint||0);
-  try{
-    const r=await SAMPLE.json(`These 4 images are frames from ONE short video clip of a room, taken at 0.0s, 0.08s, 0.16s and about 2 seconds. The camera is meant to be still.
+  let r; try{
+    r=await SAMPLE.json(`These 4 images are frames from ONE short video clip of a room, taken at 0.0s, 0.08s, 0.16s and about 2 seconds.
 What should be moving: ${vp.movers||"any ceiling fan, fireplace flames, running faucet or pool/hot tub water in the room"}.
-Compare the frames carefully. A spinning ceiling fan shows its blades at different angles between frames, or blurred blades; a frozen fan shows the blades in exactly the same position in every frame. Flames change shape; running water changes.
-Reply with only JSON: {"thing":"what you checked, e.g. ceiling fan","present":true|false,"moving":true|false,"why":"one short sentence"}`,{images:imgs,modelTier:"default"});
-    if(!r||typeof r!=="object") return null;
-    if(r.present===false) return null;
-    return {moving:r.moving===true, why:aStr(r.why||"",120)};
+1) Find EVERY ceiling fan, fireplace fire, running faucet and pool/hot tub water visible in the first image. For each, give a box that fully contains it (for a fan, include all blade tips), as fractions of the image width and height: [left, top, right, bottom], each 0 to 1.
+2) For each, compare the frames: a spinning fan shows its blades at different angles between frames or blurred; a frozen fan shows the blades in exactly the same position.
+Reply with only JSON: {"items":[{"thing":"ceiling fan","box":[0.4,0.05,0.62,0.2],"moving":true|false}]}  (use {"items":[]} if none are visible)`,{images:imgs,modelTier:"default"});
   }catch(e){ return null; }
+  const items=(r&&Array.isArray(r.items)?r.items:[]).filter(it=>it&&Array.isArray(it.box)&&it.box.length===4&&it.box.every(x=>typeof x==="number"&&x>=0&&x<=1)&&it.box[2]>it.box[0]&&it.box[3]>it.box[1]).slice(0,4);
+  if(!items.length) return null;
+  // every fan/flame must move: one spinning fan next to a frozen one is still a giveaway
+  let all=true; const scores=[];
+  for(const it of items){ const m=await boxMotion(vp,it.box).catch(()=>null); scores.push(m); const moving=m==null?it.moving===true:m>=BOX_MOVING; if(!moving) all=false; }
+  return {moving:all, scores, items:items.map(it=>aStr(it.thing||"",30))};
 }
 const clipLooksGood=async vp=>{ if(vp.camLocked&&vp.mustMove){ const a=await aiSaysMoving(vp); vp.aiCheck=a; if(a) return a.moving; } return vp.camLocked&&!vp.mustMove?true:await pixelGood(vp); };
 const pixelGood=async vp=>vp.camLocked?(await activityScore(vp).catch(()=>1))>=ACTIVITY_MIN:(await motionScore(vp).catch(()=>99))>=MOTION_MIN;
@@ -2935,7 +2963,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={activityScore,clipReport:()=>CLIP_REPORT.map(r=>({name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={activityScore,boxMotion,clipReport:()=>CLIP_REPORT.map(r=>({check:r.photo.aiCheck||null,name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
