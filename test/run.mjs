@@ -58,6 +58,7 @@ const falmock = http.createServer(async (req, res) => {
   const send = (o, st = 200) => { res.writeHead(st, { "content-type": "application/json" }); res.end(JSON.stringify(o)); };
   if (req.method === "POST") { const j = JSON.parse(b); falCalls.push({ path: req.url, auth: req.headers.authorization, body: j });
     if (/ZmFpbC1tZQ/.test(j.image_url)) return send({ detail: "bad" }, 422);
+    if (/YnJva2U/.test(j.image_url)) return send({ detail: "User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing." }, 403);
     return send({ request_id: "r1", status_url: `http://127.0.0.1:${FALM}/st/r1`, response_url: `http://127.0.0.1:${FALM}/res/r1` }); }
   if (req.url === "/st/r1") { falPolls++; return send({ status: falPolls < 2 ? "IN_PROGRESS" : "COMPLETED" }); }
   if (req.url === "/res/r1") return send({ video: { url: `http://127.0.0.1:${FALM}/v.mp4` } });
@@ -285,6 +286,9 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   const fid = (await f.json()).id; let fs2; for (let k = 0; k < 20; k++) { await new Promise(r => setTimeout(r, 100)); fs2 = await (await api(Gp, `/api/clips/${fid}`, undefined, { as: "u" })).json(); if (fs2.status === "failed") break; }
   const afterFail = (await (await api(Gp, "/api/me", undefined, { as: "u" })).json()).user.credits;
   check("Clips: a failed clip explains itself and refunds the credit", fs2.status === "failed" && /still/.test(fs2.error) && afterFail === 1, `${fs2.error} credits=${afterFail}`);
+  const ob = await api(Gp, "/api/clips", { image: "data:image/jpeg;base64,YnJva2U=" }, { headers: {} });
+  const obid = (await ob.json()).id; let obs; for (let k = 0; k < 20; k++) { await new Promise(r => setTimeout(r, 100)); obs = await (await api(Gp, `/api/clips/${obid}`)).json(); if (obs.status === "failed") break; }
+  check("Clips: an empty fal balance says 'add funds', not 'make a new key'", obs.status === "failed" && /out of money/.test(obs.error) && /no new key needed/.test(obs.error), obs.error);
   const lim = await postAs(Gp, "u", "/api/clips", { image: jpg });
   check("Clips: hourly limit per account", lim.status === 429, (await lim.json()).error);
   const gone = await api(Gp, `/api/clips/00000000-0000-0000-0000-000000000000`, undefined, { as: "u" });
