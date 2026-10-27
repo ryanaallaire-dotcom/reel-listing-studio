@@ -234,7 +234,7 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   check("Credits: each clip uses 1 credit", left === 1, left);
   let st; for (let k = 0; k < 40; k++) { await new Promise(r => setTimeout(r, 100)); st = await (await api(Gp, `/api/clips/${id}`, undefined, { as: "u" })).json(); if (st.status === "done" || st.status === "failed") break; }
   const c = falCalls[0] || {};
-  check("Clips: sends the photo to the video model with your key", c.auth === "Key fal-test" && /kling-video/.test(c.path) && c.body.image_url.startsWith("data:image/jpeg") && /dolly/.test(c.body.prompt) && /ceiling fan turns/.test(c.body.prompt) && /people/.test(c.body.negative_prompt), c.path);
+  check("Clips: sends the photo to the video model with your key", c.auth === "Key fal-test" && /kling-video/.test(c.path) && c.body.image_url.startsWith("data:image/jpeg") && /dolly/.test(c.body.prompt) && /ceiling fan anywhere in the picture, even a small one near the edge, spins/.test(c.body.prompt) && /people/.test(c.body.negative_prompt), c.path);
   check("Clips: finishes and the video downloads", st.status === "done", JSON.stringify(st));
   falCalls.length = 0; await postAs(Gp, "default", "/api/clips", { image: jpg, kind: "int", move: "truck" });
   await new Promise(r => setTimeout(r, 200));
@@ -260,7 +260,7 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   await new Promise(r => setTimeout(r, 250));
   const lk = falCalls[0]?.body || {}, lk2 = falCalls[1]?.body || {};
   check("Clips: fan shots lock the AI camera so it only animates the fan (our engine adds the pan)", /locked off on a tripod/.test(lk.prompt || "") && !/sideways/.test(lk.prompt || "") && /camera pan/.test(lk.negative_prompt || "") && /fan blades turn/.test(lk.prompt || ""), (lk.prompt || "").slice(0, 160));
-  check("Clips: a locked-camera re-make insists the fan visibly spins", /fan blades must be clearly spinning/.test(lk2.prompt || "") && !/camera keeps moving/.test(lk2.prompt || ""));
+  check("Clips: a locked-camera re-make insists the fan visibly spins, on a second model (Kling 2.6)", /fan blades must be clearly spinning/.test(lk2.prompt || "") && !/camera keeps moving/.test(lk2.prompt || "") && /v2\.6\/pro/.test(falCalls[1]?.path || "") && /v2\.5-turbo/.test(falCalls[0]?.path || ""), `${falCalls[0]?.path} | ${falCalls[1]?.path}`);
   falCalls.length = 0;
   await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", live: ["trees", "sky", "ceiling_fan"] }, { headers: {} });
   await api(Gp, "/api/clips", { image: jpg, kind: "ext", move: "rpan", live: ["trees", "sky", "pool"] }, { headers: {} });
