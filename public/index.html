@@ -2584,7 +2584,7 @@ async function doLabel(){
 2) Classify each: "ext" (exterior, yard, pool, view, aerial), "int" (a room), or "detail" (close-up of a fixture, finish or decor).
 3) Order them like a home tour film: strongest exterior hero first, then flow through living, kitchen, bedrooms and baths, best view or outdoor living near the end.
 4) For each photo, list which of these are clearly visible (only if you're sure): "ceiling_fan", "fireplace", "pool", "hot_tub", "faucet" (a kitchen or bathroom faucet clearly in view), "water" (lake, ocean, pond, fountain), "curtains", "trees" (trees or palms that are part of an outdoor scene), "sky".
-5) For each photo, write ONE short sentence (max 20 words) for a video animator saying exactly what visibly moves in real life and where it is, e.g. "The two white ceiling fans on the ceiling spin steadily." or "Flames flicker in the stone fireplace on the left." Only ceiling fans, fireplaces, running faucets, pools, hot tubs, water, curtains; for outdoor photos also trees and clouds. Look closely at the ceiling in every room photo: a ceiling fan that is small, far away, white on a white ceiling or partly cut off still counts, so include "ceiling_fan" and mention it. Never mention trees seen through a window. Use "" if nothing moves.
+5) For each photo, write ONE short sentence (max 20 words) for a video animator saying exactly what visibly moves in real life and where it is, e.g. "The two white ceiling fans on the ceiling spin steadily." or "Flames flicker in the stone fireplace on the left." Only ceiling fans, fireplaces, pools, hot tubs and curtains (never faucets, sinks or running water); for outdoor photos also trees and clouds. Look closely at the ceiling in every room photo: a ceiling fan that is small, far away, white on a white ceiling or partly cut off still counts, so include "ceiling_fan" and mention it. Never mention trees seen through a window. Use "" if nothing moves.
 Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|"detail", ...],"live":[["ceiling_fan","fireplace"], ...],"movers":["sentence for photo 1", ...],"order":[photo numbers in recommended order]}`,{images:P.map(p=>p.aiBlob),modelTier:"default"});
     if(!r||typeof r!=="object"||Array.isArray(r)) throw {code:"invalid_json"};
     let used=0;
@@ -2598,7 +2598,7 @@ Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|
     const restP=S.photos.filter(p=>!P.includes(p)&&!p.isVideo&&!p.sample);
     for(let k=0;k<restP.length;k+=max){ const B=restP.slice(k,k+max); st.textContent=`Labeling more photos: ${Math.min(k+max,restP.length)} of ${restP.length}\u2026`;
       try{ const r2=await SAMPLE.json(`These are ${B.length} more photos from the same ${S.d.type==="stay"?"vacation rental":"listing"}, numbered 1 to ${B.length}.
-For each: a 2-4 word Title Case label; "ext"|"int"|"detail"; which of "ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains","trees","sky" are clearly visible (trees/sky only for outdoor photos); and ONE short sentence (max 20 words) saying exactly what visibly moves and where (only fans, fireplaces, faucets, pools, hot tubs, water, curtains, and for outdoor photos trees and clouds; never trees seen through a window; "" if nothing). Look closely at every ceiling: a small, white or partly cut-off ceiling fan still counts.
+For each: a 2-4 word Title Case label; "ext"|"int"|"detail"; which of "ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains","trees","sky" are clearly visible (trees/sky only for outdoor photos); and ONE short sentence (max 20 words) saying exactly what visibly moves and where (only fans, fireplaces, pools, hot tubs, curtains — never faucets or running water; and for outdoor photos trees and clouds; never trees seen through a window; "" if nothing). Look closely at every ceiling: a small, white or partly cut-off ceiling fan still counts.
 Reply with only JSON: {"labels":[...],"kinds":[...],"live":[[...], ...],"movers":[...]}`,{images:B.map(p=>p.aiBlob),modelTier:"default"});
         if(r2&&typeof r2==="object"){ B.forEach((p,i)=>{ const l=aStr(r2.labels?.[i],40); if(l) p.caption=l; const kd=r2.kinds?.[i]; if(["ext","int","detail"].includes(kd)) p.kind=kd;
           const L=Array.isArray(r2.live?.[i])?r2.live[i]:[]; p.live=[...new Set(L.filter(x=>LIVE_KEYS.includes(x)))]; p.movers=cleanMovers(r2.movers?.[i]); }); } }catch(e){ break; } }
@@ -2787,8 +2787,8 @@ async function aiSaysMoving(vp){
   await seekTo(v,vp.inPoint||0);
   let r; try{
     r=await SAMPLE.json(`These 4 images are frames from ONE short video clip of a room, taken at 0.0s, 0.08s, 0.16s and about 2 seconds.
-What should be moving: ${vp.movers||"any ceiling fan, fireplace flames, running faucet or pool/hot tub water in the room"}.
-1) Find EVERY ceiling fan, fireplace fire, running faucet and pool/hot tub water visible in the first image. For each, give a box that fully contains it (for a fan, include all blade tips), as fractions of the image width and height: [left, top, right, bottom], each 0 to 1.
+What should be moving: ${vp.movers||"any ceiling fan, fireplace flames or pool/hot tub water"}.
+1) Find EVERY ceiling fan, fireplace fire and pool/hot tub water visible in the first image (ignore faucets and sinks). For each, give a box that fully contains it (for a fan, include all blade tips), as fractions of the image width and height: [left, top, right, bottom], each 0 to 1.
 2) For each, compare the frames: a spinning fan shows its blades at different angles between frames or blurred; a frozen fan shows the blades in exactly the same position.
 Reply with only JSON: {"items":[{"thing":"ceiling fan","box":[0.4,0.05,0.62,0.2],"moving":true|false}]}  (use {"items":[]} if none are visible)`,{images:imgs,modelTier:"default"});
   }catch(e){ return null; }
@@ -2803,9 +2803,9 @@ const clipLooksGood=async vp=>{ if(vp.camLocked&&vp.mustMove){ const a=await aiS
 const pixelGood=async vp=>vp.camLocked?(await activityScore(vp).catch(()=>1))>=ACTIVITY_MIN:(await motionScore(vp).catch(()=>99))>=MOTION_MIN;
 const clipScore=async vp=>vp.aiCheck?(vp.aiCheck.moving?1e6:0):vp.camLocked?(await activityScore(vp).catch(()=>1))*1000:await motionScore(vp).catch(()=>99);
 let CLIP_REPORT=[];   // shot-by-shot result of the last AI motion run
-const INDOOR_MOVERS=["ceiling_fan","fireplace","faucet","pool","hot_tub","water","curtains"];
+const INDOOR_MOVERS=["ceiling_fan","fireplace","pool","hot_tub"];
 const lockFor=p=>(p.kind||"int")!=="ext"||hasMovers(p);
-const hasMovers=p=>(p.live||[]).some(k=>INDOOR_MOVERS.includes(k))||/fan|flame|fire|faucet|water|pool|tub|curtain/i.test(p.movers||"");
+const hasMovers=p=>(p.live||[]).some(k=>INDOOR_MOVERS.includes(k))||/fan|flame|fire|pool|hot tub/i.test(p.movers||"");
 // the labeler's "what moves" sentence: plain words only, short
 const cleanMovers=x=>typeof x==="string"?x.replace(/<[^>]*>?/g," ").replace(/[^\p{L}\p{N}\s,.'\-]/gu,"").replace(/\s+/g," ").trim().slice(0,140):"";
 // things in a photo that move in real life: the AI clip brings them to life (fans spin, fires flicker, water ripples)
