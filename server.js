@@ -112,6 +112,23 @@ export const server = http.createServer(async (req, res) => {
       if (req.method === "POST" && u.pathname === "/api/account/topup/capture") {
         const user = needUser(req); const { orderID } = await readJson(req); return json(res, 200, { user: meJson(await captureTopup(user, orderID)) });
       }
+      if (u.pathname === "/api/account/admin/partners" && req.method === "POST") {
+        const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
+        const { partners, tier, videos } = await readJson(req);
+        if (!Array.isArray(partners) || !partners.length || partners.length > 50) return json(res, 400, { error: "Add between 1 and 50 partners." });
+        const base = (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
+        const results = partners.map(p => { try { const r = acct.adminCreatePartner({ ...p, tier: tier || "agency", videos: videos ?? 25 });
+            return { ok: true, email: r.user.email, name: r.user.name, created: r.created, credits: r.user.credits, videos: r.videos, link: `${base}/?setup=${r.token}` }; }
+          catch (e) { return { ok: false, email: String(p?.email || ""), error: e.message }; } });
+        return json(res, 200, { results });
+      }
+      if (u.pathname === "/api/account/setup") {
+        if (req.method === "GET") { try { return json(res, 200, acct.setupInfo(u.searchParams.get("token"))); } catch (e) { return json(res, e.status || 400, { error: e.message }); } }
+        if (req.method === "POST") { if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many attempts. Wait a few minutes, then try again." });
+          const body = await readJson(req);
+          try { const token = acct.setupPassword(body); res.setHeader("set-cookie", acct.sessionCookie(token, SECURE)); return json(res, 200, { ok: true }); }
+          catch (e) { return json(res, e.status || 400, { error: e.message }); } }
+      }
       if (u.pathname === "/api/account/admin") {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
         if (req.method === "GET") return json(res, 200, { users: acct.adminList() });

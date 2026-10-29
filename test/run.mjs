@@ -229,6 +229,24 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   const g = await postAs(Gp, "default", "/api/account/admin", { email: "agent@test.com", credits: 2 });
   check("Credits: owner can grant credits", g.status === 200 && (await g.json()).user.credits === 2);
   const nonAdmin = await postAs(Gp, "u", "/api/account/admin", { email: "agent@test.com", credits: 500 });
+  // partner accounts: owner creates them; partners set their own password from a one-time link
+  await signIn(Gp, "existing@test.com", "ex");
+  const pr = await postAs(Gp, "default", "/api/account/admin/partners", { tier: "agency", videos: 25, partners: [
+    { name: "Gary Test", email: "Gary.Partner@Test.com", phone: "(704) 555-0100" }, { name: "Bad", email: "not-an-email" }, { name: "Existing", email: "existing@test.com" }] });
+  const prj = await pr.json(); const gary = prj.results?.[0] || {}, tok = (gary.link || "").split("setup=")[1] || "";
+  check("Partners: owner creates accounts with 25 videos (300 AI credits) and a setup link; bad emails are reported", pr.status === 200 && gary.ok && gary.created && gary.credits === 300 && gary.videos === 25
+    && /\?setup=[0-9a-f]{48}$/.test(gary.link) && prj.results[1].ok === false && /valid email/.test(prj.results[1].error) && prj.results[2].ok && prj.results[2].created === false, JSON.stringify(prj).slice(0, 300));
+  const prNo = await postAs(Gp, "u", "/api/account/admin/partners", { partners: [{ email: "x@test.com" }] });
+  check("Partners: customers can't create partner accounts", prNo.status === 403);
+  const noLogin = await api(Gp, "/api/account/login", { email: "gary.partner@test.com", password: "anything-at-all" }, { as: "gary" });
+  const info = await (await api(Gp, `/api/account/setup?token=${tok}`, undefined, { as: "gary" })).json();
+  check("Partners: nobody can sign in before the partner sets a password; the link shows who it's for", noLogin.status !== 200 && info.email === "gary.partner@test.com" && info.name === "Gary Test", JSON.stringify(info));
+  const set = await api(Gp, "/api/account/setup", { token: tok, password: "gary-secret-99" }, { as: "gary" });
+  const gme = (await (await api(Gp, "/api/me", undefined, { as: "gary" })).json()).user;
+  check("Partners: setting a password signs them in on an Agency (Premium) partner plan, no watermark, 300 credits", set.status === 200 && gme?.tier === "agency" && gme.partner && gme.tierLabel === "Agency Partner" && gme.watermark === false && gme.credits === 300, JSON.stringify(gme));
+  const again = await api(Gp, "/api/account/setup", { token: tok, password: "another-pass-1" }, { as: "gary2" });
+  const relog = await api(Gp, "/api/account/login", { email: "gary.partner@test.com", password: "gary-secret-99" }, { as: "gary3" });
+  check("Partners: the setup link works once; the chosen password signs in", again.status === 404 && relog.status === 200);
   check("Credits: customers can't grant themselves credits", nonAdmin.status === 403);
   const r = await postAs(Gp, "u", "/api/clips", { image: jpg, kind: "int" });
   const { id, credits: left } = await r.json();

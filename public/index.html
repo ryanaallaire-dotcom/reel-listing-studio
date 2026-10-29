@@ -350,6 +350,19 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
       <strong>Owner tools</strong>
       <form id="grantForm"><label style="flex:1 1 220px">Customer email<input type="email" id="grantEmail" required></label><label style="width:120px">Credits<input type="number" id="grantNum" value="10" step="1"></label><button class="btn" type="submit">Give credits</button></form>
       <p class="status" id="grantStatus"></p>
+      <div style="margin-top:14px"><strong>Add partners</strong>
+        <p class="small" style="margin:4px 0 8px">Paste each partner's <b>name, email and phone</b>, all on one line or on separate lines. Each gets a free plan with no PayPal billing and a private link to set their own password.</p>
+        <form id="partnerForm" style="flex-direction:column;align-items:stretch">
+          <textarea id="partnerList" rows="4" placeholder="Paste partners: name, email and phone (one partner per line, or each on its own line)" style="width:100%;font:inherit;padding:8px;border-radius:8px"></textarea>
+          <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <label style="width:150px">Plan<select id="partnerTier"><option value="agency">Agency (Premium)</option><option value="pro">Pro</option><option value="starter">Starter</option></select></label>
+            <label style="width:130px">Videos each<input type="number" id="partnerVideos" value="25" min="1" step="1"></label>
+            <button class="btn primary" type="submit">Create partner accounts</button>
+          </div>
+        </form>
+        <p class="status" id="partnerStatus"></p>
+        <div id="partnerOut"></div>
+      </div>
     </div>
   </div>
 </dialog>
@@ -2200,6 +2213,53 @@ $("#grantForm").addEventListener("submit",async e=>{
   const r=await fetch("/api/account/admin",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:$("#grantEmail").value.trim(),credits:+$("#grantNum").value})}); const j=await r.json().catch(()=>({}));
   st.className=r.ok?"status ok":"status bad"; st.textContent=r.ok?`${j.user.email} now has ${j.user.credits} credits.`:(j.error||"Didn't work.");
 });
+// Accepts "Name, email, phone" per line, or name / email / phone on separate lines (pasted from a text or email)
+function parsePartners(text){
+  const toks=String(text).split(/[\n,;\t|]+/).map(t=>t.trim()).filter(Boolean), out=[]; let cur={};
+  const push=()=>{ if(cur.email) out.push({name:cur.name||"",email:cur.email,phone:cur.phone||""}); cur={}; };
+  for(const t of toks){
+    const em=t.match(/[^\s<>]+@[^\s<>]+\.[a-z]{2,}/i);
+    if(em){ if(cur.email) push(); cur.email=em[0]; continue; }
+    if(/^\+?[\d\s().-]{7,}$/.test(t)&&t.replace(/\D/g,"").length>=7){ if(cur.phone&&cur.email) push(); cur.phone=t; continue; }
+    if(cur.email) push(); cur.name=cur.name?cur.name+" "+t:t;
+  }
+  push(); return out;
+}
+$("#partnerForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const st=$("#partnerStatus"), out=$("#partnerOut"); out.innerHTML="";
+  const partners=parsePartners($("#partnerList").value);
+  if(!partners.length){ st.className="status bad"; st.textContent="Add at least one partner."; return; }
+  st.className="status"; st.textContent="Creating accounts\u2026";
+  const r=await fetch("/api/account/admin/partners",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({partners,tier:$("#partnerTier").value,videos:+$("#partnerVideos").value})}); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ st.className="status bad"; st.textContent=j.error||"Didn't work."; return; }
+  const ok=j.results.filter(x=>x.ok).length; st.className=ok===j.results.length?"status ok":"status warn";
+  st.textContent=`${ok} of ${j.results.length} partner accounts ready. Send each partner their link below (it works once, for 14 days).`;
+  j.results.forEach(x=>{ const d=document.createElement("div"); d.className="res-item"; d.style.marginTop="8px";
+    d.innerHTML=`<div style="min-width:0"><b></b><div class="small"></div></div>${x.ok?`<button class="btn sm" type="button">Copy link</button>`:""}`;
+    d.querySelector("b").textContent=(x.name?x.name+" \u00b7 ":"")+x.email;
+    d.querySelector(".small").textContent=x.ok?`${x.created?"New account":"Existing account upgraded"} \u00b7 ${x.videos} videos (${x.credits} AI credits) \u00b7 ${x.link}`:`Not created: ${x.error}`;
+    const b=d.querySelector("button"); if(b) b.onclick=async()=>{ try{ await navigator.clipboard.writeText(x.link); b.textContent="Copied \u2713"; }catch(err){ prompt("Copy this link:",x.link); } };
+    out.appendChild(d); });
+});
+// partner setup link: ?setup=TOKEN lets an invited partner choose their password
+async function partnerSetup(){
+  const tok=new URLSearchParams(location.search).get("setup"); if(!tok||!/^[0-9a-f]{48}$/.test(tok)) return;
+  history.replaceState(null,"",location.pathname);
+  const r=await fetch("/api/account/setup?token="+tok); const j=await r.json().catch(()=>({}));
+  const dlg=document.createElement("dialog"); dlg.className="dlg"; dlg.id="setupDlg";
+  dlg.innerHTML=`<div class="dlg-in" style="max-width:420px"><h3 style="margin:0 0 6px"></h3><p class="small" id="setupWho"></p>
+    <form id="setupForm" style="display:flex;flex-direction:column;gap:10px"><label>Choose a password<input type="password" id="setupPw" minlength="8" autocomplete="new-password" required></label>
+    <button class="btn primary" type="submit">Set password and start</button></form><p class="status" id="setupSt"></p></div>`;
+  document.body.appendChild(dlg);
+  dlg.querySelector("h3").textContent=r.ok?`Welcome${j.name?", "+j.name.split(" ")[0]:""}!`:"Link expired";
+  dlg.querySelector("#setupWho").textContent=r.ok?`Your partner account for ${j.email} is ready. Choose a password (8+ characters) to sign in.`:(j.error||"This link no longer works.");
+  if(!r.ok) dlg.querySelector("#setupForm").hidden=true;
+  dlg.querySelector("#setupForm").onsubmit=async e=>{ e.preventDefault(); const st=dlg.querySelector("#setupSt");
+    const r2=await fetch("/api/account/setup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({token:tok,password:dlg.querySelector("#setupPw").value})}); const j2=await r2.json().catch(()=>({}));
+    if(r2.ok){ st.className="status ok"; st.textContent="You're all set."; setTimeout(()=>location.reload(),700); } else { st.className="status bad"; st.textContent=j2.error||"Didn't work."; } };
+  try{ dlg.showModal(); }catch(e){ dlg.setAttribute("open",""); }
+}
+partnerSetup();
 function escapeHtml(x){ return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 const watermarkOn=()=>!!(IMPORT&&IMPORT.accounts&&(!ACCT||!ACCT.user||ACCT.user.watermark));
 
@@ -3007,7 +3067,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={get PENDING(){return PENDING;},activityScore,boxMotion,clipReport:()=>CLIP_REPORT.map(r=>({check:r.photo.aiCheck||null,name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={parsePartners,get PENDING(){return PENDING;},activityScore,boxMotion,clipReport:()=>CLIP_REPORT.map(r=>({check:r.photo.aiCheck||null,name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
