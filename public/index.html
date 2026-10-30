@@ -1966,7 +1966,28 @@ function dropZone(el,handler){
 dropZone($("#drop"),addFiles);
 // Step 1 only collects files; nothing starts until Make my video
 let PENDING=[];
-function queueFiles(files){ if(!files||!files.length) return; if(building||busy){ return; } PENDING.push(...files);
+// A listing ZIP (link import or Chrome Grabber): fill in the details now and put its photos in the picker,
+// so the user can remove or reorder them before anything is built.
+async function unzipToPending(zip){
+  if(!window.JSZip) return 0;
+  let z; try{ z=await JSZip.loadAsync(zip); }catch(e){ return 0; }
+  const ents=Object.values(z.files).filter(e=>!e.dir&&!/__MACOSX|\/\._/.test(e.name));
+  const lj=ents.find(e=>/(^|\/)listing\.json$/i.test(e.name)); if(lj){ try{ applyListing(JSON.parse(await lj.async("string"))); }catch(e){} }
+  const media=ents.filter(e=>IMG_RE.test(e.name)||VID_RE.test(e.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  const out=[]; for(const e of media.slice(0,MAX_PHOTOS)){ const b=await e.async("blob"), nm=e.name.split("/").pop();
+    const type=IMG_RE.test(nm)?(/\.png$/i.test(nm)?"image/png":/\.webp$/i.test(nm)?"image/webp":/\.hei[cf]$/i.test(nm)?"image/heic":"image/jpeg"):/\.webm$/i.test(nm)?"video/webm":/\.mov$/i.test(nm)?"video/quicktime":"video/mp4";
+    out.push(new File([b],nm,{type})); }
+  if(out.length){ PENDING.push(...out); updatePending(); }
+  return out.length;
+}
+function showPending(){ const b=$("#pendingNote"); if(b&&!b.hidden) setTimeout(()=>b.scrollIntoView({behavior:"smooth",block:"center"}),100); }
+async function queueZips(zips){ for(const z of zips) await unzipToPending(z); showPending(); }
+function queueFiles(files){ if(!files||!files.length) return; if(building||busy){ return; }
+  const isZip=f=>/\.zip$/i.test(f.name||"")||f.type==="application/zip"||f.type==="application/x-zip-compressed";
+  const zips=[...files].filter(isZip); files=[...files].filter(f=>!isZip(f));
+  if(zips.length&&window.JSZip) queueZips(zips); else files.push(...zips);
+  if(!files.length) return;
+  PENDING.push(...files);
   if(!USER_ORDER) PENDING.sort((a,b)=>(a.name||"").localeCompare(b.name||"",undefined,{numeric:true,sensitivity:"base"}));
   updatePending(); }
 // Queued photos: numbered in tour order, × removes one, drag to change the order (mouse or finger).
@@ -1985,6 +2006,8 @@ function renderPendingThumbs(th,zips,pics){
     t.onpointerdown=e=>startThumbDrag(e,t,th);
     th.appendChild(t); });
   if(zips){ const sp=document.createElement("span"); sp.textContent="Photos inside the ZIP appear once you press Make my video"; th.appendChild(sp); }
+  const nImg=th.querySelectorAll(".pt").length;
+  if(nImg>S.o.count){ const w=document.createElement("div"); w.className="pthint"; w.style.color="var(--warn)"; w.textContent=`The video uses up to ${S.o.count} photos. You have ${nImg}: remove the ones you don't want with \u00d7, or we'll pick the best ${S.o.count}.`; th.appendChild(w); }
   if(th.querySelectorAll(".pt").length>1){ const h=document.createElement("div"); h.className="pthint"; h.textContent=USER_ORDER?"Your order will be kept: photo 1 opens the video. Drag to rearrange, \u00d7 removes one.":"Drag photos to set the order yourself (otherwise we pick the best tour order). \u00d7 removes one."; th.appendChild(h); }
 }
 function startThumbDrag(e,t,th){
@@ -2303,9 +2326,10 @@ async function importFromLink(){
       return; }
     if(IMPORT.accounts) loadMe();
     const blob=await r.blob(); const count=r.headers.get("x-photo-count");
-    n.className="status ok"; n.textContent=`Imported ${count||"the"} photos and the listing details. Building your video…`;
     busyBtn(btn,false,"Import listing");
-    await autoBuild([new File([blob],"listing.zip",{type:"application/zip"})]);
+    const got=await unzipToPending(new File([blob],"listing.zip",{type:"application/zip"}));
+    n.className="status ok"; n.textContent=got?`Imported ${got} photos and the listing details. Below: tap \u00d7 on any photo you don't want, drag to reorder, then press Make my video.`:"The listing came in without photos. Add photos below, or use the Chrome Grabber.";
+    showPending();
   }catch(e){ n.className="status bad"; n.textContent="Couldn't reach the import service. Check your connection and try again."; }
   finally{ busyBtn(btn,false,"Import listing"); }
 }
