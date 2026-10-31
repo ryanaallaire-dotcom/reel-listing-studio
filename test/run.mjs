@@ -274,6 +274,19 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   check("Forgot password: emails a one-time reset link (same answer for unknown emails); the new password works", fg.status === 200 && fgNone.status === 200 && mails.length === 1
     && mails[0].body.to[0] === "gary.partner@test.com" && rs?.status === 200 && relogin.status === 200, JSON.stringify(mails.map(m => m.body.to)));
   await api(Gp, "/api/account/setup", { token: (await (async () => { mails.length = 0; await api(Gp, "/api/account/forgot", { email: "gary.partner@test.com" }, { as: "anon-f" }); await new Promise(r => setTimeout(r, 300)); return (mails[0]?.body.text || "").match(/setup=([0-9a-f]{48})/)?.[1]; })()), password: "gary-secret-99" }, { as: "gary-r3" });
+  const wl = prj.results?.[0]?.welcome;
+  check("Welcome email: built for each new partner with their password link, sign-in address and personal link", !!wl && /Welcome to Reel Listing Studio, Gary/.test(wl.subject) && wl.text.includes(gary.link) && /\/[a-z2-9]{6}\b/.test(wl.text) && /25 videos/.test(wl.text), wl?.subject);
+  mails.length = 0;
+  const ws = await postAs(Gp, "default", "/api/account/admin/welcome", { email: "gary.partner@test.com", ...wl });
+  const wsNo = await postAs(Gp, "u", "/api/account/admin/welcome", { email: "x@test.com", subject: "x", text: "x" });
+  await new Promise(r => setTimeout(r, 200));
+  check("Welcome email: owner can send it with the Launch Plan PDF attached; customers can't", ws.status === 200 && wsNo.status === 403 && mails[0]?.body.attachments?.[0]?.filename === "Reel-Listing-Studio-Partner-Launch-Plan.pdf"
+    && Buffer.from(mails[0].body.attachments[0].content, "base64").subarray(0, 4).toString() === "%PDF", JSON.stringify(mails[0]?.body.to));
+  const gpdf = await api(Gp, "/api/partner/guide.pdf", undefined, { as: "gary3" });
+  const upd = await api(Gp, "/api/partner/guide.pdf", undefined, { as: "u" });
+  const anon = await fetch(`http://127.0.0.1:${Gp}/api/partner/guide.pdf`);
+  check("Launch Plan: partners can open the PDF; customers and visitors can't", gpdf.status === 200 && gpdf.headers.get("content-type") === "application/pdf" && upd.status === 403 && anon.status === 401, `${gpdf.status} ${upd.status} ${anon.status}`);
+  mails.length = 0;
   const badLead = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "No Contact" }) });
   check("Leads: a request needs an email or phone", badLead.status === 400);
   const setc = await api(Gp, "/api/partner/link", { code: "gary" }, { as: "gary3" });

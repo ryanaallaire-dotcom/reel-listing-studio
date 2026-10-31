@@ -2,7 +2,7 @@
 //   GET  /               the Studio
 //   GET  /api/health     lets the Studio know link import is available
 //   POST /api/import     { url } → ZIP of photos + listing.json (same format as the Chrome Grabber)
-import { leadAlert, emailEnabled, sendPasswordLink } from "./lib/notify.js";
+import { leadAlert, emailEnabled, sendPasswordLink, welcomeEmail, sendWelcome } from "./lib/notify.js";
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -33,6 +33,7 @@ const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "a
 const STUDIO = path.join(DIR, "public", "index.html");
 const SKELETON_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>`;
 const AGENTS = path.join(DIR, "public", "agents.html");
+const GUIDE = path.join(DIR, "private", "partner-launch-plan.pdf");
 const REF_DAYS = 90;
 const cookieVal = (req, k) => { const m = new RegExp(`(?:^|;\\s*)${k}=([^;]+)`).exec(req.headers.cookie || ""); return m ? decodeURIComponent(m[1]) : ""; };
 // first partner to refer someone keeps the credit for 90 days
@@ -78,6 +79,11 @@ export const server = http.createServer(async (req, res) => {
   res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
   if (process.env.TRUST_PROXY === "1") res.setHeader("strict-transport-security", "max-age=31536000");
   try {
+    // old onrender address -> the same page on the real domain (pages and media; API calls keep working)
+    const canon = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
+    if (canon && (req.method === "GET" || req.method === "HEAD") && /\.onrender\.com$/i.test(String(req.headers.host || "").split(":")[0]) && !u.pathname.startsWith("/api/")) {
+      res.writeHead(301, { location: canon + u.pathname + u.search }); return res.end();
+    }
     if (req.method === "GET" && (u.pathname === "/privacy" || u.pathname === "/privacy/")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" }); return res.end(fs.readFileSync(path.join(DIR, "public", "privacy.html")));
     }
@@ -158,6 +164,21 @@ export const server = http.createServer(async (req, res) => {
         const user = needUser(req); const { code } = await readJson(req);
         return json(res, 200, { code: acct.setRefCode(user, code) });
       }
+      if (u.pathname === "/api/account/admin/welcome" && req.method === "POST") {
+        const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
+        const { email, subject, text, html } = await readJson(req);
+        if (!emailEnabled()) return json(res, 503, { error: "Email isn't set up yet. Add RESEND_API_KEY in Render, or copy the email and send it yourself." });
+        try { await sendWelcome(String(email || ""), { subject: String(subject || "").slice(0, 200), text: String(text || "").slice(0, 8000), html: String(html || "").slice(0, 20000) }, fs.readFileSync(GUIDE)); }
+        catch (e) { return json(res, 502, { error: "The email didn't send: " + e.message }); }
+        return json(res, 200, { ok: true });
+      }
+      if (u.pathname === "/api/partner/guide.pdf" && req.method === "GET") {
+        const user = needUser(req); if (!user.partner && !acct.isAdmin(user)) return json(res, 403, { error: "Partner accounts only." });
+        const pdf = fs.readFileSync(GUIDE);
+        res.writeHead(200, { "content-type": "application/pdf", "content-length": pdf.length, "cache-control": "private, max-age=600",
+          "content-disposition": `${u.searchParams.has("download") ? "attachment" : "inline"}; filename="Reel-Listing-Studio-Partner-Launch-Plan.pdf"` });
+        return res.end(pdf);
+      }
       if (u.pathname === "/api/partner/leads" && req.method === "GET") {
         const user = needUser(req); if (!user.partner && !acct.isAdmin(user)) return json(res, 403, { error: "Partner accounts only." });
         return json(res, 200, acct.partnerLeads(user.id));
@@ -178,7 +199,9 @@ export const server = http.createServer(async (req, res) => {
         if (!Array.isArray(partners) || !partners.length || partners.length > 50) return json(res, 400, { error: "Add between 1 and 50 partners." });
         const base = (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
         const results = partners.map(p => { try { const r = acct.adminCreatePartner({ ...p, tier: tier || "agency", videos: videos ?? 25 });
-            return { ok: true, email: r.user.email, name: r.user.name, created: r.created, credits: r.user.credits, videos: r.videos, link: `${base}/?setup=${r.token}` }; }
+            const link = `${base}/?setup=${r.token}`;
+            return { ok: true, email: r.user.email, name: r.user.name, created: r.created, credits: r.user.credits, videos: r.videos, link,
+              welcome: welcomeEmail({ name: r.user.name, setupLink: link, site: base, code: r.user.refCode, videos: Math.round(r.user.credits / acct.CREDITS_PER_VIDEO) }) }; }
           catch (e) { return { ok: false, email: String(p?.email || ""), error: e.message }; } });
         return json(res, 200, { results });
       }
@@ -211,7 +234,7 @@ export const server = http.createServer(async (req, res) => {
       catch (e) { console.warn("paypal webhook", e.message); return json(res, e.status || 500, { error: "Rejected." }); }
     }
     if (req.method === "GET" && u.pathname === "/api/health") {
-      return json(res, 200, { ok: true, service: "reel-listing", import: true, provider: providerInfo() || "none", keyRequired: false, accounts: true, accountsSaved: acct.dbPersistent(), payments: paypalEnabled(), ai: aiEnabled(),
+      return json(res, 200, { emailOn: emailEnabled(), publicUrl: (process.env.PUBLIC_URL || "").replace(/\/$/, "") || null, ok: true, service: "reel-listing", import: true, provider: providerInfo() || "none", keyRequired: false, accounts: true, accountsSaved: acct.dbPersistent(), payments: paypalEnabled(), ai: aiEnabled(),
         clips: clipsEnabled(), clipModel: clipsEnabled() ? clipModel() : null, maxClips: MAX_CLIPS_PER_VIDEO, depth: fs.existsSync(DEPTH_MODEL) });
     }
     if ((req.method === "GET" || req.method === "HEAD") && u.pathname.startsWith("/api/clip-src/")) {      // the photo fal downloads; unguessable, expires in 30 min
