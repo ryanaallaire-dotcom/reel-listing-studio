@@ -143,8 +143,9 @@ export const server = http.createServer(async (req, res) => {
         const me = acct.userFrom(req);
         // partners never see the public self-serve prices; they get VIP Reload instead
         const vip = { price: process.env.VIP_RELOAD_PRICE || "", videos: +process.env.VIP_RELOAD_VIDEOS || 25 };
-        return json(res, 200, me && me.partner && !acct.isAdmin(me) ? { user: meJson(me), vip, inviteRequired: !!ACCESS_KEY }
-          : { user: meJson(me), tiers: acct.TIERS, topup: acct.TOPUP, paypal, vip, inviteRequired: !!ACCESS_KEY });
+        // self-serve plan prices are only shown to the owner; everyone else sees done-for-you packages (or VIP Reload for partners)
+        return json(res, 200, me && acct.isAdmin(me) ? { user: meJson(me), tiers: acct.TIERS, topup: acct.TOPUP, paypal, vip, inviteRequired: !!ACCESS_KEY }
+          : { user: meJson(me), vip, inviteRequired: !!ACCESS_KEY });
       }
       if (req.method === "POST" && (u.pathname === "/api/account/signup" || u.pathname === "/api/account/login")) {
         if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many sign-in attempts. Wait a few minutes, then try again." });

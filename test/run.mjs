@@ -172,7 +172,7 @@ const Dp = 18914; const sd = await startServer(Dp, { ALLOW_LOCAL_FETCH: "1", ACC
   const i1 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123` });
   const i2 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123` });
   const i3 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123` }); const j3 = await i3.json();
-  check("Free plan: 2 imports a month, then asks to upgrade", i1.status === 200 && i2.status === 200 && i3.status === 402 && /Upgrade/.test(j3.error), j3.error);
+  check("Free plan: 2 imports a month, then points to done-for-you (no self-serve upsell)", i1.status === 200 && i2.status === 200 && i3.status === 402 && /have us make your video/.test(j3.error) && !/upgrade/i.test(j3.error), j3.error);
   const failed = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/nophotos` });
   check("Free plan: blocked import isn't counted twice", failed.status === 402);
   // accounts
@@ -428,7 +428,7 @@ let sp = await startServer(Pp, ppEnv, { keep: true });
   await new Promise(r => setTimeout(r, 300));
   const me0 = await (await api(Pp, "/api/me")).json();
   check("PayPal: creates the product, 3 plans and the webhook by itself", pp.products === 1 && Object.keys(pp.plans).sort().join() === "agency,pro,starter" && pp.plans.pro.price === "79.00" && pp.webhookUrl === "https://reel.test/api/paypal/webhook", JSON.stringify(pp.plans));
-  check("PayPal: Studio gets the client ID and plan IDs (never the secret)", me0.paypal?.clientId === "cid" && me0.paypal.plans.starter === "P-STARTER" && !JSON.stringify(me0).includes("secret"));
+  check("Customers never receive self-serve plan prices or PayPal plan IDs (and never the secret)", !me0.paypal && !me0.tiers && !me0.topup && !JSON.stringify(me0).includes("secret"));
   await signIn(Pp, "agent@test.com", "u");          // user id 1
   await signIn(Pp, "other@test.com", "o");          // user id 2
   pp.subs["I-STARTER0001"] = { status: "ACTIVE", custom_id: "1", plan_id: "P-STARTER" };

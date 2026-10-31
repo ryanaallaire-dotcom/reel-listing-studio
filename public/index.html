@@ -353,7 +353,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 <dialog class="dlg" id="authDlg" aria-labelledby="authTitle">
   <div class="dlg-in">
     <div class="dlg-h"><h2 id="authTitle">Create your free account</h2><button class="dlg-x" data-close aria-label="Close">×</button></div>
-    <p class="small" id="authWhy">Free accounts make 3D videos and import 2 listing links a month. Upgrade any time for AI motion.</p>
+    <p class="small" id="authWhy">Free accounts make 3D videos and import 2 listing links a month.</p>
     <form id="authForm" novalidate>
       <label>Email<input type="email" id="authEmail" autocomplete="email" required maxlength="200"></label>
       <label>Password<input type="password" id="authPass" autocomplete="new-password" required minlength="8" maxlength="200" placeholder="At least 8 characters"></label>
@@ -2185,13 +2185,13 @@ async function loadMe(){
 function setUser(u){ if(!ACCT) ACCT={}; ACCT.user=u; renderAcct(); }
 function renderAcct(){
   if(!ACCT) return; const u=ACCT.user;
-  const pb=$("#plansBtn"); if(pb) pb.textContent=u&&u.partner&&!u.admin?"VIP Reload":"Plans";
+  const pb=$("#plansBtn"); if(pb) pb.textContent=u&&u.partner&&!u.admin?"VIP Reload":u&&u.admin?"Plans":"Done for you";
   const tp=$("#toolsPill"); if(tp) tp.hidden=!(u&&(u.partner||u.admin));
   $("#acct").hidden=false;
   $("#signBtn").textContent=u?"Sign out":"Sign in"; $("#signBtn").classList.toggle("primary",!u);
   $("#signBtn").title=u?`Signed in as ${u.email}`:"";
   $("#creditPill").hidden=!u; if(u) $("#creditNum").textContent=u.admin?"∞":u.credits;
-  $("#plansBtn").textContent=u&&u.partner&&!u.admin?"VIP Reload":u&&u.tier!=="free"?u.tierLabel:"Plans";
+  $("#plansBtn").textContent=u&&u.partner&&!u.admin?"VIP Reload":u&&u.admin?"Plans":"Done for you";
   if(IMPORT&&IMPORT.ai&&!window.claude){ if(u){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); } }
   const mr=$("#modelRow"); if(mr){ mr.hidden=!(u&&u.admin&&IMPORT&&IMPORT.clips); $("#aiModel").value=S.o.aiModel||""; }
   syncClipNote(); if(typeof refresh==="function"&&SEGS.length) refresh();
@@ -2212,7 +2212,7 @@ function syncAuthMode(){
   const fg=$("#authForgot"); if(fg) fg.hidden=up;
   $("#authPass").autocomplete=up?"new-password":"current-password";
   $("#inviteRow").hidden=!(up&&ACCT&&ACCT.inviteRequired);
-  $("#authWhy").textContent=up?"Free accounts make 3D videos and import 2 listing links a month. Upgrade any time for AI motion.":"Sign in to use link import, AI writing and AI motion.";
+  $("#authWhy").textContent=up?"Free accounts make 3D videos and import 2 listing links a month.":"Sign in to use link import, AI writing and AI motion.";
   $("#authSwap").innerHTML=up?'Already have an account? <button class="linkish" type="button" id="swapBtn">Sign in</button>':'New here? <button class="linkish" type="button" id="swapBtn">Create a free account</button><br><span class="small">Forgot your password? Ask the studio owner to reset it.</span>';
   $("#swapBtn").onclick=()=>{ authMode=up?"login":"signup"; syncAuthMode(); };
 }
@@ -2278,9 +2278,23 @@ function openVip(why){
   $("#adminBox").hidden=true;
   dlgOpen($("#plansDlg"));
 }
+// Everyone except the owner: no self-serve prices, just the done-for-you packages on the sales page
+function openDfy(why){
+  const st=$("#plansStatus"); $("#plansTitle").textContent="Have us make it for you";
+  $("#plansWhy").textContent=why||"Send us your listing and get a finished walkthrough video, in every format, within 24 hours.";
+  st.className="status"; st.textContent="";
+  $("#planCards").innerHTML=`<div class="vip"><div class="vip-right" style="grid-column:1/-1">
+    <h3>Done-for-you listing videos</h3>
+    <p class="small">Fans spinning, fireplaces on, smooth camera moves, in vertical, widescreen and MLS-ready versions, with a caption written for you. Nothing is charged until you approve your quote.</p>
+    <a class="btn primary" href="/#request" style="width:100%;margin-top:10px">See packages and get my video</a></div></div>`;
+  $("#topupBox").hidden=true; $("#plansFine").hidden=true; $("#adminBox").hidden=true;
+  const u=ACCT&&ACCT.user; $("#acctLine").textContent=u?`Signed in as ${u.email}.`:"";
+  dlgOpen($("#plansDlg"));
+}
 async function openPlans(why){
   if(!ACCT) return; const u=ACCT.user, T=ACCT.tiers, st=$("#plansStatus");
   if(u&&u.partner&&!u.admin) return openVip(why);
+  if(!(u&&u.admin)||!T) return openDfy(why);
   $("#plansTitle").textContent="Plans"; $("#plansFine").hidden=false;
   $("#plansWhy").textContent=why||"1 credit turns 1 shot into real AI-generated moving footage. 3D depth videos are always free.";
   st.className="status"; st.textContent="";
@@ -3001,8 +3015,8 @@ const CLIP_COST=.35;
 function syncClipNote(){
   const n=$("#clipNote"); if(!n) return;
   const nReal=S.photos.filter(p=>!p.isVideo&&!p.sample).length, k=S.o.clips===99?(nReal||Math.min(S.o.count,12)):S.o.clips, all=S.o.clips===99;
-  if(IMPORT&&IMPORT.accounts&&k){ if(!signedIn()){ n.textContent=`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Sign in and pick a plan to use it (1 credit per shot).`; return; }
-    const c=credits(); n.textContent=c>=k?`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Uses ${k} of your ${ACCT.user.admin?"unlimited":c} AI credits and takes 2–5 minutes.`:c>0?`You have ${c} AI credit${c>1?"s":""}, so AI motion will animate your top ${c} shot${c>1?"s":""}. Open Plans for more.`:"You're out of AI credits, so every shot uses free 3D camera moves. Open Plans to add credits."; return; }
+  if(IMPORT&&IMPORT.accounts&&k){ if(!signedIn()){ n.textContent=`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Sign in to use it.`; return; }
+    const c=credits(); n.textContent=c>=k?`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Uses ${k} of your ${ACCT.user.admin?"unlimited":c} AI credits and takes 2–5 minutes.`:c>0?`You have ${c} AI credit${c>1?"s":""}, so AI motion will animate your top ${c} shot${c>1?"s":""}. Tap Done for you at the top to have us make it.`:"You're out of AI credits, so every shot uses free 3D camera moves. Tap Done for you at the top to have us make it."; return; }
   n.textContent=k?`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Takes 2–5 minutes and costs about $${(k*CLIP_COST).toFixed(2)} per video in AI credits. It's made for the video shape you've picked.`:"AI motion is off: every shot uses free camera moves with 3D depth.";
 }
 function cropForClip(p){
@@ -3177,7 +3191,7 @@ $("#aiMotionBtn").onclick=async ()=>{
   if(building||busy) return; const btn=$("#aiMotionBtn"), st=$("#aiLabelStatus");
   busyBtn(btn,true,"Making AI clips…"); lock(true); st.className="status"; st.textContent="Making AI motion clips. This takes 2–5 minutes.";
   if(IMPORT&&IMPORT.accounts&&!signedIn()){ busyBtn(btn,false,"Add AI motion again"); lock(false); openAuth("Sign in to use AI motion.","login"); return; }
-  if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion again"); lock(false); openPlans(isPartner()?"You've used all your videos. Request a VIP Reload below to keep going.":"You're out of AI credits. Pick a plan or add credits to use AI motion."); return; }
+  if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion again"); lock(false); openPlans(isPartner()?"You've used all your videos. Request a VIP Reload below to keep going.":"You're out of AI credits. We can make this video for you instead."); return; }
   activity("Making AI motion clips\u2026","AI motion takes 2\u20135 minutes. You can keep this tab open and wait.");
   try{ const r=await makeClips(S.o.clips||99,(d,n,note)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,note?`Quality check: ${note}`:"AI motion takes 2\u20135 minutes. You can keep this tab open and wait."); });
     renderReport();
@@ -3243,7 +3257,7 @@ async function autoBuild(files){
       const r=await makeClips(S.o.clips,(d,n,note)=>{ stage("clips","on",`${d}/${n}`); if(note) activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,`Quality check: ${note}`); });
       stage("clips",r.ok?"done":"skip",r.ok?`${r.ok} clips`:r.skipped==="signin"?"sign in":r.skipped==="credits"?"no credits":"stills");
       if(!r.fail&&!r.skipped&&aiWhy){ st.className="status warn"; st.textContent="AI labels didn't run: "+aiWhy; }
-      if(r.skipped){ st.className="status"; st.textContent=r.skipped==="signin"?"Sign in and pick a plan to add AI motion. This video uses free 3D camera moves.":(isPartner()?"You've used all your videos, so this one uses free 3D camera moves. Tap VIP Reload at the top for more.":"You're out of AI credits, so this video uses free 3D camera moves. Open Plans to add credits."); }
+      if(r.skipped){ st.className="status"; st.textContent=r.skipped==="signin"?"Sign in to add AI motion. This video uses free 3D camera moves.":(isPartner()?"You've used all your videos, so this one uses free 3D camera moves. Tap VIP Reload at the top for more.":"You're out of AI credits, so this video uses free 3D camera moves. Tap Done for you at the top to have us make it."); }
       if(r.fail){ st.className="status warn"; st.textContent=`${r.fail} AI clip${r.fail>1?"s":""} didn't work, so ${r.fail>1?"those shots stay":"that shot stays"} as a still: ${r.err}`; }
     }
 
