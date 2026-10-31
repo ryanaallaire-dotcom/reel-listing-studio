@@ -12,7 +12,7 @@ import { importListing } from "./lib/import.js";
 import { providerInfo } from "./lib/providers.js";
 import { assertPublicUrl } from "./lib/safe-fetch.js";
 import { runAI, aiEnabled } from "./lib/ai.js";
-import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel, clipSource } from "./lib/clips.js";
+import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel, clipSource, premiumEnabled } from "./lib/clips.js";
 import * as acct from "./lib/accounts.js";
 import { paypalEnabled, ensureSetup, clientConfig, confirmSubscription, cancelSubscription, createTopup, captureTopup, handleWebhook } from "./lib/paypal.js";
 
@@ -260,7 +260,7 @@ export const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && u.pathname === "/api/health") {
       return json(res, 200, { emailOn: emailEnabled(), publicUrl: (process.env.PUBLIC_URL || "").replace(/\/$/, "") || null, ok: true, service: "reel-listing", import: true, provider: providerInfo() || "none", keyRequired: false, accounts: true, accountsSaved: acct.dbPersistent(), payments: paypalEnabled(), ai: aiEnabled(),
-        clips: clipsEnabled(), clipModel: clipsEnabled() ? clipModel() : null, maxClips: MAX_CLIPS_PER_VIDEO, depth: fs.existsSync(DEPTH_MODEL) });
+        clips: clipsEnabled(), premium: premiumEnabled(), clipModel: clipsEnabled() ? clipModel() : null, maxClips: MAX_CLIPS_PER_VIDEO, depth: fs.existsSync(DEPTH_MODEL) });
     }
     if ((req.method === "GET" || req.method === "HEAD") && u.pathname.startsWith("/api/clip-src/")) {      // the photo fal downloads; unguessable, expires in 30 min
       const tok = u.pathname.slice(14).replace(/\.(jpg|png|webp)$/, "");

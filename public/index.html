@@ -513,7 +513,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         </details>
         <label class="toggle" hidden><input type="checkbox" id="autoRender"> Render the video when done</label>
         <h3 class="wz"><span>3</span>Make it</h3>
-        <label class="f lockable" id="modelRow" hidden style="margin-top:10px"><span>AI video model (owner test)</span><select id="aiModel"><option value="">Kling 2.5 Turbo Pro (default)</option><option value="kling26">Kling 2.6 Pro</option><option value="kling3">Kling 3.0 Pro</option></select></label>
+        <label class="f lockable" id="modelRow" hidden style="margin-top:10px"><span>AI video model (owner test)</span><select id="aiModel"><option value="">Kling 2.5 Turbo Pro (default)</option><option value="kling26">Kling 2.6 Pro</option><option value="kling3">Kling 3.0 Pro</option><option value="hf3">Premium: Higgsfield Kling 3.0</option></select></label>
         <p class="small clips-only" id="clipNote" hidden></p>
         <div class="row"><button class="btn primary big" id="go">Make my video</button><span class="status" id="goStatus" aria-live="polite"></span></div>
         <ol class="pipe" id="pipe" hidden>
@@ -790,7 +790,7 @@ try{
 }catch(e){}
 (function validateSaved(){
   const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:99,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={aiModel:v=>["","kling26","kling3"].includes(v),target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v9:v=>true,v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const ok={aiModel:v=>["","kling26","kling3","hf3"].includes(v),target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v9:v=>true,v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
@@ -2193,7 +2193,7 @@ function renderAcct(){
   $("#creditPill").hidden=!u; if(u) $("#creditNum").textContent=u.admin?"∞":u.credits;
   $("#plansBtn").textContent=u&&u.partner&&!u.admin?"VIP Reload":u&&u.admin?"Plans":"Done for you";
   if(IMPORT&&IMPORT.ai&&!window.claude){ if(u){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); } }
-  const mr=$("#modelRow"); if(mr){ mr.hidden=!(u&&u.admin&&IMPORT&&IMPORT.clips); $("#aiModel").value=S.o.aiModel||""; }
+  const mr=$("#modelRow"); if(mr){ mr.hidden=!(u&&u.admin&&IMPORT&&IMPORT.clips); const ho=$("#aiModel option[value=hf3]"); if(ho) ho.hidden=!(IMPORT&&IMPORT.premium); if(S.o.aiModel==="hf3"&&!(IMPORT&&IMPORT.premium)) S.o.aiModel=""; $("#aiModel").value=S.o.aiModel||""; }
   syncClipNote(); if(typeof refresh==="function"&&SEGS.length) refresh();
 }
 function dlgOpen(d){ try{ d.showModal(); }catch(e){ d.setAttribute("open",""); } }
