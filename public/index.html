@@ -1594,12 +1594,14 @@ function drawGL(t,A,lA,B,lB,tr,m0,m1,sh){
 function draw2D(t,A,lA,B,lB,m0){
   const one=(seg,local,alpha)=>{ const c=camAt(seg,local,t), src=seg.type==="stats"||seg.type==="outro"?seg.img.blur:(seg.img.isVideo&&seg.img.video&&seg.img.video.readyState>=2?clipFrame(seg.img):seg.img.src);
     ctx.save(); ctx.globalAlpha=alpha; ctx.filter="none";
+    // a <video>'s own size is videoWidth/videoHeight (its .width is 0 unless set), which made AI-clip shots draw nothing in 2D mode
+    const sw0=src.videoWidth||src.width, sh0=src.videoHeight||src.height;
     if(seg.fit){ const b=seg.img.blur, bs=Math.max(W/b.width,H/b.height)*1.1; ctx.drawImage(b,(W-b.width*bs)/2,(H-b.height*bs)/2,b.width*bs,b.height*bs);
       ctx.fillStyle="rgba(0,0,0,.58)"; ctx.fillRect(0,0,W,H);
       const [x,y,cw,ch]=seg.card, X0=x*W, Y0=y*H, CW=cw*W, CH=ch*H; ctx.beginPath(); ctx.roundRect(X0,Y0,CW,CH,18*u); ctx.clip();
-      const s2=Math.max(CW/src.width,CH/src.height)*c.C[0], dw2=src.width*s2, dh2=src.height*s2;
+      const s2=Math.max(CW/sw0,CH/sh0)*c.C[0], dw2=sw0*s2, dh2=sh0*s2;
       ctx.drawImage(src,X0+(CW-dw2)/2-c.C[1]*dw2,Y0+(CH-dh2)/2-c.C[2]*dh2,dw2,dh2); ctx.restore(); return; }
-    const iw=src.width, ih=src.height, s=Math.max(W/iw,H/ih)*c.C[0], dw=iw*s, dh=ih*s;
+    const iw=sw0, ih=sh0, s=Math.max(W/iw,H/ih)*c.C[0], dw=iw*s, dh=ih*s;
     ctx.drawImage(src,(W-dw)/2-c.C[1]*dw,(H-dh)/2-c.C[2]*dh,dw,dh);
     if(segExp(seg)<1){ ctx.fillStyle=`rgba(0,0,0,${1-segExp(seg)})`; ctx.fillRect(0,0,W,H); } ctx.restore(); };
   one(A,lA,1); if(B) one(B,lB,easeIO(m0));
@@ -3073,12 +3075,19 @@ function cropForClip(p){
   const c=mk(sw*sc,sh*sc); c.getContext("2d").drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height);
   return c.toDataURL("image/jpeg",.9);
 }
-async function clipOne(p,onState,retry){
+// some AI clips (newer models: HDR / 10-bit / HEVC) play in a <video> tag but draw as pure black into the film: catch that
+async function clipIsBlack(vp){
+  const v=vp.video, c=mk(32,32), g=c.getContext("2d",{willReadFrequently:true}); let dark=0;
+  for(const f of [.25,.5,.75]){ try{ await seekTo(v,v.duration*f); g.drawImage(v,0,0,32,32); const d=g.getImageData(0,0,32,32).data; let m=0; for(let i=0;i<d.length;i+=4) m+=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]; if(m/(d.length/4)<8) dark++; }catch(e){ dark++; } }
+  try{ await seekTo(v,vp.inPoint||0); }catch(e){}
+  return dark===3;
+}
+async function clipOne(p,onState,retry,modelOverride){
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
   const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["rpan","rtilt","rdiag","truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"rpan";
-  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[],movers:p.movers||"",retry:!!retry,model:S.o.aiModel||"",lockCam:lockFor(p)})});
+  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[],movers:p.movers||"",retry:!!retry,model:modelOverride??(S.o.aiModel||""),lockCam:lockFor(p)})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"The AI video service couldn't start.");
-  const t0=Date.now();
+  const t0=Date.now(), usedModel=modelOverride??(S.o.aiModel||"");
   for(;;){
     await new Promise(res=>setTimeout(res,4000));
     const s=await fetch(`/api/clips/${j.id}`,{headers}).then(r=>r.json()).catch(()=>({status:"working"}));
@@ -3090,7 +3099,13 @@ async function clipOne(p,onState,retry){
   }
   const v=await fetch(`/api/clips/${j.id}/video`,{headers}); if(!v.ok) throw new Error("Couldn't download the AI clip.");
   const blob=await v.blob();
-  return makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,live:p.live,movers:p.movers,aiClip:true,srcPhoto:p,camLocked:lockFor(p),mustMove:hasMovers(p)});
+  const vp=await makeVideoPhoto(new File([blob],"ai-clip.mp4",{type:"video/mp4"}),{caption:p.caption,kind:p.kind,live:p.live,movers:p.movers,aiClip:true,srcPhoto:p,camLocked:lockFor(p),mustMove:hasMovers(p)});
+  if(await clipIsBlack(vp)){
+    try{ vp.video.removeAttribute("src"); vp.video.load(); }catch(e){}
+    if(usedModel) return clipOne(p,onState,retry,"");     // that model's clips don't draw here: use the standard model for this shot
+    throw new Error("The AI clip came back black, so this shot uses a camera move instead.");
+  }
+  return vp;
 }
 function renderReport(){
   const box=$("#shotReport"); if(!box) return; if(!CLIP_REPORT.length){ box.hidden=true; return; }
