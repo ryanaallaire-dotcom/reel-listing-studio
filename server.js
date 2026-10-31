@@ -2,7 +2,7 @@
 //   GET  /               the Studio
 //   GET  /api/health     lets the Studio know link import is available
 //   POST /api/import     { url } → ZIP of photos + listing.json (same format as the Chrome Grabber)
-import { leadAlert, emailEnabled, sendPasswordLink, welcomeEmail, sendWelcome } from "./lib/notify.js";
+import { leadAlert, emailEnabled, sendPasswordLink, welcomeEmail, sendWelcome, vipAlert } from "./lib/notify.js";
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -49,6 +49,7 @@ const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!do
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
 const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map();
+const reloadHits = new Map();
 function allow(ip, map = hits, limit = PER_HOUR) {
   const now = Date.now(), list = (map.get(ip) || []).filter(t => now - t < 3600e3);
   if (list.length >= limit) { map.set(ip, list); return false; }
@@ -139,7 +140,11 @@ export const server = http.createServer(async (req, res) => {
     if (u.pathname.startsWith("/api/account/") || u.pathname.startsWith("/api/partner/") || u.pathname === "/api/me") {
       if (req.method === "GET" && u.pathname === "/api/me") {
         let paypal = null; try { paypal = await clientConfig(); } catch (e) { console.error("paypal setup", e.message); }
-        return json(res, 200, { user: meJson(acct.userFrom(req)), tiers: acct.TIERS, topup: acct.TOPUP, paypal, inviteRequired: !!ACCESS_KEY });
+        const me = acct.userFrom(req);
+        // partners never see the public self-serve prices; they get VIP Reload instead
+        const vip = { price: process.env.VIP_RELOAD_PRICE || "", videos: +process.env.VIP_RELOAD_VIDEOS || 25 };
+        return json(res, 200, me && me.partner && !acct.isAdmin(me) ? { user: meJson(me), vip, inviteRequired: !!ACCESS_KEY }
+          : { user: meJson(me), tiers: acct.TIERS, topup: acct.TOPUP, paypal, vip, inviteRequired: !!ACCESS_KEY });
       }
       if (req.method === "POST" && (u.pathname === "/api/account/signup" || u.pathname === "/api/account/login")) {
         if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many sign-in attempts. Wait a few minutes, then try again." });
@@ -185,6 +190,16 @@ export const server = http.createServer(async (req, res) => {
         res.writeHead(200, { "content-type": "application/pdf", "content-length": pdf.length, "cache-control": "private, max-age=600",
           "content-disposition": `${u.searchParams.has("download") ? "attachment" : "inline"}; filename="Reel-Listing-Studio-Partner-Launch-Plan.pdf"` });
         return res.end(pdf);
+      }
+      if (u.pathname === "/api/partner/reload" && req.method === "POST") {
+        const user = needUser(req); if (!user.partner) return json(res, 403, { error: "Partner accounts only." });
+        if (!allow("u" + user.id, reloadHits, 5)) return json(res, 429, { error: "You've already sent a few requests this hour. We'll be in touch shortly." });
+        const { videos, note } = await readJson(req);
+        const n = [25, 50, 100].includes(+videos) ? +videos : 25;
+        acct.addLead({ name: `VIP Reload: ${user.name || user.email}`, email: user.email, phone: user.phone || "", package: `VIP Reload, ${n} videos`,
+          notes: `Partner reload request. Videos left: ${Math.floor((user.monthly + user.extra) / acct.CREDITS_PER_VIDEO)}. ${String(note || "").slice(0, 500)}` }, null);
+        vipAlert({ name: user.name || user.email, email: user.email, phone: user.phone, videos: n, left: Math.floor((user.monthly + user.extra) / acct.CREDITS_PER_VIDEO), note: String(note || "").slice(0, 500) });
+        return json(res, 200, { ok: true });
       }
       if (u.pathname === "/api/partner/leads" && req.method === "GET") {
         const user = needUser(req); if (!user.partner && !acct.isAdmin(user)) return json(res, 403, { error: "Partner accounts only." });

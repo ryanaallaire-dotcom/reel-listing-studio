@@ -249,7 +249,7 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   check("Partners: nobody can sign in before the partner sets a password; the link shows who it's for", noLogin.status !== 200 && info.email === "gary.partner@test.com" && info.name === "Gary Test", JSON.stringify(info));
   const set = await api(Gp, "/api/account/setup", { token: tok, password: "gary-secret-99" }, { as: "gary" });
   const gme = (await (await api(Gp, "/api/me", undefined, { as: "gary" })).json()).user;
-  check("Partners: setting a password signs them in on an Agency (Premium) partner plan, no watermark, 300 credits", set.status === 200 && gme?.tier === "agency" && gme.partner && gme.tierLabel === "Agency Partner" && gme.watermark === false && gme.credits === 300, JSON.stringify(gme));
+  check("Partners: setting a password signs them in on a VIP partner plan (Agency features), no watermark, 300 credits", set.status === 200 && gme?.tier === "agency" && gme.partner && gme.tierLabel === "VIP Partner" && gme.watermark === false && gme.credits === 300, JSON.stringify(gme));
   const again = await api(Gp, "/api/account/setup", { token: tok, password: "another-pass-1" }, { as: "gary2" });
   const relog = await api(Gp, "/api/account/login", { email: "gary.partner@test.com", password: "gary-secret-99" }, { as: "gary3" });
   check("Partners: the setup link works once; the chosen password signs in", again.status === 404 && relog.status === 200);
@@ -290,6 +290,15 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   const anon = await fetch(`http://127.0.0.1:${Gp}/api/partner/guide.pdf`);
   check("Launch Plan: partners can open the PDF; customers and visitors can't", gpdf.status === 200 && gpdf.headers.get("content-type") === "application/pdf" && upd.status === 403 && anon.status === 401, `${gpdf.status} ${upd.status} ${anon.status}`);
   mails.length = 0;
+  const meP = await (await api(Gp, "/api/me", undefined, { as: "gary3" })).json();
+  const meO = await (await api(Gp, "/api/me")).json();
+  mails.length = 0;
+  const vr = await api(Gp, "/api/partner/reload", { videos: 50, note: "by Friday" }, { as: "gary3" });
+  const vrNo = await api(Gp, "/api/partner/reload", { videos: 50 }, { as: "u" });
+  await new Promise(r => setTimeout(r, 300));
+  check("VIP Reload: partners don't get public plan prices; they can request a VIP Reload (owner emailed); customers can't", !meP.tiers && !meP.topup && !!meP.vip && !!meO.tiers
+    && vr.status === 200 && vrNo.status === 403 && /VIP Reload request: Gary Test \(50 videos\)/.test(mails[0]?.body.subject || ""), mails[0]?.body.subject);
+  mails.length = 0;
   const badLead = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "No Contact" }) });
   check("Leads: a request needs an email or phone", badLead.status === 400);
   const setc = await api(Gp, "/api/partner/link", { code: "gary" }, { as: "gary3" });
@@ -308,7 +317,7 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   check("Leads: partners see their own requests", lead2.status === 200 && mine.leads?.length === 2 && mine.leads.some(l => l.email === "amy@realty.test"), JSON.stringify(mine).slice(0, 200));
   const notPartner = await api(Gp, "/api/partner/leads", undefined, { as: "u" });
   const all = await (await api(Gp, "/api/account/admin/leads")).json();
-  check("Leads: customers can't see leads; the owner sees all with the partner's name", notPartner.status === 403 && all.leads?.length === 2 && all.leads[0].partner === "Gary Test");
+  check("Leads: customers can't see leads; the owner sees all with the partner's name", notPartner.status === 403 && all.leads?.filter(l => !/^VIP Reload/.test(l.name)).length === 2 && all.leads.filter(l => !/^VIP Reload/.test(l.name))[0].partner === "Gary Test");
   const ref2 = await fetch(`http://127.0.0.1:${Gp}/api/account/signup`, { method: "POST", headers: { "content-type": "application/json", cookie: "rls_ref=gary" }, body: JSON.stringify({ email: "newagent@test.com", password: "correct-horse-1" }) });
   const mine2 = await (await api(Gp, "/api/partner/leads", undefined, { as: "gary3" })).json();
   check("Referrals: an agent who signs up through the link is credited to the partner", ref2.status === 200 && mine2.signups?.some(x => x.email === "newagent@test.com"), JSON.stringify(mine2.signups));

@@ -307,6 +307,14 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .script pre{white-space:pre-wrap;font:inherit;font-size:14.5px;line-height:1.5;margin:0;background:var(--panel,#1a1a24);border-radius:8px;padding:10px;user-select:text}
 .script .subj{font-size:14px;margin:0 0 6px}
 .tools-group{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.vip{display:grid;grid-template-columns:1fr 1.2fr;gap:16px;grid-column:1/-1}
+.vip>div{border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--panel-2)}
+.vip-right{border-color:var(--brand)!important;box-shadow:0 0 0 1px var(--brand) inset}
+.vip-tag{display:inline-block;background:var(--brand);color:var(--on-brand);font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:8px}
+.vip-num{font-size:44px;font-weight:800;line-height:1;margin:10px 0 6px}
+.vip-num small{font-size:16px;font-weight:600;color:var(--muted)}
+.vip select,.vip input{width:100%;margin-top:4px}
+@media (max-width:700px){ .vip{grid-template-columns:1fr} }
 .plan-card{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel-2)}
 .linkbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .linkbox input{flex:1 1 220px;min-width:0}
@@ -2177,12 +2185,13 @@ async function loadMe(){
 function setUser(u){ if(!ACCT) ACCT={}; ACCT.user=u; renderAcct(); }
 function renderAcct(){
   if(!ACCT) return; const u=ACCT.user;
+  const pb=$("#plansBtn"); if(pb) pb.textContent=u&&u.partner&&!u.admin?"VIP Reload":"Plans";
   const tp=$("#toolsPill"); if(tp) tp.hidden=!(u&&(u.partner||u.admin));
   $("#acct").hidden=false;
   $("#signBtn").textContent=u?"Sign out":"Sign in"; $("#signBtn").classList.toggle("primary",!u);
   $("#signBtn").title=u?`Signed in as ${u.email}`:"";
   $("#creditPill").hidden=!u; if(u) $("#creditNum").textContent=u.admin?"∞":u.credits;
-  $("#plansBtn").textContent=u&&u.tier!=="free"?u.tierLabel:"Plans";
+  $("#plansBtn").textContent=u&&u.partner&&!u.admin?"VIP Reload":u&&u.tier!=="free"?u.tierLabel:"Plans";
   if(IMPORT&&IMPORT.ai&&!window.claude){ if(u){ SAMPLE=serverAI(); document.body.classList.remove("ai-off"); } }
   const mr=$("#modelRow"); if(mr){ mr.hidden=!(u&&u.admin&&IMPORT&&IMPORT.clips); $("#aiModel").value=S.o.aiModel||""; }
   syncClipNote(); if(typeof refresh==="function"&&SEGS.length) refresh();
@@ -2243,8 +2252,36 @@ function loadPP(ns,params){
     sc.src=`https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(ACCT.paypal.clientId)}&currency=USD&components=buttons&${params}`;
     sc.dataset.namespace=ns; sc.onload=()=>res(window[ns]); sc.onerror=()=>{ ppLoaded[ns]=null; rej(new Error("paypal")); }; document.head.appendChild(sc); });
 }
+// Partners: no public prices. Their package, and a VIP Reload at partner-only pricing.
+const isPartner=()=>!!(ACCT&&ACCT.user&&ACCT.user.partner&&!ACCT.user.admin);
+function openVip(why){
+  const u=ACCT.user, v=ACCT.vip||{videos:25}, st=$("#plansStatus"), left=Math.floor((u.credits||0)/12);
+  $("#plansTitle").textContent="VIP Reload";
+  $("#plansWhy").textContent=why||"Partner-only pricing. As a partner you always get our best rate on more videos.";
+  st.className="status"; st.textContent="";
+  $("#planCards").innerHTML=`<div class="vip">
+    <div class="vip-left"><span class="vip-tag">VIP partner</span><h3>Your package</h3>
+      <div class="vip-num">${left}<small> video${left===1?"":"s"} left</small></div>
+      <p class="small">${u.credits} AI credits on your VIP partner account. Each video uses up to about 12.</p></div>
+    <div class="vip-right"><h3>VIP Reload</h3>
+      <p class="small">${v.price?`${v.videos} more videos for ${escapeHtml(v.price)}, partner pricing you won't find anywhere else.`:"More videos at partner-only pricing, our best rate, reserved for partners."}</p>
+      <label class="small" style="display:block;margin:10px 0 6px">How many videos?<select id="vipQty"><option value="25">25 videos</option><option value="50">50 videos</option><option value="100">100 videos</option></select></label>
+      <label class="small" style="display:block;margin:0 0 10px">Anything we should know? (optional)<input id="vipNote" maxlength="300" placeholder="e.g. need them by Friday"></label>
+      <button class="btn primary" id="vipGo" style="width:100%">Request my VIP Reload</button>
+      <p class="small" style="margin:8px 0 0">We'll send your invoice and add the videos to your account, usually the same day.</p></div></div>`;
+  $("#vipGo").onclick=async()=>{ const b=$("#vipGo"); b.disabled=true; b.textContent="Sending\u2026";
+    const r=await fetch("/api/partner/reload",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({videos:+$("#vipQty").value,note:$("#vipNote").value})}); const j=await r.json().catch(()=>({}));
+    if(r.ok){ b.textContent="Requested \u2713"; st.className="status ok"; st.textContent="Got it. We'll send your VIP Reload invoice shortly and add the videos as soon as it's paid."; }
+    else { b.disabled=false; b.textContent="Request my VIP Reload"; st.className="status bad"; st.textContent=j.error||"Couldn't send that. Call or text (715) 222-6776."; } };
+  $("#topupBox").hidden=true; $("#plansFine").hidden=true;
+  $("#acctLine").textContent=`Signed in as ${u.email}.`;
+  $("#adminBox").hidden=true;
+  dlgOpen($("#plansDlg"));
+}
 async function openPlans(why){
   if(!ACCT) return; const u=ACCT.user, T=ACCT.tiers, st=$("#plansStatus");
+  if(u&&u.partner&&!u.admin) return openVip(why);
+  $("#plansTitle").textContent="Plans"; $("#plansFine").hidden=false;
   $("#plansWhy").textContent=why||"1 credit turns 1 shot into real AI-generated moving footage. 3D depth videos are always free.";
   st.className="status"; st.textContent="";
   const order=["free","starter","pro","agency"];
@@ -3140,7 +3177,7 @@ $("#aiMotionBtn").onclick=async ()=>{
   if(building||busy) return; const btn=$("#aiMotionBtn"), st=$("#aiLabelStatus");
   busyBtn(btn,true,"Making AI clips…"); lock(true); st.className="status"; st.textContent="Making AI motion clips. This takes 2–5 minutes.";
   if(IMPORT&&IMPORT.accounts&&!signedIn()){ busyBtn(btn,false,"Add AI motion again"); lock(false); openAuth("Sign in to use AI motion.","login"); return; }
-  if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion again"); lock(false); openPlans("You're out of AI credits. Pick a plan or add credits to use AI motion."); return; }
+  if(IMPORT&&IMPORT.accounts&&credits()<1){ busyBtn(btn,false,"Add AI motion again"); lock(false); openPlans(isPartner()?"You've used all your videos. Request a VIP Reload below to keep going.":"You're out of AI credits. Pick a plan or add credits to use AI motion."); return; }
   activity("Making AI motion clips\u2026","AI motion takes 2\u20135 minutes. You can keep this tab open and wait.");
   try{ const r=await makeClips(S.o.clips||99,(d,n,note)=>{ st.textContent=`Making AI motion clips: ${d} of ${n} done. This takes 2–5 minutes.`; activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,note?`Quality check: ${note}`:"AI motion takes 2\u20135 minutes. You can keep this tab open and wait."); });
     renderReport();
@@ -3206,7 +3243,7 @@ async function autoBuild(files){
       const r=await makeClips(S.o.clips,(d,n,note)=>{ stage("clips","on",`${d}/${n}`); if(note) activity(`Making AI motion clips \u00b7 ${d} of ${n} done\u2026`,`Quality check: ${note}`); });
       stage("clips",r.ok?"done":"skip",r.ok?`${r.ok} clips`:r.skipped==="signin"?"sign in":r.skipped==="credits"?"no credits":"stills");
       if(!r.fail&&!r.skipped&&aiWhy){ st.className="status warn"; st.textContent="AI labels didn't run: "+aiWhy; }
-      if(r.skipped){ st.className="status"; st.textContent=r.skipped==="signin"?"Sign in and pick a plan to add AI motion. This video uses free 3D camera moves.":"You're out of AI credits, so this video uses free 3D camera moves. Open Plans to add credits."; }
+      if(r.skipped){ st.className="status"; st.textContent=r.skipped==="signin"?"Sign in and pick a plan to add AI motion. This video uses free 3D camera moves.":(isPartner()?"You've used all your videos, so this one uses free 3D camera moves. Tap VIP Reload at the top for more.":"You're out of AI credits, so this video uses free 3D camera moves. Open Plans to add credits."); }
       if(r.fail){ st.className="status warn"; st.textContent=`${r.fail} AI clip${r.fail>1?"s":""} didn't work, so ${r.fail>1?"those shots stay":"that shot stays"} as a still: ${r.err}`; }
     }
 
