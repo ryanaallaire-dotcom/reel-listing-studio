@@ -26,8 +26,8 @@ const AI_PER_HOUR = +process.env.AI_PER_HOUR || 60;            // per visitor
 const CLIPS_PER_HOUR = +process.env.CLIPS_PER_HOUR || 30;       // per visitor — each clip costs you money
 const MAX_CLIPS_PER_VIDEO = +process.env.MAX_CLIPS_PER_VIDEO || 6;
 const DEPTH_MODEL = path.join(DIR, "public", "models", "depth_q8.onnx");
-const STATIC = { "/vendor/": path.join(DIR, "public", "vendor"), "/models/": path.join(DIR, "public", "models") };
-const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".onnx": "application/octet-stream" };
+const STATIC = { "/vendor/": path.join(DIR, "public", "vendor"), "/models/": path.join(DIR, "public", "models"), "/media/": path.join(DIR, "public", "media") };
+const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".onnx": "application/octet-stream", ".mp4": "video/mp4", ".jpg": "image/jpeg" };
 
 const STUDIO = path.join(DIR, "public", "index.html");
 const SKELETON_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>`;
@@ -74,8 +74,17 @@ export const server = http.createServer(async (req, res) => {
         const name = path.basename(decodeURIComponent(u.pathname.slice(pre.length)));
         const file = path.join(STATIC[pre], name), type = TYPES[path.extname(name)];
         if (!type || !name || name.startsWith(".") || !fs.existsSync(file)) return json(res, 404, { error: "Not found." });
-        const st = fs.statSync(file);
-        res.writeHead(200, { "content-type": type, "content-length": st.size, "cache-control": "public, max-age=604800, immutable" });
+        const st = fs.statSync(file), cache = pre === "/media/" ? "public, max-age=3600" : "public, max-age=604800, immutable";
+        if (pre === "/media/" && u.searchParams.has("download")) res.setHeader("content-disposition", `attachment; filename="${name}"`);
+        // videos: phones and Safari need byte ranges to play and seek
+        const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || "");
+        if (m && (m[1] || m[2])) {
+          let a = m[1] ? +m[1] : Math.max(0, st.size - +m[2]), b = m[1] && m[2] ? Math.min(+m[2], st.size - 1) : st.size - 1;
+          if (a >= st.size || a > b) { res.writeHead(416, { "content-range": `bytes */${st.size}` }); return res.end(); }
+          res.writeHead(206, { "content-type": type, "content-length": b - a + 1, "content-range": `bytes ${a}-${b}/${st.size}`, "accept-ranges": "bytes", "cache-control": cache });
+          return fs.createReadStream(file, { start: a, end: b }).pipe(res);
+        }
+        res.writeHead(200, { "content-type": type, "content-length": st.size, "accept-ranges": "bytes", "cache-control": cache });
         return fs.createReadStream(file).pipe(res);
       }
     }
