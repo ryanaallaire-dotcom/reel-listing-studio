@@ -2326,7 +2326,11 @@ const DEMO_VIDEOS=[
   {id:"demo-lakefront-walkthrough",t:"Finished walkthrough (lakefront rental)",d:"A real Reel Listing Studio video made from listing photos: fan spinning, water moving, branded titles. Best example to send first."},
   {id:"ad-3-steps",t:"Ad: \u201cIt only takes 3 steps\u201d",d:"Vertical ad showing how simple it is. Great for Reels, Stories and Facebook groups."},
   {id:"ad-3-steps-v2",t:"Ad: 3 steps (short cut)",d:"8-second version of the 3-step ad for quick posts and DMs."},
-  {id:"ad-presenter",t:"Ad: presenter intro",d:"A presenter explains Reel Listing Studio for agents. Good for cold audiences."}];
+  {id:"ad-presenter",t:"Ad: presenter intro",d:"A presenter explains Reel Listing Studio for agents. Good for cold audiences."},
+  {id:"ad-creator-commercial",t:"Ad: creator-style commercial",d:"Selfie-style ad answering \u201chow did you turn a photo into a video?\u201d Feels native on TikTok and Reels."},
+  {id:"example-walkthrough-modern",t:"Example: modern home walkthrough",d:"Vertical walkthrough of a bright mid-century home. Shows the walkthrough style agents want."},
+  {id:"example-3d-interior",t:"Example: 3D interior animation",d:"Smooth camera moves through designed interiors. Good for luxury and new-build listings."},
+  {id:"example-luxury-dallas",t:"Example: luxury home tour (Dallas)",d:"Short luxury tour for inspiration. Show it as the look agents can get, not as a video of their listing."}];
 const mediaURL=(id,ext="mp4")=>`${location.origin}/media/${id}.${ext}`;
 function toolsMe(){
   const u=(ACCT&&ACCT.user)||{}; let saved={}; try{ saved=JSON.parse(localStorage.getItem("rls-tools-"+(u.email||""))||"{}"); }catch(e){}
