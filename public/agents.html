@@ -89,7 +89,7 @@ header .btn{padding:11px 20px;font-size:15px}
 .receipt{border:1px dashed rgba(242,240,235,.3);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;font-family:var(--mono);font-size:14px;color:var(--band-muted)}
 .receipt .row{display:flex;justify-content:space-between;gap:12px}
 .receipt .tot{border-top:1px dashed rgba(242,240,235,.3);padding-top:14px;color:var(--on-band);font-weight:500}
-.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:40px}
 .quick div{border-top:2px solid #F2A541;padding-top:12px;font-size:15px;color:var(--band-muted)}
 .quick b{display:block;color:var(--on-band);font-size:17px}
 .proof .fill{background:#4A3C10;color:#F2F0EB}
@@ -270,7 +270,6 @@ html{scroll-behavior:smooth}
   </div>
   <div class="quick" style="grid-column:1/-1">
     <div><b>Jesse P., Midwest agent</b>Ordered in under 9 minutes.</div>
-    <div><b>Josh N., licensed agent, Alaska (referral partner)</b>Ordered on first look.</div>
     <div><b>Alan, Airbnb owner</b>Ordered right away for his rental.</div>
   </div>
 </div></section>
