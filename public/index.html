@@ -1427,7 +1427,9 @@ function build(){
       push({type:"photo",dur:dd,img:ph,tIn:nextTrans(),idx:i,sub:j}); }
     if(S.o.stats && i+1===statAt && stats().length+highlights().length){ const [ty,d]=t.toStats; push({type:"stats",dur:t.statsB*beat,img:rest[(i+1)%rest.length]||P[0],tIn:{type:ty,d,dir:1}}); }
   });
-  const [ty,d]=t.toOutro; push({type:"outro",dur:t.outroB*beat,img:P[0],tIn:{type:ty,d,dir:1}});
+  // the ending scales with the video: a short 3-shot video shouldn't spend a third of its time on the closing card
+  const outroBeats=Math.min(t.outroB,Math.max(4,Math.round(at/beat*.22)));
+  const [ty,d]=t.toOutro; push({type:"outro",dur:outroBeats*beat,img:P[0],tIn:{type:ty,d,dir:1}});
   // director: pick a camera move per shot so the film flows
   let alt=0, walkDir=1, lastMove="", prevMove="";
   segs.forEach((s,k)=>{
@@ -2106,7 +2108,8 @@ function updatePending(){
   if(!PENDING.length){ box.hidden=true; USER_ORDER=false; $("#go").classList.remove("pulse"); return; }
   const zips=PENDING.filter(f=>/\.zip$/i.test(f.name)||f.type==="application/zip").length, vids=PENDING.filter(f=>/^video\//.test(f.type)||/\.(mp4|mov|m4v|webm)$/i.test(f.name)).length, pics=PENDING.length-zips-vids;
   const parts=[pics?`${pics} photo${pics>1?"s":""}`:"",vids?`${vids} video clip${vids>1?"s":""}`:"",zips?`${zips} ZIP${zips>1?"s":""}`:""].filter(Boolean).join(", ");
-  box.hidden=false; $("#pendingText").textContent=`${parts} added. Add more if you like, then press Make my video.`;
+  box.hidden=false; const useN=Math.min(pics,S.o.count)+vids;
+  $("#pendingText").textContent=pics>S.o.count?`${parts} added. Nothing has started yet: tap \u00d7 on the ones you don't want. Make my video uses ${useN} (the best ${S.o.count} photos${vids?" plus your clips":""}).`:`${parts} added. Nothing has started yet: tap \u00d7 to remove any, drag to reorder, then press Make my video.`;
   const th=$("#pendingThumbs"); if(th) renderPendingThumbs(th,zips,pics);
   $("#go").classList.add("pulse");
 }
