@@ -49,13 +49,14 @@ const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!do
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
 const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map();
-const reloadHits = new Map();
+const reloadHits = new Map(), emailHits = new Map(), leadHits = new Map();
+const AUTH_PER_IP = +process.env.AUTH_PER_IP || 300;   // a workshop room shares one Wi-Fi address
 function allow(ip, map = hits, limit = PER_HOUR) {
   const now = Date.now(), list = (map.get(ip) || []).filter(t => now - t < 3600e3);
   if (list.length >= limit) { map.set(ip, list); return false; }
   list.push(now); map.set(ip, list); return true;
 }
-const cache = new Map(); let cacheBytes = 0; const CACHE_MAX = 400e6;
+const cache = new Map(); let cacheBytes = 0; const CACHE_MAX = +process.env.IMPORT_CACHE_MB * 1e6 || 120e6;   // kept small: the server has 512 MB
 function cacheGet(k) { const e = cache.get(k); if (!e) return null; if (Date.now() - e.at > CACHE_HOURS * 3600e3) { cache.delete(k); cacheBytes -= e.zip.length; return null; } return e; }
 function cacheSet(k, v) { cache.set(k, { ...v, at: Date.now() }); cacheBytes += v.zip.length;
   for (const [key, e] of cache) { if (cacheBytes <= CACHE_MAX) break; cache.delete(key); cacheBytes -= e.zip.length; } }
@@ -97,7 +98,7 @@ export const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(agentsPage(partner));
     }
     if (req.method === "POST" && u.pathname === "/api/leads") {
-      if (!allow(clientIp(req), authHits, 15)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes, or call us." });
+      if (!allow(clientIp(req), leadHits, 120)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes, or call us." });
       const body = await readJson(req);
       if (body.website) return json(res, 200, { ok: true });   // bots fill the hidden field
       const saved = acct.addLead(body, cookieVal(req, "rls_ref") || body.ref);
@@ -148,8 +149,9 @@ export const server = http.createServer(async (req, res) => {
           : { user: meJson(me), vip, inviteRequired: !!ACCESS_KEY });
       }
       if (req.method === "POST" && (u.pathname === "/api/account/signup" || u.pathname === "/api/account/login")) {
-        if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many sign-in attempts. Wait a few minutes, then try again." });
         const body = await readJson(req);
+        if (!allow(clientIp(req), authHits, AUTH_PER_IP) || !allow("e:" + String(body.email || "").trim().toLowerCase(), emailHits, 10))
+          return json(res, 429, { error: "Too many sign-in attempts. Wait a few minutes, then try again." });
         const token = u.pathname.endsWith("signup") ? acct.signup(body) : acct.login(body);
         if (u.pathname.endsWith("signup")) { const nu = acct.userFrom({ headers: { cookie: acct.sessionCookie(token, false).split(";")[0] } }); if (nu) acct.setReferredBy(nu.id, cookieVal(req, "rls_ref")); }
         res.setHeader("set-cookie", acct.sessionCookie(token, SECURE));
@@ -229,8 +231,8 @@ export const server = http.createServer(async (req, res) => {
         return json(res, 200, { results });
       }
       if (u.pathname === "/api/account/forgot" && req.method === "POST") {
-        if (!allow(clientIp(req), authHits, 10)) return json(res, 429, { error: "Too many attempts. Wait a few minutes, then try again." });
         const { email } = await readJson(req);
+        if (!allow(clientIp(req), authHits, AUTH_PER_IP) || !allow("f:" + String(email || "").trim().toLowerCase(), emailHits, 5)) return json(res, 429, { error: "Too many attempts. Wait a few minutes, then try again." });
         if (!emailEnabled()) return json(res, 503, { error: "Password reset by email isn't set up yet. Contact support@advancemarketinggroup.net and we'll reset it for you." });
         const user = acct.findUserByEmail(email);
         if (user) { const base = (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
@@ -239,7 +241,7 @@ export const server = http.createServer(async (req, res) => {
       }
       if (u.pathname === "/api/account/setup") {
         if (req.method === "GET") { try { return json(res, 200, acct.setupInfo(u.searchParams.get("token"))); } catch (e) { return json(res, e.status || 400, { error: e.message }); } }
-        if (req.method === "POST") { if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many attempts. Wait a few minutes, then try again." });
+        if (req.method === "POST") { if (!allow(clientIp(req), authHits, AUTH_PER_IP)) return json(res, 429, { error: "Too many attempts. Wait a few minutes, then try again." });
           const body = await readJson(req);
           try { const token = acct.setupPassword(body); res.setHeader("set-cookie", acct.sessionCookie(token, SECURE)); return json(res, 200, { ok: true }); }
           catch (e) { return json(res, e.status || 400, { error: e.message }); } }
@@ -282,7 +284,7 @@ export const server = http.createServer(async (req, res) => {
       }
       const m = u.pathname.match(/^\/api\/clips\/([0-9a-f-]{36})(\/video)?$/);
       if (req.method === "GET" && m) {
-        if (m[2]) { const buf = clipVideo(m[1], owner); res.writeHead(200, { "content-type": "video/mp4", "content-length": buf.length, "cache-control": "no-store" }); return res.end(buf); }
+        if (m[2]) { const v = clipVideo(m[1], owner); res.writeHead(200, { "content-type": "video/mp4", "content-length": v.size, "cache-control": "no-store" }); return fs.createReadStream(v.file).pipe(res); }
         return json(res, 200, clipStatus(m[1], owner));
       }
     }
@@ -293,8 +295,12 @@ export const server = http.createServer(async (req, res) => {
       assertPublicUrl(url);
       const key = cacheKey(url), hit = cacheGet(key);
       if (!hit) {
-        if (!allow(clientIp(req))) return json(res, 429, { error: `You've imported ${PER_HOUR} listings this hour. Wait a bit, then try again.` });
-        if (running >= MAX_PARALLEL) return json(res, 503, { error: "The importer is busy with other listings. Try again in a few seconds." });
+        if (!allow("u" + user.id)) return json(res, 429, { error: `You've imported ${PER_HOUR} listings this hour. Wait a bit, then try again.` });
+        // a busy room waits its turn for a few seconds instead of getting an error
+        for (let waited = 0; running >= MAX_PARALLEL; waited += 500) {
+          if (waited > 90e3) return json(res, 503, { error: "The importer is very busy right now. Try again in a minute." });
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
       acct.countImport(user);
       let out = hit;
@@ -304,9 +310,9 @@ export const server = http.createServer(async (req, res) => {
       return res.end(out.zip);
     }
     if (req.method === "POST" && u.pathname === "/api/ai") {
-      needUser(req);
+      const aiUser = needUser(req);
       if (!aiEnabled()) return json(res, 404, { error: "AI isn't set up on this server." });
-      if (!allow(clientIp(req), aiHits, AI_PER_HOUR)) return json(res, 429, { error: `You've used the AI ${AI_PER_HOUR} times this hour. Wait a bit, then try again.` });
+      if (!allow("u" + aiUser.id, aiHits, AI_PER_HOUR)) return json(res, 429, { error: `You've used the AI ${AI_PER_HOUR} times this hour. Wait a bit, then try again.` });
       const body = await readJson(req, 25e6);
       return json(res, 200, await runAI(body));
     }
