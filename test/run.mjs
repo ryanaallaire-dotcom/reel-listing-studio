@@ -86,6 +86,9 @@ await new Promise(r => fixture.listen(FX, "127.0.0.1", r));
 await new Promise(r => mock.listen(MOCK, "127.0.0.1", r));
 await new Promise(r => aimock.listen(AIM, "127.0.0.1", r));
 await new Promise(r => falmock.listen(FALM, "127.0.0.1", r));
+const RESM = 18906; const mails = [];
+const resmock = http.createServer(async (req, res) => { let b = ""; for await (const c of req) b += c; mails.push({ path: req.url, auth: req.headers.authorization, body: JSON.parse(b || "{}") }); res.writeHead(200, { "content-type": "application/json" }); res.end('{"id":"m1"}'); });
+await new Promise(r => resmock.listen(RESM, "127.0.0.1", r));
 
 // ===== server A: test mode (may fetch the local fixture), no page service =====
 const A = 18911; const sa = await startServer(A, { ALLOW_LOCAL_FETCH: "1", IMPORTS_PER_HOUR: "6" });
@@ -218,7 +221,7 @@ const F = 18916; const sf = await startServer(F, {});
 sf.kill();
 
 // ===== server G: AI motion clips + 3D depth files =====
-const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAGE_MODE: "url", FAL_KEY: "fal-test", FAL_QUEUE_BASE: `http://127.0.0.1:${FALM}`, CLIP_POLL_MS: "100", ALLOW_LOCAL_FETCH: "1", CLIPS_PER_HOUR: "3" });
+const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", RESEND_BASE: `http://127.0.0.1:${RESM}`, LEAD_ALERT_FROM: "Reel Listing Studio <leads@reellistingstudio.com>", TRUST_PROXY: "1", CLIP_IMAGE_MODE: "url", FAL_KEY: "fal-test", FAL_QUEUE_BASE: `http://127.0.0.1:${FALM}`, CLIP_POLL_MS: "100", ALLOW_LOCAL_FETCH: "1", CLIPS_PER_HOUR: "3" });
 {
   const h = await (await fetch(`http://127.0.0.1:${Gp}/api/health`)).json();
   check("Clips: health reports AI motion and 3D depth", h.clips === true && h.depth === true && /kling/.test(h.clipModel), JSON.stringify(h));
@@ -257,6 +260,20 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   const lead = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json", cookie: rc }, body: JSON.stringify({ name: "Agent Amy", email: "amy@realty.test", phone: "555-201-3344", listing: "https://zillow.test/1", package: "Signature ($399)" }) });
   const lj = await lead.json();
   check("Leads: a request from a referred agent is credited to the partner", lead.status === 200 && lj.partner?.name === "Gary Test", JSON.stringify(lj));
+  await new Promise(r => setTimeout(r, 300));
+  const toOwner = mails.find(m => m.body.to?.includes(ADMIN)), toPartner = mails.find(m => m.body.to?.includes("gary.partner@test.com"));
+  check("Lead alerts: the owner and the referring partner each get an email, reply goes to the agent", mails.length === 2 && toOwner?.auth === "Bearer re_test" && /Agent Amy/.test(toOwner.body.subject)
+    && /Gary Test/.test(toOwner.body.text) && toPartner && toOwner.body.reply_to === "amy@realty.test" && toOwner.body.from === "Reel Listing Studio <leads@reellistingstudio.com>", JSON.stringify(mails.map(m => m.body.to)));
+  mails.length = 0;
+  const fg = await api(Gp, "/api/account/forgot", { email: "gary.partner@test.com" }, { as: "anon-f" });
+  const fgNone = await api(Gp, "/api/account/forgot", { email: "nobody-here@test.com" }, { as: "anon-f" });
+  await new Promise(r => setTimeout(r, 300));
+  const resetLink = (mails[0]?.body.text || "").match(/setup=([0-9a-f]{48})/)?.[1];
+  const rs = resetLink && await api(Gp, "/api/account/setup", { token: resetLink, password: "brand-new-pass-1" }, { as: "gary-r" });
+  const relogin = await api(Gp, "/api/account/login", { email: "gary.partner@test.com", password: "brand-new-pass-1" }, { as: "gary-r2" });
+  check("Forgot password: emails a one-time reset link (same answer for unknown emails); the new password works", fg.status === 200 && fgNone.status === 200 && mails.length === 1
+    && mails[0].body.to[0] === "gary.partner@test.com" && rs?.status === 200 && relogin.status === 200, JSON.stringify(mails.map(m => m.body.to)));
+  await api(Gp, "/api/account/setup", { token: (await (async () => { mails.length = 0; await api(Gp, "/api/account/forgot", { email: "gary.partner@test.com" }, { as: "anon-f" }); await new Promise(r => setTimeout(r, 300)); return (mails[0]?.body.text || "").match(/setup=([0-9a-f]{48})/)?.[1]; })()), password: "gary-secret-99" }, { as: "gary-r3" });
   const badLead = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "No Contact" }) });
   check("Leads: a request needs an email or phone", badLead.status === 400);
   const setc = await api(Gp, "/api/partner/link", { code: "gary" }, { as: "gary3" });
@@ -443,4 +460,4 @@ sp.kill(); ppmock.close();
 fixture.close(); mock.close(); aimock.close(); falmock.close();
 console.log(results.join("\n"));
 console.log(`\n${results.filter(r => r.startsWith("PASS")).length}/${results.length} passed`);
-process.exit(results.some(r => r.startsWith("FAIL")) ? 1 : 0);
+resmock.close(); process.exit(results.some(r => r.startsWith("FAIL")) ? 1 : 0);

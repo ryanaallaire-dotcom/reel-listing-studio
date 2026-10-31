@@ -351,6 +351,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
       <label id="inviteRow" hidden>Invite code<input type="text" id="authInvite" autocomplete="off" maxlength="200" placeholder="The code you were given"></label>
       <p class="status" id="authStatus" role="status" aria-live="polite"></p>
       <button class="btn primary" id="authGo" type="submit">Create account</button>
+      <button class="btn sm" id="authForgot" type="button" style="justify-self:start;background:none;border:0;padding:4px 0;text-decoration:underline">Forgot password?</button>
     </form>
     <p class="swap" id="authSwap"></p>
   </div>
@@ -2192,6 +2193,7 @@ function syncAuthMode(){
   const up=authMode==="signup";
   $("#authTitle").textContent=up?"Create your free account":"Welcome back";
   $("#authGo").textContent=up?"Create account":"Sign in";
+  const fg=$("#authForgot"); if(fg) fg.hidden=up;
   $("#authPass").autocomplete=up?"new-password":"current-password";
   $("#inviteRow").hidden=!(up&&ACCT&&ACCT.inviteRequired);
   $("#authWhy").textContent=up?"Free accounts make 3D videos and import 2 listing links a month. Upgrade any time for AI motion.":"Sign in to use link import, AI writing and AI motion.";
@@ -2334,6 +2336,12 @@ $("#allLeadsBtn").onclick=async()=>{
   j.leads.forEach(l=>box.appendChild(leadRow(l,true)));
   j.signups.forEach(u=>{ const d=document.createElement("div"); d.className="lead"; d.textContent=`Sign-up: ${u.email} \u2013 ${when(u.created)} \u2013 via ${u.partner||"partner"}`; box.appendChild(d); });
 };
+$("#authForgot").onclick=async()=>{
+  const st=$("#authStatus"), email=$("#authEmail").value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)){ st.className="status warn"; st.textContent="Type your email above, then press Forgot password? again."; $("#authEmail").focus(); return; }
+  const r=await fetch("/api/account/forgot",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email})}); const j=await r.json().catch(()=>({}));
+  st.className=r.ok?"status ok":"status warn"; st.textContent=r.ok?`If ${email} has an account, a reset link is on its way. Check your inbox (and spam) for an email from Reel Listing Studio.`:(j.error||"Couldn't send the reset email. Try again.");
+};
 // partner setup link: ?setup=TOKEN lets an invited partner choose their password
 async function partnerSetup(){
   const tok=new URLSearchParams(location.search).get("setup"); if(!tok||!/^[0-9a-f]{48}$/.test(tok)) return;
@@ -2344,8 +2352,8 @@ async function partnerSetup(){
     <form id="setupForm" style="display:flex;flex-direction:column;gap:10px"><label>Choose a password<input type="password" id="setupPw" minlength="8" autocomplete="new-password" required></label>
     <button class="btn primary" type="submit">Set password and start</button></form><p class="status" id="setupSt"></p></div>`;
   document.body.appendChild(dlg);
-  dlg.querySelector("h3").textContent=r.ok?`Welcome${j.name?", "+j.name.split(" ")[0]:""}!`:"Link expired";
-  dlg.querySelector("#setupWho").textContent=r.ok?`Your partner account for ${j.email} is ready. Choose a password (8+ characters) to sign in.`:(j.error||"This link no longer works.");
+  dlg.querySelector("h3").textContent=r.ok?(j.name?`Welcome, ${j.name.split(" ")[0]}!`:"Set your password"):"Link expired";
+  dlg.querySelector("#setupWho").textContent=r.ok?`Choose a password for ${j.email} (8+ characters). You'll be signed in right away.`:(j.error||"This link no longer works.");
   if(!r.ok) dlg.querySelector("#setupForm").hidden=true;
   dlg.querySelector("#setupForm").onsubmit=async e=>{ e.preventDefault(); const st=dlg.querySelector("#setupSt");
     const r2=await fetch("/api/account/setup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({token:tok,password:dlg.querySelector("#setupPw").value})}); const j2=await r2.json().catch(()=>({}));

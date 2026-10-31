@@ -2,6 +2,7 @@
 //   GET  /               the Studio
 //   GET  /api/health     lets the Studio know link import is available
 //   POST /api/import     { url } → ZIP of photos + listing.json (same format as the Chrome Grabber)
+import { leadAlert, emailEnabled, sendPasswordLink } from "./lib/notify.js";
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -89,7 +90,9 @@ export const server = http.createServer(async (req, res) => {
       if (!allow(clientIp(req), authHits, 15)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes, or call us." });
       const body = await readJson(req);
       if (body.website) return json(res, 200, { ok: true });   // bots fill the hidden field
-      return json(res, 200, { ok: true, ...acct.addLead(body, cookieVal(req, "rls_ref") || body.ref) });
+      const saved = acct.addLead(body, cookieVal(req, "rls_ref") || body.ref);
+      leadAlert(saved.lead, saved.partner);
+      return json(res, 200, { ok: true, partner: saved.partner });
     }
     if (req.method === "GET" && (u.pathname === "/" || u.pathname === "/index.html")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(page());
@@ -176,6 +179,15 @@ export const server = http.createServer(async (req, res) => {
           catch (e) { return { ok: false, email: String(p?.email || ""), error: e.message }; } });
         return json(res, 200, { results });
       }
+      if (u.pathname === "/api/account/forgot" && req.method === "POST") {
+        if (!allow(clientIp(req), authHits, 10)) return json(res, 429, { error: "Too many attempts. Wait a few minutes, then try again." });
+        const { email } = await readJson(req);
+        if (!emailEnabled()) return json(res, 503, { error: "Password reset by email isn't set up yet. Contact support@advancemarketinggroup.net and we'll reset it for you." });
+        const user = acct.findUserByEmail(email);
+        if (user) { const base = (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
+          sendPasswordLink(user.email, `${base}/?setup=${acct.createSetupLink(user.id, 1)}`).catch(e => console.error("reset email failed:", e.message)); }
+        return json(res, 200, { ok: true });   // same answer whether or not the email has an account
+      }
       if (u.pathname === "/api/account/setup") {
         if (req.method === "GET") { try { return json(res, 200, acct.setupInfo(u.searchParams.get("token"))); } catch (e) { return json(res, e.status || 400, { error: e.message }); } }
         if (req.method === "POST") { if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many attempts. Wait a few minutes, then try again." });
@@ -261,5 +273,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   acct.openDb();
   if (!process.env.DB_PATH) console.warn("DB_PATH isn't set: accounts are stored inside the app and are lost on every redeploy. Attach a disk and set DB_PATH.");
   ensureSetup().then(s => s && console.log("PayPal ready:", JSON.stringify(s.plans))).catch(e => console.error("PayPal setup failed:", e.message));
+  // Owner password reset: set OWNER_RESET=yes in Render, open the reset link printed in the logs, then remove OWNER_RESET.
+  if (/^(1|yes|true)$/i.test(process.env.OWNER_RESET || "")) {
+    const base = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
+    for (const em of acct.adminEmails()) { const u = acct.findUserByEmail(em);
+      if (u) console.log(`OWNER PASSWORD RESET for ${em} (valid 1 hour, works once): ${base || "https://<your-site>"}/?setup=${acct.createSetupLink(u.id, 1)}`);
+      else console.log(`OWNER_RESET: no account yet for ${em}. Sign up with that email instead.`); }
+    console.log("Remove OWNER_RESET from Render's Environment once you've reset your password.");
+  }
   server.listen(PORT, () => console.log(`Reel Listing Studio on http://localhost:${PORT}  (page service: ${providerInfo() || "none — protected sites will ask for the Grabber"}; AI: ${aiEnabled() ? "on" : "off"}; AI motion: ${clipsEnabled() ? "on" : "off"}; 3D depth: ${fs.existsSync(DEPTH_MODEL) ? "on" : "off"})`));
 }
