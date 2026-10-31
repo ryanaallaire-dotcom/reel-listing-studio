@@ -78,6 +78,9 @@ export const server = http.createServer(async (req, res) => {
   res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
   if (process.env.TRUST_PROXY === "1") res.setHeader("strict-transport-security", "max-age=31536000");
   try {
+    if (req.method === "GET" && (u.pathname === "/privacy" || u.pathname === "/privacy/")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" }); return res.end(fs.readFileSync(path.join(DIR, "public", "privacy.html")));
+    }
     // agent sales page, with partner referral links: /r/ken-george or /agents?ref=ken-george
     // short partner links at the top level too: /aimptr works the same as /r/aimptr
     const shortCode = req.method === "GET" && /^\/[a-z0-9][a-z0-9-]{1,28}[a-z0-9]\/?$/i.test(u.pathname) && acct.partnerByRef(u.pathname.replace(/\//g, "")) ? u.pathname.replace(/\//g, "") : null;

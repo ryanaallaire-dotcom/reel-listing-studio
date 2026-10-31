@@ -437,6 +437,7 @@ html{scroll-behavior:smooth}
     <p class="err" id="fErr" hidden>Add your name, mobile number, email and the listing so we can send your quote.</p>
     <button class="btn btn-primary" type="submit">Send my listing</button>
     <p class="under">We’ll reach out within one business day with your quote. Nothing is charged until you approve it.</p>
+    <p class="under consent">By sending, you agree to be contacted by call, text or email about your request (reply STOP to opt out) and to our <a href="/privacy">Privacy Policy</a>.</p>
     <div class="done" id="fDone" hidden><h3>Got it. Your listing is in.</h3><p id="doneText">We’ll review your photos and send your quote within one business day.</p></div>
   </form>
 </div></section>
@@ -458,7 +459,7 @@ const SITE = {
   candaceQuote: "",   // Candace's own words, with her OK
   guarantee: "",      // e.g. "If the finished video isn't right, we redo it. Still not right? Full refund."
   referralPerk: "",   // e.g. "a free extra reel on your first listing"
-  privacy: "", terms: "", partners: ""   // links
+  privacy: "/privacy", terms: "", partners: ""   // links
 };
 const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the server from their link)
 (function(){
