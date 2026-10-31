@@ -2,356 +2,536 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Reel Listing Studio: your listing photos, filmed</title>
-<meta name="description" content="Turn your listing photos into a walkthrough video that looks filmed: fans spinning, fireplaces on, smooth camera moves. Vertical, YouTube and MLS versions in 48 hours. No shoot.">
-<meta property="og:title" content="Your listing photos, filmed.">
-<meta property="og:description" content="Walkthrough videos from the photos you already have. No shoot, no scheduling, ready in 48 hours.">
-<meta property="og:image" content="/media/hero-photo.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Reel Listing Studio for Agents</title>
+<meta name="description" content="Send a listing link. Get a walkthrough video that looks shot on site, in vertical, widescreen and MLS-ready versions. Nothing charged until you approve.">
+<meta property="og:title" content="Your listing photos, filmed. In 48 hours, from $199.">
+<meta property="og:description" content="Send a listing link. Get a walkthrough video that looks shot on site, in vertical, widescreen and MLS-ready versions. Nothing charged until you approve.">
+<meta property="og:image" content="/media/walk-still.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
 <style>
+/* Layout: a viewfinder. Copy on the left, a live "camera" on the right; every section below is one plain column the agent reads top to bottom. */
 :root{
-  --dusk:#1B1838; --twilight:#2B3A67; --amber:#F3B33D; --amber-ink:#2A1C00; --blush:#F4C7B5;
-  --paper:#F4F6FA; --ink:#20243A; --muted:#5B6180; --line:#DCE1EC; --white:#fff;
-  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Figtree",system-ui,sans-serif;
-  --r-lg:22px; --r-md:14px; --r-sm:10px;
+  --paper:#F6F5F2; --card:#FFFFFF; --ink:#13161B; --muted:#5B616B; --line:#DEDBD4;
+  --amber:#C97A0E; --amber-soft:#F7E6CB; --on-amber:#13161B; --rec:#D8432E; --band:#13161B; --on-band:#F2F0EB; --band-muted:#A3A8B0; --fill:#FFF3C4;
+  --display:'Oswald','Arial Narrow',Arial,sans-serif; --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
 }
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
-img,video{display:block;max-width:100%}
-a{color:inherit}
-:focus-visible{outline:3px solid var(--amber);outline-offset:3px;border-radius:6px}
-.wrap{width:min(1160px,100% - 40px);margin-inline:auto}
-h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;letter-spacing:-.02em}
-h2{font-size:clamp(32px,4.6vw,54px);font-weight:800;max-width:18ch}
-h3{font-size:22px;font-weight:700;letter-spacing:-.01em}
-p{margin:0}
-.lede{font-size:clamp(18px,1.6vw,21px);color:var(--muted);max-width:56ch;margin-top:16px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font:700 17px/1 var(--body);padding:17px 26px;border-radius:999px;border:0;cursor:pointer;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
-.btn-amber{background:var(--amber);color:var(--amber-ink);box-shadow:0 10px 30px -10px rgba(243,179,61,.7)}
-.btn-amber:hover{transform:translateY(-2px)}
-.btn-ghost{background:transparent;color:inherit;border:2px solid currentColor;opacity:.9}
-section{padding:clamp(72px,9vw,120px) 0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0F1114; --card:#171A1F; --ink:#EDEBE6; --muted:#9AA0A8; --line:#2A2E35;
+  --amber:#F2A541; --amber-soft:#3A2A12; --on-amber:#13161B; --rec:#F06A55; --band:#1B1F25; --on-band:#F2F0EB; --band-muted:#A3A8B0; --fill:#4A3C10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0F1114; --card:#171A1F; --ink:#EDEBE6; --muted:#9AA0A8; --line:#2A2E35;
+  --amber:#F2A541; --amber-soft:#3A2A12; --on-amber:#13161B; --rec:#F06A55; --band:#1B1F25; --on-band:#F2F0EB; --band-muted:#A3A8B0; --fill:#4A3C10; color-scheme:dark}
 
-/* referral banner */
-.ref{background:var(--amber);color:var(--amber-ink);font-size:15px;font-weight:600}
-.ref .wrap{display:flex;gap:6px 18px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 0;text-align:center}
-.ref a{font-weight:700}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{padding-block:72px}
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;line-height:1.02;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(52px,8vw,96px);font-weight:700}
+h2{font-size:clamp(34px,5vw,54px);font-weight:600}
+h3{font-size:24px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.lede{font-size:19px;color:var(--muted);max-width:60ch}
+.fill{background:var(--fill);color:var(--ink);padding:0 .3em;border-radius:4px;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-family:var(--body);font-weight:700;font-size:17px;padding:16px 26px;border-radius:999px;text-decoration:none;border:2px solid transparent;cursor:pointer}
+.btn-primary{background:var(--amber);color:var(--on-amber)}
+.btn-ghost{border-color:var(--ink);color:var(--ink);background:transparent}
+.btn:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.toggle button:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+.risk{font-size:15px;color:var(--muted)}
+.risk b{color:var(--ink)}
+
+/* ribbon */
+.ribbon{background:var(--amber);color:var(--on-amber);font-size:15px}
+.ribbon .wrap{display:flex;gap:12px;align-items:center;justify-content:space-between;padding-block:10px}
+.ribbon button{background:none;border:0;color:inherit;font-size:20px;cursor:pointer;padding:0 4px}
+
+/* header */
+header .wrap{display:flex;align-items:center;justify-content:space-between;padding-block:20px;gap:16px}
+.brand{font-family:var(--display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
+.brand i{width:10px;height:10px;border-radius:50%;background:var(--rec);display:inline-block}
+header .btn{padding:11px 20px;font-size:15px}
 
 /* hero */
-.hero{background:radial-gradient(120% 90% at 85% 0%,#3D3A78 0%,var(--dusk) 55%) ,var(--dusk);color:var(--white);padding:28px 0 clamp(64px,8vw,104px);overflow:hidden}
-.nav{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:clamp(36px,6vw,72px)}
-.logo{font:800 20px/1 var(--display);letter-spacing:-.02em;text-decoration:none;display:flex;align-items:center;gap:10px}
-.logo i{width:26px;height:26px;border-radius:7px;background:conic-gradient(from 210deg,var(--amber),var(--blush),#8A7CF0,var(--amber));display:inline-block}
-.nav a.small{font-weight:600;font-size:15px;text-decoration:none;opacity:.85}
-.hero-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(28px,5vw,64px);align-items:center}
-.hero h1{font-size:clamp(44px,6.2vw,84px);font-weight:800;letter-spacing:-.035em;max-width:11ch}
-.hero .lede{color:rgba(255,255,255,.78)}
-.hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
-.hero .btn-ghost{color:var(--white)}
-.proof{display:flex;gap:22px;flex-wrap:wrap;margin-top:30px;font-size:15px;color:rgba(255,255,255,.7)}
-.proof b{color:var(--white);font-weight:700}
+.hero{padding-block:24px 64px}
+.hero .wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
+.hero-copy{display:flex;flex-direction:column;gap:24px;min-width:0}
+.ctas{display:flex;gap:12px;flex-wrap:wrap}
+.stats{display:flex;gap:28px;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--line)}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-family:var(--display);font-size:30px;font-weight:600;line-height:1}
+.stats span{font-size:14px;color:var(--muted)}
+.cam{display:flex;flex-direction:column;align-items:center;gap:14px}
+.viewfinder{position:relative;width:min(340px,100%);aspect-ratio:9/16;border-radius:28px;overflow:hidden;background:#000;box-shadow:0 30px 60px -30px rgba(0,0,0,.5)}
+.viewfinder video,.viewfinder img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vf-ui{position:absolute;inset:14px;pointer-events:none;font-family:var(--mono);font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.vf-ui .c{position:absolute;width:22px;height:22px;border-color:rgba(255,255,255,.85);border-style:solid}
+.c.tl{top:0;left:0;border-width:2px 0 0 2px}.c.tr{top:0;right:0;border-width:2px 2px 0 0}.c.bl{bottom:0;left:0;border-width:0 0 2px 2px}.c.br{bottom:0;right:0;border-width:0 2px 2px 0}
+.vf-top{position:absolute;top:6px;left:32px;right:32px;display:flex;justify-content:space-between}
+.vf-top .rec::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#F06A55;margin-right:6px;vertical-align:1px}
+.vf-ui.still .rec{opacity:.35}
+.vf-bot{position:absolute;bottom:6px;left:32px;right:32px;text-align:center}
+.toggle{display:inline-flex;border:2px solid var(--ink);border-radius:999px;padding:3px}
+.toggle button{border:0;background:transparent;color:var(--ink);font:700 15px var(--body);padding:8px 18px;border-radius:999px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.cam small{color:var(--muted);font-size:14px}
 
-/* the photo / filmed player: the one bold moment */
-.player{position:relative;border-radius:var(--r-lg);overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.08);aspect-ratio:16/9;background:#000}
-.player img,.player video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.player video{opacity:0;transition:opacity .45s ease}
-.player.filmed video{opacity:1}
-.player .tag{position:absolute;left:16px;top:16px;background:rgba(15,13,35,.7);backdrop-filter:blur(6px);color:#fff;font-size:14px;font-weight:600;padding:7px 12px;border-radius:999px}
-.switch{display:inline-flex;margin-top:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px}
-.switch button{font:700 16px/1 var(--body);color:rgba(255,255,255,.75);background:transparent;border:0;padding:12px 22px;border-radius:999px;cursor:pointer}
-.switch button[aria-pressed=true]{background:var(--white);color:var(--dusk)}
-.switch-note{font-size:14px;color:rgba(255,255,255,.62);margin-top:10px}
+/* proof */
+.proof{background:var(--band);color:var(--on-band)}
+.proof .wrap{display:grid;grid-template-columns:1fr 1fr;gap:56px}
+.proof .eyebrow{color:#F2A541}
+.proof-body{display:flex;flex-direction:column;gap:18px;min-width:0}
+.proof-body p{color:var(--band-muted);font-size:18px}
+.proof-body strong{color:var(--on-band)}
+.bignum{font-family:var(--display);font-size:clamp(56px,9vw,104px);font-weight:700;line-height:.95;color:#F2A541}
+.receipt{border:1px dashed rgba(242,240,235,.3);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;font-family:var(--mono);font-size:14px;color:var(--band-muted)}
+.receipt .row{display:flex;justify-content:space-between;gap:12px}
+.receipt .tot{border-top:1px dashed rgba(242,240,235,.3);padding-top:14px;color:var(--on-band);font-weight:500}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.quick div{border-top:2px solid #F2A541;padding-top:12px;font-size:15px;color:var(--band-muted)}
+.quick b{display:block;color:var(--on-band);font-size:17px}
+.proof .fill{background:#4A3C10;color:#F2F0EB}
 
 /* compare */
-.compare{display:grid;grid-template-columns:1.1fr 1fr 1fr;margin-top:44px;border-radius:var(--r-lg);overflow:hidden;background:var(--white);border:1px solid var(--line)}
-.compare div{padding:18px 22px;border-top:1px solid var(--line)}
-.compare .hd{border-top:0;font:700 18px/1.2 var(--display);padding-top:22px}
-.compare .us{background:#FFF7E6}
-.compare .hd.us{background:var(--amber);color:var(--amber-ink)}
-.compare .rowlabel{color:var(--muted);font-weight:600}
+.tbl{overflow-x:auto;margin-top:32px;border:1px solid var(--line);border-radius:18px;background:var(--card)}
+table{width:100%;border-collapse:collapse;min-width:620px;font-size:16px}
+th,td{text-align:left;padding:18px 20px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+thead th{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+tbody th{font-weight:700;width:20%}
+td.us{background:var(--amber-soft);font-weight:700}
+.src{font-size:13px;color:var(--muted);margin-top:10px}
+.why{margin-top:36px;display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:28px;border-radius:18px;border:2px solid var(--ink)}
+.why p{font-size:19px;max-width:62ch;min-width:0}
 
 /* steps */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:48px;counter-reset:s}
-.step{border-top:3px solid var(--ink);padding-top:20px}
-.step .n{font:800 56px/1 var(--display);color:var(--twilight);letter-spacing:-.04em}
-.step h3{margin:14px 0 8px}
-.step p{color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:36px;counter-reset:s}
+.steps li{list-style:none;display:flex;flex-direction:column;gap:10px;min-width:0}
+.steps li::before{counter-increment:s;content:"0" counter(s);font-family:var(--mono);font-size:14px;color:var(--amber)}
+.steps p{color:var(--muted)}
+ol.steps{padding:0;margin-block:36px 0}
 
 /* deliverables */
-.deliver{background:var(--white)}
-.formats{display:grid;grid-template-columns:.55fr 1fr;gap:28px;margin-top:48px;align-items:end}
-.fmt{display:flex;flex-direction:column;gap:12px}
-.fmt video{border-radius:var(--r-md);background:#000;width:100%;object-fit:cover}
-.fmt .v916{aspect-ratio:9/16;max-height:620px}
-.fmt .v169{aspect-ratio:16/9}
-.fmt b{font-family:var(--display);font-size:20px}
-.fmt span{color:var(--muted);font-size:15.5px}
-.extras{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
-.extras span{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-weight:600;font-size:15px}
+.gets{display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px;margin-top:28px;padding:0}
+.gets li{list-style:none;padding:16px 0;border-bottom:1px solid var(--line);display:flex;gap:14px}
+.gets li::before{content:"";flex:0 0 10px;height:10px;margin-top:8px;border-radius:2px;background:var(--amber)}
+.gets em{color:var(--muted);font-style:normal;font-size:15px}
 
-/* reel of examples */
-.reel{background:var(--dusk);color:var(--white)}
-.reel .lede{color:rgba(255,255,255,.72)}
-.strip{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:36px 0 10px;scrollbar-width:thin}
-.strip figure{margin:0;flex:0 0 auto;scroll-snap-align:start;width:min(280px,72vw)}
-.strip video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:var(--r-md);background:#000}
-.strip figcaption{font-size:15px;color:rgba(255,255,255,.75);margin-top:10px}
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px}
+.clip{display:flex;flex-direction:column;gap:10px;min-width:0}
+.clip .frame{position:relative;aspect-ratio:9/16;border-radius:20px;overflow:hidden;background:#000}
+.clip video{width:100%;height:100%;object-fit:cover;display:block}
+.clip p{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.clip.next .frame{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;text-align:center;padding:24px;background:var(--amber-soft);border:2px dashed var(--amber)}
+.clip.next h3{font-size:30px}
 
-/* packages */
-.packs{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:48px;align-items:stretch}
-.pack{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:30px 28px;display:flex;flex-direction:column}
-.pack.best{background:var(--twilight);color:var(--white);border-color:var(--twilight);transform:translateY(-10px)}
-.pack .price{font:800 54px/1 var(--display);letter-spacing:-.03em;margin:14px 0 4px}
-.pack .per{font-size:15px;opacity:.7}
-.pack ul{list-style:none;padding:0;margin:22px 0 28px;display:grid;gap:10px;flex:1}
-.pack li{padding-left:28px;position:relative}
-.pack li::before{content:"";position:absolute;left:0;top:.5em;width:14px;height:8px;border-left:2.5px solid var(--amber);border-bottom:2.5px solid var(--amber);transform:rotate(-45deg)}
-.pack .flag{align-self:flex-start;background:var(--amber);color:var(--amber-ink);font-weight:700;font-size:14px;padding:6px 12px;border-radius:999px}
-.pack .btn{width:100%}
-.pack:not(.best) .btn{background:var(--ink);color:var(--white)}
-.addons{margin-top:24px;color:var(--muted);font-size:15.5px}
+/* founder */
+.founder .wrap{display:grid;grid-template-columns:160px 1fr;gap:36px;align-items:start}
+.head{width:160px;aspect-ratio:1;border-radius:50%;background:var(--amber-soft);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:52px;color:var(--amber)}
+.founder blockquote{margin:0;font-size:21px;line-height:1.5;max-width:62ch}
+.founder cite{display:block;margin-top:16px;font-style:normal;color:var(--muted);font-size:15px}
 
-/* objections */
-.faq{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(28px,5vw,72px);align-items:start}
-.faq .sticky{position:sticky;top:28px}
-details{border-bottom:1px solid var(--line);padding:4px 0}
-summary{list-style:none;cursor:pointer;padding:20px 40px 20px 0;font:700 19px/1.35 var(--display);letter-spacing:-.01em;position:relative}
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:36px;align-items:stretch}
+.plan{display:flex;flex-direction:column;gap:18px;padding:28px;border-radius:22px;background:var(--card);border:1px solid var(--line);min-width:0}
+.plan.rec{border:2px solid var(--amber);position:relative}
+.badge{position:absolute;top:-14px;left:28px;background:var(--amber);color:var(--on-amber);font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px}
+.price{font-family:var(--display);font-size:56px;font-weight:600;line-height:1}
+.price span{font-family:var(--body);font-size:15px;color:var(--muted);font-weight:400}
+.plan ul{margin:0;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
+.plan li{list-style:none;padding-left:22px;position:relative;font-size:15px}
+.plan li::before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
+.plan .btn{width:100%}
+.plan .for{color:var(--muted);font-size:15px}
+.addons{margin-top:20px;font-size:15px;color:var(--muted)}
+.guard{margin-top:28px;padding:28px;border-radius:18px;background:var(--amber-soft);display:flex;flex-direction:column;gap:10px}
+.guard h3{font-size:28px}
+
+/* faq */
+.faq{margin-top:28px;border-top:1px solid var(--line)}
+details{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;padding:20px 40px 20px 0;font-weight:700;font-size:18px;position:relative}
 summary::-webkit-details-marker{display:none}
-summary::after{content:"";position:absolute;right:6px;top:50%;width:12px;height:12px;border-right:2.5px solid var(--twilight);border-bottom:2.5px solid var(--twilight);transform:translateY(-70%) rotate(45deg);transition:transform .2s ease}
-details[open] summary::after{transform:translateY(-30%) rotate(225deg)}
-details p{color:var(--muted);padding:0 0 22px;max-width:62ch}
+summary::after{content:"+";position:absolute;right:4px;top:16px;font-size:26px;color:var(--amber);font-weight:400}
+details[open] summary::after{content:"–"}
+details p{padding:0 0 22px;color:var(--muted);max-width:68ch}
+.after-faq{margin-top:20px;color:var(--muted)}
 
-/* request form */
-.ask{background:linear-gradient(160deg,var(--twilight),var(--dusk));color:var(--white)}
-.ask-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(28px,5vw,64px);align-items:start}
-.ask .lede{color:rgba(255,255,255,.75)}
-.agent-card{margin-top:30px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:var(--r-md);padding:18px 20px}
-.agent-card b{font:700 20px/1.2 var(--display);display:block;margin-bottom:4px}
-.agent-card a{color:var(--amber);font-weight:600;text-decoration:none}
-form{background:var(--white);color:var(--ink);border-radius:var(--r-lg);padding:clamp(22px,3vw,34px);display:grid;grid-template-columns:1fr 1fr;gap:14px}
-form label{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px}
-form .full{grid-column:1/-1}
-input,select,textarea{font:inherit;font-weight:400;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:13px 14px;background:var(--paper);color:var(--ink);width:100%}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--twilight);background:#fff}
-.hp{position:absolute;left:-9999px}
-.form-note{font-size:14px;color:var(--muted)}
-.status{grid-column:1/-1;font-weight:600;min-height:1.4em}
-.status.ok{color:#1E7A4A}.status.bad{color:#B3261E}
-.done{grid-column:1/-1;text-align:center;padding:30px 10px}
-.done h3{font-size:30px;margin-bottom:8px}
+/* form */
+.request{background:var(--band);color:var(--on-band)}
+.request .wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px}
+.request .lede{color:var(--band-muted)}
+.request .eyebrow{color:#F2A541}
+form{display:grid;grid-template-columns:1fr 1fr;gap:16px;background:var(--card);color:var(--ink);padding:28px;border-radius:22px;min-width:0}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f.full{grid-column:1/-1}
+label{font-weight:700;font-size:14px}
+input,select,textarea{font:16px var(--body);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px;width:100%}
+textarea{min-height:90px;resize:vertical}
+.refnote{grid-column:1/-1;font-size:14px;color:var(--muted)}
+form .btn{grid-column:1/-1}
+.under{grid-column:1/-1;font-size:14px;color:var(--muted);text-align:center}
+.done{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;padding:12px 0}
+.err{color:var(--rec);font-size:14px;grid-column:1/-1}
 
-footer{background:var(--dusk);color:rgba(255,255,255,.6);font-size:14px;padding:34px 0}
-footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer{padding-block:40px 120px;font-size:14px;color:var(--muted)}
+footer .wrap{display:flex;flex-direction:column;gap:8px}
+
+[hidden]{display:none!important}
+.hide{display:none!important}
+.ribbon a{color:inherit;font-weight:700}
+/* sticky mobile CTA */
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--paper);border-top:1px solid var(--line);display:none}
+.sticky .btn{width:100%}
 
 @media (max-width:900px){
-  .hero-grid,.faq,.ask-grid,.formats{grid-template-columns:1fr}
-  .faq .sticky{position:static}
-  .steps,.packs{grid-template-columns:1fr}
-  .pack.best{transform:none}
-  .compare{grid-template-columns:1fr 1fr 1fr;font-size:15px}
-  .compare div{padding:14px 12px}
-  form{grid-template-columns:1fr}
-  .fmt .v916{max-height:520px;width:auto;margin-inline:auto}
+  .hero .wrap,.proof .wrap,.request .wrap{grid-template-columns:1fr;gap:36px}
+  .plans,.steps,.gallery{grid-template-columns:1fr}
+  .gallery{grid-template-columns:1fr 1fr}
+  .gets{grid-template-columns:1fr}
+  .quick{grid-template-columns:1fr}
+  .founder .wrap{grid-template-columns:1fr}
+  .head{width:110px}
+  .sticky.on{display:block}
+  section{padding-block:56px}
 }
-@media (max-width:520px){ .compare .hd{font-size:15px} .nav a.small{display:none} }
+@media (max-width:520px){ form{grid-template-columns:1fr} .gallery{grid-template-columns:1fr} header .btn{display:none} }
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
 </style>
 </head>
 <body>
-<div class="ref" id="refBar" hidden><div class="wrap"><span id="refText"></span><a id="refCall" hidden></a></div></div>
 
-<header class="hero">
+<div class="ribbon" id="ribbon" hidden>
   <div class="wrap">
-    <nav class="nav"><a class="logo" href="#top" aria-label="Reel Listing Studio"><i aria-hidden="true"></i>Reel Listing Studio</a><a class="small" href="#request">Get a video for your listing</a></nav>
-    <div class="hero-grid" id="top">
-      <div>
-        <h1>Your listing photos, filmed.</h1>
-        <p class="lede">Send us your listing link. Within 48 hours you get a walkthrough video that looks shot on site: fans spinning, fireplaces on, pools rippling, smooth camera moves. No videographer, no second showing, no scheduling.</p>
-        <div class="hero-ctas"><a class="btn btn-amber" href="#request">Get my listing video</a><a class="btn btn-ghost" href="#examples">Watch examples</a></div>
-        <div class="proof"><span><b>48 hours</b> turnaround</span><span><b>3 versions</b> per listing</span><span>Packages from <b>$199</b></span></div>
-      </div>
-      <div>
-        <div class="player filmed" id="player">
-          <img src="/media/hero-photo.jpg" alt="Listing photo of an open-concept living area with a ceiling fan">
-          <video id="heroVid" src="/media/hero-filmed.mp4" muted loop playsinline autoplay preload="auto" aria-label="The same room as a filmed shot, ceiling fan spinning"></video>
-          <span class="tag" id="playerTag">Filmed from that photo</span>
-        </div>
-        <div class="switch" role="group" aria-label="Compare the photo with the video"><button type="button" data-v="photo" aria-pressed="false">The photo</button><button type="button" data-v="filmed" aria-pressed="true">Filmed</button></div>
-        <p class="switch-note">Same room, same photo. Flip between them.</p>
-      </div>
-    </div>
+    <p><b id="ribbonWho">You were referred by a partner.</b> <span id="ribbonPerk"></span> <a id="ribbonCall" hidden></a></p>
+    <button type="button" id="ribbonClose" aria-label="Close">×</button>
   </div>
-</header>
+</div>
+
+<header><div class="wrap">
+  <div class="brand"><i aria-hidden="true"></i>Reel Listing Studio</div>
+  <a class="btn btn-primary" href="#request">Get my listing video</a>
+</div></header>
 
 <main>
-<section>
-  <div class="wrap">
-    <h2>A videographer is great. Until you need one this week.</h2>
-    <p class="lede">You get the look buyers stop scrolling for, without the shoot, the bill or the wait.</p>
-    <div class="compare" role="table" aria-label="Videographer compared with Reel Listing Studio">
-      <div class="hd" role="columnheader"></div><div class="hd" role="columnheader">Videographer</div><div class="hd us" role="columnheader">Reel Listing Studio</div>
-      <div class="rowlabel" role="rowheader">Cost per listing</div><div role="cell">Often $300 to $600+, social cuts extra</div><div class="us" role="cell">From $199, all versions included</div>
-      <div class="rowlabel" role="rowheader">Scheduling</div><div role="cell">Book a date, prep the home again</div><div class="us" role="cell">Nothing to book. Send the link</div>
-      <div class="rowlabel" role="rowheader">Turnaround</div><div role="cell">Days to a week or more</div><div class="us" role="cell">48 hours (24 with Premium)</div>
-      <div class="rowlabel" role="rowheader">Versions</div><div role="cell">Usually one edit</div><div class="us" role="cell">Vertical, widescreen and MLS-ready</div>
-      <div class="rowlabel" role="rowheader">Your effort</div><div role="cell">Coordinate seller, access, cleanup</div><div class="us" role="cell">One link or a folder of photos</div>
+<section class="hero"><div class="wrap">
+  <div class="hero-copy">
+    <p class="eyebrow">For listing agents · Done for you · No videographer to book</p>
+    <h1>Your listing photos, filmed.</h1>
+    <p class="lede">Send us your listing link. In 48 hours you get a walkthrough video that looks shot on site: fans turning, fireplaces flickering, water moving, the camera gliding through each room. Nothing added. Nothing removed.</p>
+    <div class="ctas">
+      <a class="btn btn-primary" href="#request">Get my listing video</a>
+      <a class="btn btn-ghost" href="#examples">Watch real examples</a>
+    </div>
+    <p class="risk"><b>Nothing is charged when you send the form.</b> You approve before you pay.</p>
+    <div class="stats">
+      <div><b>48 hrs</b><span>standard, 24 with Premium</span></div>
+      <div><b>3 versions</b><span>vertical, widescreen, MLS</span></div>
+      <div><b>From $199</b><span>per listing, no subscription</span></div>
     </div>
   </div>
-</section>
+  <div class="cam">
+    <div class="viewfinder">
+      <img id="still" src="/media/walk-still.jpg" alt="Listing photo of a living room, as a still photo" hidden>
+      <video id="filmed" src="/media/example-walkthrough-modern.mp4" poster="/media/walk-still.jpg" muted loop playsinline autoplay aria-label="The same listing photos, turned into a walkthrough video"></video>
+      <div class="vf-ui" id="vfui" aria-hidden="true">
+        <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+        <div class="vf-top"><span class="rec" id="recLabel">REC</span><span id="tc">00:00:00</span></div>
+        <div class="vf-bot" id="vfMode">FROM LISTING PHOTOS</div>
+      </div>
+    </div>
+    <div class="toggle" role="group" aria-label="Compare">
+      <button type="button" id="tPhoto" aria-pressed="false">Photo</button>
+      <button type="button" id="tFilm" aria-pressed="true">Filmed</button>
+    </div>
+    <small>Same listing. Same photos. Tap to flip.</small>
+  </div>
+</div></section>
 
-<section style="padding-top:0">
-  <div class="wrap">
-    <h2>Three steps. You do one of them.</h2>
-    <div class="steps">
-      <div class="step"><div class="n">1</div><h3>Send your listing</h3><p>Your Zillow, MLS, Airbnb or VRBO link, or just the photos. Tell us where you'll post it.</p></div>
-      <div class="step"><div class="n">2</div><h3>We bring it to life</h3><p>Every room gets real motion and a planned camera path. Each shot is checked so fans really spin and nothing looks frozen.</p></div>
-      <div class="step"><div class="n">3</div><h3>Post it everywhere</h3><p>You get your files ready for Reels, TikTok, YouTube, your website and the MLS, plus a ready-to-post caption.</p></div>
+<section class="proof"><div class="wrap">
+  <div class="proof-body">
+    <p class="eyebrow">One listing agent’s math</p>
+    <h2>She was paying $2,400 a listing.</h2>
+    <p><strong>Candace F.</strong> is a multi-seven-figure listing agent in St. Pete Beach, Florida. Before Reel Listing Studio she paid <strong>$1,200 to $2,400 per listing</strong> for a video, the social versions, an unbranded MLS cut and the re-edits. And she waited weeks to book the videographers worth hiring.</p>
+    <p>With us she got her best listing video yet, and the home sold sooner. <strong>Now she refers her entire agency.</strong></p>
+    <p data-site="candaceQuote"></p>
+  </div>
+  <div class="receipt" aria-label="Cost comparison for one listing">
+    <div class="row"><span>Videographer, listing video + social cuts + MLS + re-edits</span><span>$1,200–2,400</span></div>
+    <div class="row"><span>Wait to book</span><span>weeks</span></div>
+    <div class="row tot"><span>Reel Listing Studio, Signature</span><span>$399</span></div>
+    <div class="row"><span>Wait</span><span>48 hours</span></div>
+    <div class="bignum">−$800+</div>
+    <span>saved on one listing, at her low end</span>
+  </div>
+  <div class="quick" style="grid-column:1/-1">
+    <div><b>Jesse P., Midwest agent</b>Ordered in under 9 minutes.</div>
+    <div><b>Josh N., Alaska</b>Ordered on first look.</div>
+    <div><b>Alan, Airbnb owner</b>Ordered right away for his rental.</div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <p class="eyebrow">The comparison</p>
+  <h2>A videographer is great. Until you need one this week.</h2>
+  <div class="tbl"><table>
+    <thead><tr><th scope="col"></th><th scope="col">Hiring a videographer</th><th scope="col">Reel Listing Studio</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Cost per listing</th><td>$250–$600 for one walkthrough. Published rates run $350 for a single 30-second vertical. Social cuts and MLS versions cost extra.</td><td class="us">From $199, all 3 versions included</td></tr>
+      <tr><th scope="row">Scheduling</th><td>Book a date, then prep and stage the home a second time</td><td class="us">Nothing to book. Send the link.</td></tr>
+      <tr><th scope="row">Turnaround</th><td>Days to a week or more</td><td class="us">48 hours (24 with Premium, 12 with rush)</td></tr>
+      <tr><th scope="row">Versions</th><td>Usually one edit</td><td class="us">Vertical, widescreen and MLS-ready</td></tr>
+      <tr><th scope="row">Your effort</th><td>Coordinate the seller, access and cleanup</td><td class="us">One link or a folder of photos</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src">Rates from <a href="https://fash.com/costs/real-estate-videography-pricing">national cost guides</a> and a <a href="https://spacecrafting.com/real-estate-vertical-video">published rate card</a>. Your market may vary.</p>
+  <div class="why">
+    <p><b>A listing gets the most attention in its first days on market.</b> A video that shows up on day 10 misses them. Send it today and it goes live with the listing.</p>
+    <a class="btn btn-primary" href="#request">Get my listing video</a>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">How it works</p>
+  <h2>Three steps. You do one of them.</h2>
+  <ol class="steps">
+    <li><h3>Send your listing</h3><p>Paste the listing link, or share a folder of photos. That’s your whole job.</p></li>
+    <li><h3>We bring it to life</h3><p>Real motion from your real photos: fans, flames, water, light, plus camera pans and push-ins. Every clip is checked, and any frozen or warped shot is redone before you see it.</p></li>
+    <li><h3>Post it everywhere</h3><p>Files ready for Reels, TikTok, YouTube, your website and the MLS, with a caption written for you.</p></li>
+  </ol>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">What you get</p>
+  <h2>One listing. Every place you post.</h2>
+  <ul class="gets">
+    <li><span><b>Vertical reel</b> <em>for Instagram, Facebook, TikTok and YouTube Shorts</em></span></li>
+    <li><span><b>Widescreen video</b> <em>for YouTube, your website and seller presentations</em></span></li>
+    <li><span><b>Unbranded MLS version</b> <em>no names, logos or contact info</em></span></li>
+    <li><span><b>Ready-to-post caption</b> <em>written with Fair Housing in mind</em></span></li>
+    <li><span><b>Your branding</b> <em>name, logo, brokerage, contact info</em></span></li>
+    <li><span><b>Licensed music</b> <em>cleared for social</em></span></li>
+    <li><span><b>Just Listed, Open House and Just Sold cuts</b> <em>Signature and Premium</em></span></li>
+    <li><span><b>Ad copy</b> <em>for boosting the listing, Signature and Premium</em></span></li>
+  </ul>
+</div></section>
+
+<section id="examples" style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">Examples</p>
+  <h2>See it before you decide.</h2>
+  <p class="lede" style="margin-top:12px">Real listings, made from listing photos. Nothing added. Tap to play.</p>
+  <div class="gallery">
+    <div class="clip"><div class="frame"><video src="/media/example-walkthrough-modern.mp4" poster="/media/example-walkthrough-modern.jpg" controls muted playsinline preload="none" aria-label="Listing walkthrough example"></video></div><p>Family home · living, kitchen, sunroom · made from listing photos</p></div>
+    <div class="clip"><div class="frame"><video src="/media/example-luxury-dallas.mp4" poster="/media/example-luxury-dallas.jpg" controls muted playsinline preload="none" aria-label="Luxury listing reel, Dallas"></video></div><p>Dallas, TX · luxury home · vertical reel</p></div>
+    <div class="clip next"><div class="frame"><h3>Your listing, next.</h3><p>Send the link today. Have it back in 48 hours.</p><a class="btn btn-primary" href="#request">I want one for my listing</a></div><p>Mid-priced homes and rentals welcome</p></div>
+  </div>
+</div></section>
+
+<section class="founder" style="padding-top:0"><div class="wrap">
+  <div class="head" aria-hidden="true">RA</div>
+  <div>
+    <p class="eyebrow">Who’s behind this</p>
+    <blockquote style="margin-top:14px">“I’ve run Facebook ads for years, and I watched agents lose their best marketing window waiting on a videographer. So I built a faster way. I check the work before it goes out, and if your photos won’t make a great video, I’ll tell you before you pay a cent.”</blockquote>
+    <cite>Ryan Allaire, Reel Listing Studio<span data-site-sep="city"></span><span data-site-sep="phone"></span><span data-site-sep="email"></span></cite>
+  </div>
+</div></section>
+
+<section id="pricing" style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">Pricing</p>
+  <h2>Pick a package. Send the link.</h2>
+  <p class="lede" style="margin-top:12px">No subscription. No contract. You get an invoice to approve before any work starts.</p>
+  <div class="plans">
+    <div class="plan">
+      <div><h3>Essentials</h3><p class="for">For a quick, clean listing video.</p></div>
+      <p class="price">$199 <span>/ listing</span></p>
+      <ul><li>Up to 10 photos brought to life</li><li>All 3 versions: vertical, widescreen, MLS</li><li>Ready-to-post caption</li><li>48-hour delivery</li></ul>
+      <a class="btn btn-ghost" href="#request" data-pick="Essentials">Choose Essentials</a>
+    </div>
+    <div class="plan rec">
+      <span class="badge">Recommended for most listings</span>
+      <div><h3>Signature</h3><p class="for">Everything to market the listing start to finish.</p></div>
+      <p class="price">$399 <span>/ listing</span></p>
+      <ul><li>Up to 20 photos brought to life</li><li>All 3 versions</li><li>2 extra reels</li><li>Just Listed and Open House cuts</li><li>3 ad copy variations</li><li>1 revision</li><li>48-hour delivery</li></ul>
+      <a class="btn btn-primary" href="#request" data-pick="Signature">Choose Signature</a>
+    </div>
+    <div class="plan">
+      <div><h3>Premium</h3><p class="for">For your top listings, and the seller you’re trying to win.</p></div>
+      <p class="price">$649 <span>/ listing</span></p>
+      <ul><li>Everything in Signature</li><li>5 extra reels</li><li>Just Sold cut</li><li>5 ad copy variations</li><li>2 revisions</li><li><b>24-hour delivery</b></li></ul>
+      <a class="btn btn-ghost" href="#request" data-pick="Premium">Choose Premium</a>
     </div>
   </div>
-</section>
-
-<section class="deliver">
-  <div class="wrap">
-    <h2>One listing. Every place you post.</h2>
-    <p class="lede">The same walkthrough, cut for each platform, so you're never cropping or re-editing on your phone.</p>
-    <div class="formats">
-      <div class="fmt"><video class="v916" src="/media/example-walkthrough-modern.mp4" poster="/media/example-walkthrough-modern.jpg" muted loop playsinline preload="none" data-autoplay></video><b>Vertical reel</b><span>Instagram Reels, TikTok, YouTube Shorts, Facebook Stories</span></div>
-      <div class="fmt"><video class="v169" src="/media/demo-lakefront-walkthrough.mp4" poster="/media/demo-lakefront-walkthrough.jpg" controls playsinline preload="none"></video><b>Widescreen, branded and unbranded</b><span>Your name, phone and logo for YouTube, Facebook and your site, plus a clean version the MLS accepts</span></div>
-    </div>
-    <div class="extras"><span>Ready-to-post caption</span><span>Your branding</span><span>Music included</span><span>"Just Listed" and "Open House" cuts</span><span>Facebook and Instagram ad copy</span></div>
+  <p class="addons">Add-ons: extra reel $49 · 12-hour rush $75 · Airbnb or VRBO version $99. Not sure which? Pick “Not sure yet” on the form and we’ll recommend one from your photos.</p>
+  <div class="guard">
+    <h3>You don’t pay to find out.</h3>
+    <p>Send the form and nothing is charged. We look at your photos first. If they won’t make a great video, we tell you before you pay. You approve the invoice before we start.</p>
+    <p data-site="guarantee"></p>
   </div>
-</section>
+</div></section>
 
-<section class="reel" id="examples">
-  <div class="wrap">
-    <h2>See it before you decide.</h2>
-    <p class="lede">Tap any video to play. These are the kinds of walkthroughs your listing can have.</p>
-    <div class="strip" id="strip"></div>
+<section style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">FAQ</p>
+  <h2>Fair questions. Straight answers.</h2>
+  <div class="faq">
+    <details><summary>Is this fake or misleading to buyers?</summary><p>No. Every frame comes from your actual listing photos. We add motion (a fan turning, a fire flickering, the camera moving through the room), but nothing is added to the property or removed from it. No virtual furniture, no erased power lines. For full transparency, add “Motion enhanced from listing photos” to the caption. We’ll include that line if you ask.</p></details>
+    <details><summary>Will it look like a slideshow?</summary><p>No. A slideshow pans across still pictures. This looks like someone walked through the home with a camera: things in each room move, and the camera moves through the space. Watch the examples above and judge for yourself.</p></details>
+    <details><summary>Can I put it on the MLS?</summary><p>Yes. Every package includes an unbranded, MLS-ready version with no names, logos or contact info. MLS rules vary, so check yours.</p></details>
+    <details><summary>What if my photos aren’t great?</summary><p>We look before you pay. If your photos won’t make a great video, we tell you up front and you owe nothing. Most professional listing photos work well.</p></details>
+    <details><summary>How fast is it, really?</summary><p>48 hours for Essentials and Signature. 24 hours with Premium. Need it sooner? Add 12-hour rush for $75.</p></details>
+    <details><summary>What do I actually have to do?</summary><p>Send the listing link or a photo folder. That’s it. No scheduling, no seller coordination, no second cleanup.</p></details>
+    <details><summary>What if I want changes?</summary><p>Signature includes 1 revision and Premium includes 2. On Essentials, we fix anything that’s our mistake, like a frozen shot or a wrong detail, at no charge.</p></details>
+    <details><summary>Who owns the video? Can I run ads with it?</summary><p>You can post it anywhere, boost it, run it as an ad and show it in listing presentations. Signature and Premium include ad copy to go with it.</p></details>
+    <details><summary>Why is it so much cheaper than a videographer?</summary><p>Nobody drives to the property, nobody books a shoot, and the home isn’t staged twice. We work from the photos you already paid for.</p></details>
+    <details><summary>Is it worth it on a mid-priced listing, or a rental?</summary><p>Yes. At $199 it costs less than one 30-second clip from most videographers, it makes a mid-priced listing look like a luxury one, and it’s a strong piece for your next listing presentation. Rentals get a dedicated Airbnb or VRBO version for $99.</p></details>
   </div>
-</section>
+  <p class="after-faq">Prefer to make them yourself? There’s a <a href="/">self-serve Studio</a> too.<span id="askCall" hidden> Still have a question? Call or text <a data-site-tel></a>.</span></p>
+</div></section>
 
-<section>
-  <div class="wrap">
-    <h2>Pick a package. Send the link.</h2>
-    <p class="lede">One-time price per listing. No subscription, no contract.</p>
-    <div class="packs">
-      <div class="pack"><h3>Essentials</h3><div class="price">$199</div><div class="per">per listing</div>
-        <ul><li>Walkthrough video, up to 10 shots</li><li>Vertical, branded widescreen and MLS versions</li><li>Ready-to-post caption</li><li>48-hour delivery</li></ul>
-        <a class="btn" href="#request" data-pack="Essentials">Choose Essentials</a></div>
-      <div class="pack best"><span class="flag">Most agents pick this</span><h3 style="margin-top:14px">Signature</h3><div class="price">$399</div><div class="per">per listing</div>
-        <ul><li>Up to 20 shots, all 3 versions</li><li>2 extra social reels</li><li>"Just Listed" and "Open House" cuts</li><li>3 Facebook and Instagram ad copy variations</li><li>1 round of revisions</li><li>48-hour delivery</li></ul>
-        <a class="btn btn-amber" href="#request" data-pack="Signature">Choose Signature</a></div>
-      <div class="pack"><h3>Premium</h3><div class="price">$649</div><div class="per">per listing</div>
-        <ul><li>Everything in Signature</li><li>5 extra social reels</li><li>"Just Sold" cut too</li><li>5 ad copy variations with hashtags</li><li>2 rounds of revisions</li><li>24-hour delivery</li></ul>
-        <a class="btn" href="#request" data-pack="Premium">Choose Premium</a></div>
-    </div>
-    <p class="addons">Add-ons: extra reel $49, 12-hour rush $75, Airbnb or VRBO version $99.</p>
+<section class="request" id="request"><div class="wrap">
+  <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+    <p class="eyebrow">Start here</p>
+    <h2>Get a video for your next listing.</h2>
+    <p class="lede">Takes about a minute. Nothing is charged. You approve before you pay.</p>
   </div>
-</section>
-
-<section style="background:var(--white)">
-  <div class="wrap faq">
-    <div class="sticky"><h2>Fair questions. Straight answers.</h2><p class="lede">If yours isn't here, ask it in the form below.</p><a class="btn btn-amber" href="#request" style="margin-top:28px">Get my listing video</a></div>
-    <div>
-      <details open><summary>Is this fake? Will buyers feel misled?</summary><p>No. We animate your real listing photos. Nothing is added to or removed from the home: no new furniture, no changed finishes, no invented views. Only things already in the photo move, like a ceiling fan, a fireplace or pool water. We recommend a short note such as "motion enhanced from listing photos," and you can include it in the caption.</p></details>
-      <details><summary>Will the MLS accept it?</summary><p>Every package includes an unbranded version with no agent name, phone, logo or website, which is what most MLSs require for virtual tours. Rules on enhanced media vary by MLS and brokerage, so check yours. We'll match whatever format you need.</p></details>
-      <details><summary>My photos aren't great. Will it still work?</summary><p>Professional photos give the best result, but we pick the strongest shots, straighten and brighten them, and skip anything blurry or duplicated. If a listing needs better photos first, we'll tell you before you pay for anything.</p></details>
-      <details><summary>Does it actually look filmed, or like a slideshow?</summary><p>Flip the switch at the top of this page: that's a real result. Each shot gets its own camera move and real motion inside the room. Every shot is checked automatically, and frozen ones are redone before you see them.</p></details>
-      <details><summary>How much work is it for me?</summary><p>Send one link or a folder of photos and say where you'll post it. That's it. No showing to schedule, no seller to coordinate, no editing app.</p></details>
-      <details><summary>How fast do I get it?</summary><p>48 hours for Essentials and Signature, 24 hours with Premium, and 12 hours with the rush add-on. Perfect for a listing going live this weekend.</p></details>
-      <details><summary>What if I don't like something?</summary><p>Signature includes one round of revisions and Premium includes two. Tell us what to change (a shot, the order, the text, the music) and we'll fix it.</p></details>
-      <details><summary>Can I put my own branding on it?</summary><p>Yes. The branded versions carry your name, phone, logo and colors. The MLS version stays clean.</p></details>
-      <details><summary>Who owns the video? Can I run ads with it?</summary><p>It's yours to post on social media, YouTube, your website, email and paid ads for that listing. You only need the right to use the listing photos, which you already have for marketing.</p></details>
-      <details><summary>Why is it so much cheaper than a videographer?</summary><p>There's no crew, travel or shoot day. The video is built from photos you already paid for, so you get a polished walkthrough without the production cost.</p></details>
-      <details><summary>Is a video worth it for a mid-priced listing?</summary><p>Video is what Reels, TikTok and YouTube push to people. At this price a walkthrough makes sense for every listing, not just luxury ones, and it shows sellers you market harder than the next agent.</p></details>
-      <details><summary>Will it help me win listings?</summary><p>Many agents show these videos in listing presentations: "Here's how I'll market your home." It's a simple, visual way to stand out from agents who only post photos.</p></details>
-      <details><summary>Does it work for rentals, Airbnb and VRBO?</summary><p>Yes. Short-term rentals are a great fit: pools, hot tubs, views and cozy fireplaces all come to life. Ask for the Airbnb or VRBO version.</p></details>
-      <details><summary>Is the wording Fair Housing friendly?</summary><p>Captions and on-screen text describe the property, not who should live there. You'll always see the text before posting, and we'll change anything you want.</p></details>
-      <details><summary>Do I need to sign up for software?</summary><p>No. This is done for you. Send the listing, get the files. If you'd rather make videos yourself, ask about the self-serve Studio.</p></details>
-      <details><summary>How do I pay?</summary><p>We'll confirm your package and send an invoice before work starts. Nothing is charged when you submit the form.</p></details>
-    </div>
-  </div>
-</section>
-
-<section class="ask" id="request">
-  <div class="wrap ask-grid">
-    <div>
-      <h2>Get a video for your next listing.</h2>
-      <p class="lede">Send the listing and pick a package. We'll confirm the details and the price before anything starts. Submitting this form doesn't charge you.</p>
-      <div class="agent-card" id="agentCard" hidden><span style="opacity:.75;font-size:14px">Your Reel Listing Studio specialist</span><b id="agName"></b><div id="agLines"></div></div>
-    </div>
-    <form id="leadForm" novalidate>
-      <label>Your name<input name="name" autocomplete="name" required></label>
-      <label>Phone<input name="phone" type="tel" autocomplete="tel"></label>
-      <label class="full">Email<input name="email" type="email" autocomplete="email"></label>
-      <label class="full">Listing link or address<input name="listing" placeholder="Zillow, MLS, Airbnb or VRBO link, or the address"></label>
-      <label class="full">Package<select name="package"><option>Not sure yet</option><option>Essentials ($199)</option><option selected>Signature ($399)</option><option>Premium ($649)</option></select></label>
-      <label class="full">Anything we should know?<textarea name="notes" rows="3" placeholder="Go-live date, where you'll post it, branding notes"></textarea></label>
-      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn btn-amber full" type="submit">Send my listing</button>
-      <p class="form-note full">We'll reach out within one business day by phone or email.</p>
-      <p class="status" id="formStatus" role="status" aria-live="polite"></p>
-    </form>
-  </div>
-</section>
+  <form id="reqForm" novalidate>
+    <div class="f"><label for="fName">Your name</label><input id="fName" name="name" autocomplete="name" required></div>
+    <div class="f"><label for="fPhone">Mobile number</label><input id="fPhone" name="phone" type="tel" autocomplete="tel" placeholder="For a quick text when it’s ready" required></div>
+    <div class="f full"><label for="fEmail">Email</label><input id="fEmail" name="email" type="email" autocomplete="email" required></div>
+    <div class="f full"><label for="fListing">Listing link or address</label><input id="fListing" name="listing" placeholder="Zillow, MLS or your website link, or the address" required></div>
+    <div class="f full"><label for="fPkg">Package</label>
+      <select id="fPkg" name="package"><option>Not sure yet, recommend one</option><option>Essentials $199</option><option>Signature $399</option><option>Premium $649</option></select></div>
+    <div class="f full"><label for="fNotes">Anything we should know? <span style="font-weight:400;color:var(--muted)">(optional)</span></label><textarea id="fNotes" name="notes" placeholder="Go-live date, must-show rooms, branding notes"></textarea></div>
+    <input type="hidden" id="fRef" name="ref">
+    <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+    <input type="hidden" id="fUtmS" name="utm_source"><input type="hidden" id="fUtmC" name="utm_campaign">
+    <p class="refnote" id="refNote"><b>Referred by a partner?</b> Type their name in the notes so they get credit.</p>
+    <p class="err" id="fErr" hidden>Add your name, mobile number, email and the listing so we can send your quote.</p>
+    <button class="btn btn-primary" type="submit">Send my listing</button>
+    <p class="under">We’ll reach out within one business day with your quote. Nothing is charged until you approve it.</p>
+    <div class="done" id="fDone" hidden><h3>Got it. Your listing is in.</h3><p id="doneText">We’ll review your photos and send your quote within one business day.</p></div>
+  </form>
+</div></section>
 </main>
-<footer><div class="wrap"><span>Reel Listing Studio</span><span>Motion is created from your listing photos. Nothing is added to or removed from the property.</span></div></footer>
+
+<footer><div class="wrap">
+  <p>Motion is created from your listing photos. Nothing is added to or removed from the property.</p>
+  <p>Reel Listing Studio · Ryan Allaire<span data-site-sep="city"></span><span data-site-sep="phone"></span><span data-site-sep="email"></span><span data-site-link="privacy">Privacy</span><span data-site-link="terms">Terms</span><span data-site-link="partners">Partner program</span></p>
+</div></footer>
+
+<div class="sticky" id="sticky"><a class="btn btn-primary" href="#request" id="stickyBtn">Get my listing video, from $199</a></div>
 
 <script>
-const REF=/*__REF__*/null;
-const $=s=>document.querySelector(s);
-const fmtPhone=p=>{ const d=String(p||"").replace(/\D/g,""); return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:d.length===11&&d[0]==="1"?`(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`:String(p||""); };
-// who referred this agent
-if(REF&&REF.name){
-  const first=REF.name.split(" ")[0];
-  $("#refBar").hidden=false; $("#refText").textContent=`${REF.name} sent you this page.`;
-  if(REF.phone){ const a=$("#refCall"); a.hidden=false; a.href="tel:"+REF.phone.replace(/[^\d+]/g,""); a.textContent=`Call or text ${first}: ${fmtPhone(REF.phone)}`; }
-  $("#agentCard").hidden=false; $("#agName").textContent=REF.name;
-  const L=$("#agLines");
-  if(REF.phone){ const a=document.createElement("a"); a.href="tel:"+REF.phone.replace(/[^\d+]/g,""); a.textContent=fmtPhone(REF.phone); L.appendChild(a); L.appendChild(document.createElement("br")); }
-  if(REF.email){ const a=document.createElement("a"); a.href="mailto:"+REF.email; a.textContent=REF.email; L.appendChild(a); }
-  document.querySelector(".form-note").textContent=`${first} will reach out within one business day by phone or email.`;
-}
-// photo / filmed switch
-const player=$("#player"), vid=$("#heroVid");
-document.querySelectorAll(".switch button").forEach(b=>b.onclick=()=>{
-  const filmed=b.dataset.v==="filmed";
-  document.querySelectorAll(".switch button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
-  player.classList.toggle("filmed",filmed); $("#playerTag").textContent=filmed?"Filmed from that photo":"The original listing photo";
-  if(filmed){ vid.play().catch(()=>{}); } else vid.pause();
-});
-if(matchMedia("(prefers-reduced-motion: reduce)").matches){ vid.removeAttribute("autoplay"); vid.pause(); player.classList.remove("filmed");
-  document.querySelectorAll(".switch button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.v==="photo"))); $("#playerTag").textContent="The original listing photo"; }
-// example reel
-const EX=[["example-walkthrough-modern","Bright modern home"],["example-3d-interior","Designer interiors"],["example-luxury-dallas","Luxury home tour"],["ad-3-steps","How it works in 3 steps"],["ad-presenter","Why agents use it"],["ad-creator-commercial","Photo to video, explained"]];
-const strip=$("#strip");
-EX.forEach(([id,cap])=>{ const f=document.createElement("figure"); const v=document.createElement("video");
-  v.src=`/media/${id}.mp4`; v.poster=`/media/${id}.jpg`; v.controls=true; v.playsInline=true; v.preload="none";
-  v.addEventListener("play",()=>strip.querySelectorAll("video").forEach(o=>{ if(o!==v) o.pause(); }));
-  const c=document.createElement("figcaption"); c.textContent=cap; f.append(v,c); strip.appendChild(f); });
-// muted loops play only while on screen
-const io=new IntersectionObserver(es=>es.forEach(e=>{ const v=e.target; if(e.isIntersecting){ v.preload="auto"; v.play().catch(()=>{}); } else v.pause(); }),{threshold:.35});
-document.querySelectorAll("video[data-autoplay]").forEach(v=>io.observe(v));
-// package buttons preselect the form
-document.querySelectorAll("[data-pack]").forEach(a=>a.addEventListener("click",()=>{ const s=document.querySelector("select[name=package]"); [...s.options].forEach(o=>{ if(o.text.startsWith(a.dataset.pack)) s.value=o.value; }); }));
-// request form
-$("#leadForm").addEventListener("submit",async e=>{
-  e.preventDefault(); const f=e.target, st=$("#formStatus"), btn=f.querySelector("button[type=submit]");
-  const data=Object.fromEntries(new FormData(f)); if(REF) data.ref=REF.code;
-  if(!data.name.trim()){ st.className="status bad"; st.textContent="Add your name so we know who to contact."; f.name.focus(); return; }
-  if(!data.email.trim()&&data.phone.replace(/\D/g,"").length<7){ st.className="status bad"; st.textContent="Add an email or phone number so we can reach you."; f.email.focus(); return; }
-  btn.disabled=true; btn.textContent="Sending…"; st.className="status"; st.textContent="";
-  try{
-    const r=await fetch("/api/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)}); const j=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(j.error||"That didn't go through. Try again, or call us.");
-    const who=j.partner&&j.partner.name?j.partner.name.split(" ")[0]:"We";
-    f.innerHTML=`<div class="done"><h3>Listing received.</h3><p></p></div>`;
-    f.querySelector(".done p").textContent=`${who} will reach out within one business day to confirm your package and price.`;
-  }catch(err){ st.className="status bad"; st.textContent=err.message; btn.disabled=false; btn.textContent="Send my listing"; }
-});
+// ===== Site settings: fill these in and the matching lines appear on the page (empty = hidden) =====
+const SITE = {
+  phone: "",          // e.g. "(715) 555-0100": shown in founder line, footer, FAQ and the thank-you message
+  email: "",          // e.g. "ryan@yourdomain.com"
+  city: "",           // e.g. "Hudson, WI"
+  candaceQuote: "",   // Candace's own words, with her OK
+  guarantee: "",      // e.g. "If the finished video isn't right, we redo it. Still not right? Full refund."
+  referralPerk: "",   // e.g. "a free extra reel on your first listing"
+  privacy: "", terms: "", partners: ""   // links
+};
+const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the server from their link)
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var fmtPhone=function(p){ var d=String(p||"").replace(/\D/g,""); return d.length===10?"("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6):d.length===11&&d[0]==="1"?"("+d.slice(1,4)+") "+d.slice(4,7)+"-"+d.slice(7):String(p||""); };
+  // settings into the page
+  document.querySelectorAll("[data-site]").forEach(function(el){ var v=SITE[el.getAttribute("data-site")]; if(v) el.textContent=v; else el.classList.add("hide"); });
+  document.querySelectorAll("[data-site-sep]").forEach(function(el){ var k=el.getAttribute("data-site-sep"), v=SITE[k]; if(!v){ el.remove(); return; }
+    el.textContent=" · "; if(k==="phone"){ var a=document.createElement("a"); a.href="tel:"+v.replace(/[^\d+]/g,""); a.textContent=fmtPhone(v); el.appendChild(a); }
+    else if(k==="email"){ var m=document.createElement("a"); m.href="mailto:"+v; m.textContent=v; el.appendChild(m); } else el.appendChild(document.createTextNode(v)); });
+  document.querySelectorAll("[data-site-link]").forEach(function(el){ var v=SITE[el.getAttribute("data-site-link")]; if(!v){ el.remove(); return; }
+    var a=document.createElement("a"); a.href=v; a.textContent=el.textContent; el.textContent=" · "; el.appendChild(a); });
+  if(SITE.phone){ $("askCall").hidden=false; var t=document.querySelector("[data-site-tel]"); t.href="tel:"+SITE.phone.replace(/[^\d+]/g,""); t.textContent=fmtPhone(SITE.phone); }
+
+  // who referred this visitor (the server keeps the 90-day credit)
+  var ref = REF && REF.code ? REF : null, name = ref && ref.name, first = name ? name.split(" ")[0] : "";
+  var contactPhone = (ref && ref.phone) || SITE.phone;
+  if(ref){
+    $("fRef").value = ref.code;
+    $("ribbon").hidden = false;
+    if(name){
+      $("ribbonWho").textContent = "Referred by " + name + ".";
+      if(SITE.referralPerk) $("ribbonPerk").textContent = "You’re getting the same service " + name + "’s network uses, plus " + SITE.referralPerk + ".";
+      if(ref.phone){ var rc=$("ribbonCall"); rc.hidden=false; rc.href="tel:"+ref.phone.replace(/[^\d+]/g,""); rc.textContent="Call or text "+first+": "+fmtPhone(ref.phone); }
+      $("refNote").innerHTML = "";
+      var b=document.createElement("b"); b.textContent="Referred by " + name + "."; $("refNote").appendChild(b); $("refNote").appendChild(document.createTextNode(" They’ll be credited automatically. Nothing else to do."));
+      $("stickyBtn").textContent = "Get my video. Referred by " + first + ".";
+    } else {
+      $("refNote").innerHTML = "<b>Referred by a partner.</b> They’ll be credited automatically.";
+    }
+  }
+  if(contactPhone) $("doneText").textContent = (ref&&name? first+" will":"We’ll") + " review your photos and send your quote within one business day. Need it faster? Text " + fmtPhone(contactPhone) + ".";
+  else if(ref&&name) $("doneText").textContent = first + " will review your photos and send your quote within one business day.";
+  try {
+    var q = new URLSearchParams(location.search);
+    $("fUtmS").value = q.get("utm_source") || "";
+    $("fUtmC").value = q.get("utm_campaign") || "";
+  } catch(e){}
+  $("ribbonClose").addEventListener("click", function(){ $("ribbon").hidden = true; });
+
+  // Photo / Filmed toggle
+  var still = document.getElementById("still"), film = document.getElementById("filmed"), ui = document.getElementById("vfui");
+  var tP = document.getElementById("tPhoto"), tF = document.getElementById("tFilm");
+  function mode(filmed){
+    still.hidden = filmed; film.hidden = !filmed;
+    tP.setAttribute("aria-pressed", String(!filmed)); tF.setAttribute("aria-pressed", String(filmed));
+    ui.classList.toggle("still", !filmed);
+    document.getElementById("vfMode").textContent = filmed ? "FROM LISTING PHOTOS" : "LISTING PHOTO";
+    document.getElementById("recLabel").textContent = filmed ? "REC" : "STILL";
+    if(filmed){ var p = film.play(); if(p && p.catch) p.catch(function(){}); } else { film.pause(); }
+  }
+  tP.addEventListener("click", function(){ mode(false); });
+  tF.addEventListener("click", function(){ mode(true); });
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) mode(false);
+
+  // Timecode
+  var tc = document.getElementById("tc");
+  film.addEventListener("timeupdate", function(){
+    var t = film.currentTime, s = Math.floor(t)%60, f = Math.floor((t%1)*30);
+    tc.textContent = "00:" + String(s).padStart(2,"0") + ":" + String(f).padStart(2,"0");
+  });
+
+  // Package buttons preselect the form
+  document.querySelectorAll("[data-pick]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var sel = document.getElementById("fPkg"), want = b.getAttribute("data-pick");
+      for(var i=0;i<sel.options.length;i++) if(sel.options[i].text.indexOf(want)===0) sel.selectedIndex = i;
+    });
+  });
+
+  // Form: on your live site, POST these fields (including ref) to your existing form endpoint here.
+  var form = document.getElementById("reqForm");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var need = ["fName","fPhone","fEmail","fListing"], ok = true;
+    need.forEach(function(id){ var el = document.getElementById(id); if(!el.value.trim()){ ok = false; el.setAttribute("aria-invalid","true"); } else el.removeAttribute("aria-invalid"); });
+    var err = document.getElementById("fErr");
+    err.textContent = "Add your name, mobile number, email and the listing so we can send your quote.";
+    err.hidden = ok;
+    if(!ok) return;
+    var btn = form.querySelector("button[type=submit]"); btn.disabled = true; btn.textContent = "Sending…";
+    var data = { name:$("fName").value, phone:$("fPhone").value, email:$("fEmail").value, listing:$("fListing").value, package:$("fPkg").value,
+      notes:$("fNotes").value, ref:$("fRef").value, utm_source:$("fUtmS").value, utm_campaign:$("fUtmC").value, website:(form.website&&form.website.value)||"" };
+    fetch("/api/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok) throw new Error(j.error||"That didn’t go through. Try again in a moment."); return j; }); })
+      .then(function(){ Array.prototype.forEach.call(form.querySelectorAll(".f, .refnote, .btn, .under, .err"), function(el){ el.hidden = true; }); document.getElementById("fDone").hidden = false; })
+      .catch(function(x){ err.textContent = x.message; err.hidden = false; btn.disabled = false; btn.textContent = "Send my listing"; });
+  });
+
+  // Sticky mobile CTA appears after the hero, hides at the form
+  var sticky = document.getElementById("sticky"), hero = document.querySelector(".hero"), req = document.getElementById("request");
+  function onScroll(){
+    var past = hero.getBoundingClientRect().bottom < 0;
+    var r = req.getBoundingClientRect(), atForm = r.top < innerHeight && r.bottom > 0;
+    sticky.classList.toggle("on", past && !atForm);
+  }
+  addEventListener("scroll", onScroll, {passive:true}); onScroll();
+})();
 </script>
 </body>
 </html>

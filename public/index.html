@@ -2450,7 +2450,7 @@ function leadRow(l,showPartner){
   const c=d.querySelector(".c");
   if(l.phone){ const a=document.createElement("a"); a.href="tel:"+l.phone.replace(/[^\d+]/g,""); a.textContent=fmtPhone(l.phone); c.appendChild(a); c.append("  "); }
   if(l.email){ const a=document.createElement("a"); a.href="mailto:"+l.email; a.textContent=l.email; c.appendChild(a); }
-  const x=d.querySelector(".x"); x.textContent=[l.listing,l.notes].filter(Boolean).join(" | ");
+  const x=d.querySelector(".x"); x.textContent=[l.listing,l.notes,l.utm_source||l.utm_campaign?`ad: ${[l.utm_source,l.utm_campaign].filter(Boolean).join(" / ")}`:""].filter(Boolean).join(" | ");
   return d;
 }
 async function renderMyLeads(){
