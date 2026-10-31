@@ -31,6 +31,18 @@ const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "a
 
 const STUDIO = path.join(DIR, "public", "index.html");
 const SKELETON_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>`;
+const AGENTS = path.join(DIR, "public", "agents.html");
+const REF_DAYS = 90;
+const cookieVal = (req, k) => { const m = new RegExp(`(?:^|;\\s*)${k}=([^;]+)`).exec(req.headers.cookie || ""); return m ? decodeURIComponent(m[1]) : ""; };
+// first partner to refer someone keeps the credit for 90 days
+function refCookie(req, res, code) {
+  const p = acct.partnerByRef(code); if (!p) return null;
+  const cur = acct.partnerByRef(cookieVal(req, "rls_ref"));
+  if (cur) return cur;
+  res.setHeader("set-cookie", `rls_ref=${p.code}; Max-Age=${REF_DAYS * 86400}; Path=/; SameSite=Lax${SECURE ? "; Secure" : ""}`);
+  return p;
+}
+const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code } : null).replace(/</g, "\\u003c"));
 const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!doctype/i.test(body) ? body : SKELETON_HEAD + body + "</body></html>"; };
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
@@ -65,6 +77,18 @@ export const server = http.createServer(async (req, res) => {
   res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
   if (process.env.TRUST_PROXY === "1") res.setHeader("strict-transport-security", "max-age=31536000");
   try {
+    // agent sales page, with partner referral links: /r/ken-george or /agents?ref=ken-george
+    if (req.method === "GET" && (u.pathname === "/agents" || u.pathname.startsWith("/r/"))) {
+      const code = u.pathname.startsWith("/r/") ? u.pathname.slice(3) : u.searchParams.get("ref");
+      const partner = (code && refCookie(req, res, code)) || acct.partnerByRef(cookieVal(req, "rls_ref"));
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(agentsPage(partner));
+    }
+    if (req.method === "POST" && u.pathname === "/api/leads") {
+      if (!allow(clientIp(req), authHits, 15)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes, or call us." });
+      const body = await readJson(req);
+      if (body.website) return json(res, 200, { ok: true });   // bots fill the hidden field
+      return json(res, 200, { ok: true, ...acct.addLead(body, cookieVal(req, "rls_ref") || body.ref) });
+    }
     if (req.method === "GET" && (u.pathname === "/" || u.pathname === "/index.html")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(page());
     }
@@ -91,7 +115,7 @@ export const server = http.createServer(async (req, res) => {
     // browsers can't send JSON to another site without permission, so requiring it blocks cross-site form tricks
     if (req.method === "POST" && u.pathname.startsWith("/api/") && u.pathname !== "/api/paypal/webhook" && !/^application\/json/i.test(req.headers["content-type"] || ""))
       return json(res, 415, { error: "Send JSON." });
-    if (u.pathname.startsWith("/api/account/") || u.pathname === "/api/me") {
+    if (u.pathname.startsWith("/api/account/") || u.pathname.startsWith("/api/partner/") || u.pathname === "/api/me") {
       if (req.method === "GET" && u.pathname === "/api/me") {
         let paypal = null; try { paypal = await clientConfig(); } catch (e) { console.error("paypal setup", e.message); }
         return json(res, 200, { user: meJson(acct.userFrom(req)), tiers: acct.TIERS, topup: acct.TOPUP, paypal, inviteRequired: !!ACCESS_KEY });
@@ -100,6 +124,7 @@ export const server = http.createServer(async (req, res) => {
         if (!allow(clientIp(req), authHits, 20)) return json(res, 429, { error: "Too many sign-in attempts. Wait a few minutes, then try again." });
         const body = await readJson(req);
         const token = u.pathname.endsWith("signup") ? acct.signup(body) : acct.login(body);
+        if (u.pathname.endsWith("signup")) { const nu = acct.userFrom({ headers: { cookie: acct.sessionCookie(token, false).split(";")[0] } }); if (nu) acct.setReferredBy(nu.id, cookieVal(req, "rls_ref")); }
         res.setHeader("set-cookie", acct.sessionCookie(token, SECURE));
         return json(res, 200, { user: meJson(acct.userFrom({ headers: { cookie: `${acct.cookieName}=${token}` } })) });
       }
@@ -120,6 +145,18 @@ export const server = http.createServer(async (req, res) => {
       }
       if (req.method === "POST" && u.pathname === "/api/account/topup/capture") {
         const user = needUser(req); const { orderID } = await readJson(req); return json(res, 200, { user: meJson(await captureTopup(user, orderID)) });
+      }
+      if (u.pathname === "/api/partner/link" && req.method === "POST") {
+        const user = needUser(req); const { code } = await readJson(req);
+        return json(res, 200, { code: acct.setRefCode(user, code) });
+      }
+      if (u.pathname === "/api/partner/leads" && req.method === "GET") {
+        const user = needUser(req); if (!user.partner && !acct.isAdmin(user)) return json(res, 403, { error: "Partner accounts only." });
+        return json(res, 200, acct.partnerLeads(user.id));
+      }
+      if (u.pathname === "/api/account/admin/leads" && req.method === "GET") {
+        const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
+        return json(res, 200, acct.allLeads());
       }
       if (u.pathname === "/api/account/admin/partners" && req.method === "POST") {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });

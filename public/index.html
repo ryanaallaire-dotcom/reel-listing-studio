@@ -307,6 +307,12 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .script pre{white-space:pre-wrap;font:inherit;font-size:14.5px;line-height:1.5;margin:0;background:var(--panel,#1a1a24);border-radius:8px;padding:10px;user-select:text}
 .script .subj{font-size:14px;margin:0 0 6px}
 .tools-group{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.linkbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.linkbox input{flex:1 1 220px;min-width:0}
+.lead{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--panel-2);font-size:14.5px}
+.lead b{font-size:15.5px}
+.lead .meta{color:var(--muted);font-size:13px}
+.lead a{color:inherit}
 .tools-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .tools-form input,.tools-form select{width:100%}
 .pthint{flex-basis:100%;font-size:13px;color:var(--muted)}
@@ -354,7 +360,15 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
   <div class="dlg-in">
     <div class="dlg-h"><h2 id="toolsTitle">Agency tools</h2><button class="dlg-x" data-close aria-label="Close">×</button></div>
     <p class="small" style="margin:0 0 12px">Everything you need to win agents: videos to share and ready-to-send messages, already signed with your details.</p>
-    <div class="seg" role="group" aria-label="Agency tools section" id="toolsSeg"><button data-v="videos" aria-pressed="true">Demo &amp; ad videos</button><button data-v="scripts">Text, email &amp; Messenger scripts</button><button data-v="me">Your details</button></div>
+    <div class="seg" role="group" aria-label="Agency tools section" id="toolsSeg"><button data-v="link">My link &amp; leads</button><button data-v="videos" aria-pressed="true">Demo &amp; ad videos</button><button data-v="scripts">Text, email &amp; Messenger scripts</button><button data-v="me">Your details</button></div>
+    <div id="toolsLink" class="tools-pane" hidden>
+      <p class="small" style="margin:0 0 6px">Send agents to <b>your own sales page</b>. Anyone who opens your link is tagged as your referral for 90 days, so every request and sign-up from them is credited to you.</p>
+      <div class="linkbox"><input id="myLink" readonly aria-label="Your link"><button class="btn sm primary" id="copyMyLink" type="button">Copy link</button><a class="btn sm" id="openMyLink" target="_blank" rel="noopener">Open page</a></div>
+      <form id="codeForm" class="linkbox" style="margin-top:10px"><span class="small" id="codePrefix"></span><input id="myCode" aria-label="Choose your link" maxlength="30" spellcheck="false" autocapitalize="off"><button class="btn sm" type="submit">Save my link</button></form>
+      <p class="status" id="codeStatus"></p>
+      <div class="tools-group">Requests from agents</div><div id="myLeads" class="small">Loading…</div>
+      <div class="tools-group">Agents who signed up through you</div><div id="mySignups" class="small"></div>
+    </div>
     <div id="toolsVideos" class="tools-pane"></div>
     <div id="toolsScripts" class="tools-pane" hidden></div>
     <div id="toolsMe" class="tools-pane" hidden>
@@ -366,7 +380,8 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         <label>Starting price (Essentials)<input id="tmP1" value="$199"></label>
         <label>Signature package<input id="tmP2" value="$399"></label>
         <label>Premium package<input id="tmP3" value="$649"></label>
-        <label style="grid-column:1/-1">Demo video in your scripts<select id="tmDemo"></select></label>
+        <label style="grid-column:1/-1">Link in your scripts<select id="tmLinkMode"><option value="page">My sales page (tracks your referrals)</option><option value="video">A demo video only</option></select></label>
+        <label style="grid-column:1/-1">Demo video (when sending a video link)<select id="tmDemo"></select></label>
       </div>
     </div>
   </div>
@@ -398,6 +413,8 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
           </div>
         </form>
         <p class="status" id="partnerStatus"></p>
+        <div style="margin-top:14px"><button class="btn sm" type="button" id="allLeadsBtn">Show all agent requests</button> <a class="btn sm" href="/agents" target="_blank" rel="noopener">Open the agent sales page</a></div>
+        <div id="allLeads" style="margin-top:10px"></div>
         <div id="partnerOut"></div>
       </div>
     </div>
@@ -2302,6 +2319,13 @@ $("#partnerForm").addEventListener("submit",async e=>{
     const b=d.querySelector("button"); if(b) b.onclick=async()=>{ try{ await navigator.clipboard.writeText(x.link); b.textContent="Copied \u2713"; }catch(err){ prompt("Copy this link:",x.link); } };
     out.appendChild(d); });
 });
+$("#allLeadsBtn").onclick=async()=>{
+  const box=$("#allLeads"); box.textContent="Loading\u2026"; const r=await fetch("/api/account/admin/leads"); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ box.textContent=j.error||"Couldn't load."; return; }
+  box.innerHTML=""; const h=document.createElement("p"); h.className="small"; h.textContent=`${j.leads.length} request${j.leads.length===1?"":"s"}, ${j.signups.length} referred sign-up${j.signups.length===1?"":"s"}.`; box.appendChild(h);
+  j.leads.forEach(l=>box.appendChild(leadRow(l,true)));
+  j.signups.forEach(u=>{ const d=document.createElement("div"); d.className="lead"; d.textContent=`Sign-up: ${u.email} \u2013 ${when(u.created)} \u2013 via ${u.partner||"partner"}`; box.appendChild(d); });
+};
 // partner setup link: ?setup=TOKEN lets an invited partner choose their password
 async function partnerSetup(){
   const tok=new URLSearchParams(location.search).get("setup"); if(!tok||!/^[0-9a-f]{48}$/.test(tok)) return;
@@ -2334,16 +2358,16 @@ const DEMO_VIDEOS=[
 const mediaURL=(id,ext="mp4")=>`${location.origin}/media/${id}.${ext}`;
 function toolsMe(){
   const u=(ACCT&&ACCT.user)||{}; let saved={}; try{ saved=JSON.parse(localStorage.getItem("rls-tools-"+(u.email||""))||"{}"); }catch(e){}
-  return {name:saved.name||u.name||"", phone:saved.phone||u.phone||"", email:saved.email||u.email||"", p1:saved.p1||"$199", p2:saved.p2||"$399", p3:saved.p3||"$649", demo:saved.demo||"demo-lakefront-walkthrough"};
+  return {name:saved.name||u.name||"", phone:saved.phone||u.phone||"", email:saved.email||u.email||"", p1:saved.p1||"$199", p2:saved.p2||"$399", p3:saved.p3||"$649", demo:saved.demo||"demo-lakefront-walkthrough", linkMode:saved.linkMode||"page"};
 }
 function saveToolsMe(){
-  const u=(ACCT&&ACCT.user)||{}; const me={name:$("#tmName").value.trim(),phone:$("#tmPhone").value.trim(),email:$("#tmEmail").value.trim(),p1:$("#tmP1").value.trim(),p2:$("#tmP2").value.trim(),p3:$("#tmP3").value.trim(),demo:$("#tmDemo").value};
+  const u=(ACCT&&ACCT.user)||{}; const me={name:$("#tmName").value.trim(),phone:$("#tmPhone").value.trim(),email:$("#tmEmail").value.trim(),p1:$("#tmP1").value.trim(),p2:$("#tmP2").value.trim(),p3:$("#tmP3").value.trim(),demo:$("#tmDemo").value,linkMode:$("#tmLinkMode").value};
   try{ localStorage.setItem("rls-tools-"+(u.email||""),JSON.stringify(me)); }catch(e){}
   renderScripts();
 }
 const fmtPhone=p=>{ const d=String(p||"").replace(/\D/g,""); return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:d.length===11&&d[0]==="1"?`(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`:String(p||""); };
 function scriptList(me){
-  const first=(me.name||"").split(" ")[0]||"[your name]", name=me.name||"[your name]", phone=fmtPhone(me.phone)||"[your phone]", email=me.email||"[your email]", demo=mediaURL(me.demo);
+  const code=ACCT&&ACCT.user&&ACCT.user.refCode, first=(me.name||"").split(" ")[0]||"[your name]", name=me.name||"[your name]", phone=fmtPhone(me.phone)||"[your phone]", email=me.email||"[your email]", demo=me.linkMode==="video"||!code?mediaURL(me.demo):`${location.origin}/r/${code}`;
   const sig=`${name}\n${phone}\n${email}`;
   return [
    {g:"Text messages",items:[
@@ -2389,12 +2413,47 @@ function renderToolVideos(){
 function openTools(){
   const me=toolsMe(); $("#tmName").value=me.name; $("#tmPhone").value=fmtPhone(me.phone); $("#tmEmail").value=me.email; $("#tmP1").value=me.p1; $("#tmP2").value=me.p2; $("#tmP3").value=me.p3;
   const sel=$("#tmDemo"); if(!sel.options.length) DEMO_VIDEOS.forEach(v=>sel.add(new Option(v.t,v.id))); sel.value=me.demo;
-  renderToolVideos(); renderScripts(); dlgOpen($("#toolsDlg"));
+  $("#tmLinkMode").value=me.linkMode;
+  renderToolVideos(); renderScripts(); renderMyLink(); dlgOpen($("#toolsDlg"));
+  if(ACCT&&ACCT.user&&ACCT.user.refCode) $('#toolsSeg button[data-v="link"]').click();
 }
 $("#toolsPill").onclick=openTools;
-$$("#toolsSeg button").forEach(b=>b.onclick=()=>{ segSync("toolsSeg",b.dataset.v); $("#toolsVideos").hidden=b.dataset.v!=="videos"; $("#toolsScripts").hidden=b.dataset.v!=="scripts"; $("#toolsMe").hidden=b.dataset.v!=="me"; });
-["tmName","tmPhone","tmEmail","tmP1","tmP2","tmP3","tmDemo"].forEach(id=>$("#"+id).addEventListener("input",saveToolsMe));
-$("#tmDemo").addEventListener("change",saveToolsMe);
+$$("#toolsSeg button").forEach(b=>b.onclick=()=>{ segSync("toolsSeg",b.dataset.v); $("#toolsLink").hidden=b.dataset.v!=="link"; if(b.dataset.v==="link") renderMyLeads(); $("#toolsVideos").hidden=b.dataset.v!=="videos"; $("#toolsScripts").hidden=b.dataset.v!=="scripts"; $("#toolsMe").hidden=b.dataset.v!=="me"; });
+["tmName","tmPhone","tmEmail","tmP1","tmP2","tmP3","tmDemo","tmLinkMode"].forEach(id=>$("#"+id).addEventListener("input",saveToolsMe));
+$("#tmDemo").addEventListener("change",saveToolsMe); $("#tmLinkMode").addEventListener("change",saveToolsMe);
+function renderMyLink(){
+  const code=ACCT&&ACCT.user&&ACCT.user.refCode, url=code?`${location.origin}/r/${code}`:`${location.origin}/agents`;
+  $("#myLink").value=url; $("#openMyLink").href=url; $("#codePrefix").textContent=`${location.host}/r/`; $("#myCode").value=code||"";
+  $("#codeForm").hidden=!code;
+}
+$("#copyMyLink").onclick=async()=>{ const b=$("#copyMyLink"); try{ await navigator.clipboard.writeText($("#myLink").value); b.textContent="Copied \u2713"; setTimeout(()=>b.textContent="Copy link",1600); }catch(e){ prompt("Copy your link:",$("#myLink").value); } };
+$("#myCode").addEventListener("input",e=>{ e.target.value=e.target.value.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,""); });
+$("#codeForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const st=$("#codeStatus");
+  const r=await fetch("/api/partner/link",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:$("#myCode").value})}); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ st.className="status bad"; st.textContent=j.error||"Couldn't save that link."; return; }
+  ACCT.user.refCode=j.code; renderMyLink(); renderScripts(); st.className="status ok"; st.textContent="Saved. Your scripts now use this link. Your old link still works and still credits you.";
+});
+const when=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+function leadRow(l,showPartner){
+  const d=document.createElement("div"); d.className="lead";
+  d.innerHTML=`<b></b> <span class="meta"></span><div class="c"></div><div class="x"></div>`;
+  d.querySelector("b").textContent=l.name||l.email; d.querySelector(".meta").textContent=` ${when(l.created)}${l.package?" \u2013 "+l.package:""}${showPartner?` \u2013 via ${l.partner||"no partner (direct)"}`:""}`;
+  const c=d.querySelector(".c");
+  if(l.phone){ const a=document.createElement("a"); a.href="tel:"+l.phone.replace(/[^\d+]/g,""); a.textContent=fmtPhone(l.phone); c.appendChild(a); c.append("  "); }
+  if(l.email){ const a=document.createElement("a"); a.href="mailto:"+l.email; a.textContent=l.email; c.appendChild(a); }
+  const x=d.querySelector(".x"); x.textContent=[l.listing,l.notes].filter(Boolean).join(" | ");
+  return d;
+}
+async function renderMyLeads(){
+  const box=$("#myLeads"), sb=$("#mySignups"); box.textContent="Loading\u2026";
+  const r=await fetch("/api/partner/leads"); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ box.textContent=j.error||"Couldn't load your leads."; return; }
+  box.innerHTML=""; if(!j.leads.length) box.textContent="No requests yet. Send your link with one of the scripts to get started.";
+  j.leads.forEach(l=>box.appendChild(leadRow(l)));
+  sb.innerHTML=""; if(!j.signups.length) sb.textContent="None yet.";
+  j.signups.forEach(u=>{ const d=document.createElement("div"); d.className="lead"; d.textContent=`${u.email} \u2013 joined ${when(u.created)} (${u.tier} plan)`; sb.appendChild(d); });
+}
 $("#toolsDlg").addEventListener("close",()=>$$("#toolsVideos video").forEach(v=>v.pause()));
 function escapeHtml(x){ return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 const watermarkOn=()=>!!(IMPORT&&IMPORT.accounts&&(!ACCT||!ACCT.user||ACCT.user.watermark));
