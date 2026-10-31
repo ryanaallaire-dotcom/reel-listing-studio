@@ -98,8 +98,11 @@ const A = 18911; const sa = await startServer(A, { ALLOW_LOCAL_FETCH: "1", IMPOR
   await signIn(A);
   const h = await (await fetch(`http://127.0.0.1:${A}/api/health`)).json();
   check("Health says import is available", h.ok && h.service === "reel-listing" && h.import, JSON.stringify(h));
-  const page = await (await fetch(`http://127.0.0.1:${A}/`)).text();
-  check("Serves the Studio page", page.includes("Reel Listing Studio") && page.includes("importBtn"));
+  const page = await (await fetch(`http://127.0.0.1:${A}/studio`)).text();
+  check("Serves the Studio page at /studio", page.includes("Reel Listing Studio") && page.includes("importBtn"));
+  const home = await (await fetch(`http://127.0.0.1:${A}/`)).text();
+  const oldSetup = await fetch(`http://127.0.0.1:${A}/?setup=abc`, { redirect: "manual" });
+  check("The home page is the agent sales page; old password links go to the Studio", /Your listing photos, filmed/.test(home) && !home.includes("importBtn") && oldSetup.status === 302 && oldSetup.headers.get("location") === "/studio?setup=abc");
 
   const r = await post(A, { url: `http://127.0.0.1:${FX}/listing/889123?utm_source=fb` });
   const buf = new Uint8Array(await r.arrayBuffer()); let files = {};
@@ -238,7 +241,7 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
     { name: "Gary Test", email: "Gary.Partner@Test.com", phone: "(704) 555-0100" }, { name: "Bad", email: "not-an-email" }, { name: "Existing", email: "existing@test.com" }] });
   const prj = await pr.json(); const gary = prj.results?.[0] || {}, tok = (gary.link || "").split("setup=")[1] || "";
   check("Partners: owner creates accounts with 25 videos (300 AI credits) and a setup link; bad emails are reported", pr.status === 200 && gary.ok && gary.created && gary.credits === 300 && gary.videos === 25
-    && /\?setup=[0-9a-f]{48}$/.test(gary.link) && prj.results[1].ok === false && /valid email/.test(prj.results[1].error) && prj.results[2].ok && prj.results[2].created === false, JSON.stringify(prj).slice(0, 300));
+    && /\/studio\?setup=[0-9a-f]{48}$/.test(gary.link) && prj.results[1].ok === false && /valid email/.test(prj.results[1].error) && prj.results[2].ok && prj.results[2].created === false, JSON.stringify(prj).slice(0, 300));
   const prNo = await postAs(Gp, "u", "/api/account/admin/partners", { partners: [{ email: "x@test.com" }] });
   check("Partners: customers can't create partner accounts", prNo.status === 403);
   const noLogin = await api(Gp, "/api/account/login", { email: "gary.partner@test.com", password: "anything-at-all" }, { as: "gary" });

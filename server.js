@@ -103,7 +103,14 @@ export const server = http.createServer(async (req, res) => {
       leadAlert(saved.lead, saved.partner);
       return json(res, 200, { ok: true, partner: saved.partner });
     }
+    if (req.method === "GET" && (u.pathname === "/" || u.pathname === "/index.html") && u.searchParams.has("setup")) {
+      res.writeHead(302, { location: "/studio" + u.search }); return res.end();   // older password links
+    }
     if (req.method === "GET" && (u.pathname === "/" || u.pathname === "/index.html")) {
+      const partner = acct.partnerByRef(cookieVal(req, "rls_ref"));
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(agentsPage(partner));
+    }
+    if (req.method === "GET" && (u.pathname === "/studio" || u.pathname === "/studio/")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(page());
     }
     if (req.method === "GET") {
@@ -199,7 +206,7 @@ export const server = http.createServer(async (req, res) => {
         if (!Array.isArray(partners) || !partners.length || partners.length > 50) return json(res, 400, { error: "Add between 1 and 50 partners." });
         const base = (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
         const results = partners.map(p => { try { const r = acct.adminCreatePartner({ ...p, tier: tier || "agency", videos: videos ?? 25 });
-            const link = `${base}/?setup=${r.token}`;
+            const link = `${base}/studio?setup=${r.token}`;
             return { ok: true, email: r.user.email, name: r.user.name, created: r.created, credits: r.user.credits, videos: r.videos, link,
               welcome: welcomeEmail({ name: r.user.name, setupLink: link, site: base, code: r.user.refCode, videos: Math.round(r.user.credits / acct.CREDITS_PER_VIDEO) }) }; }
           catch (e) { return { ok: false, email: String(p?.email || ""), error: e.message }; } });
@@ -211,7 +218,7 @@ export const server = http.createServer(async (req, res) => {
         if (!emailEnabled()) return json(res, 503, { error: "Password reset by email isn't set up yet. Contact support@advancemarketinggroup.net and we'll reset it for you." });
         const user = acct.findUserByEmail(email);
         if (user) { const base = (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
-          sendPasswordLink(user.email, `${base}/?setup=${acct.createSetupLink(user.id, 1)}`).catch(e => console.error("reset email failed:", e.message)); }
+          sendPasswordLink(user.email, `${base}/studio?setup=${acct.createSetupLink(user.id, 1)}`).catch(e => console.error("reset email failed:", e.message)); }
         return json(res, 200, { ok: true });   // same answer whether or not the email has an account
       }
       if (u.pathname === "/api/account/setup") {
@@ -303,7 +310,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (/^(1|yes|true)$/i.test(process.env.OWNER_RESET || "")) {
     const base = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
     for (const em of acct.adminEmails()) { const u = acct.findUserByEmail(em);
-      if (u) console.log(`OWNER PASSWORD RESET for ${em} (valid 1 hour, works once): ${base || "https://<your-site>"}/?setup=${acct.createSetupLink(u.id, 1)}`);
+      if (u) console.log(`OWNER PASSWORD RESET for ${em} (valid 1 hour, works once): ${base || "https://<your-site>"}/studio?setup=${acct.createSetupLink(u.id, 1)}`);
       else console.log(`OWNER_RESET: no account yet for ${em}. Sign up with that email instead.`); }
     console.log("Remove OWNER_RESET from Render's Environment once you've reset your password.");
   }
