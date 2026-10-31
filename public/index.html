@@ -3289,7 +3289,7 @@ async function autoBuild(files){
       stage("depth","on");
       const nd=await depthAll((i,n)=>stage("depth","on",`${i+1}/${n}`));
       stage("depth",nd||S.photos.some(p=>p.depth)?"done":"skip",nd?`${nd} shots`:""); refresh();
-    }
+    } else stage("depth","skip",!(IMPORT&&IMPORT.depth)?"not on server":"2D mode");
 
     if(SAMPLE){
       stage("ai","on"); const notes=[];
