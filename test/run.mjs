@@ -263,6 +263,13 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   const taken = await api(Gp, "/api/partner/link", { code: "agents" }, { as: "gary3" });
   const oldLink = await fetch(`http://127.0.0.1:${Gp}/r/${gid}`); const ol = await oldLink.text();
   check("Referrals: partners choose their own link; reserved names are refused; the old link still credits them", setc.status === 200 && (await setc.json()).code === "gary" && taken.status === 409 && /"code":"gary"/.test(ol));
+  const ownerSet = await postAs(Gp, "default", "/api/account/admin/partner-link", { email: "gary.partner@test.com", code: "aimptr" });
+  const notOwner = await postAs(Gp, "u", "/api/account/admin/partner-link", { email: "gary.partner@test.com", code: "zzz-top" });
+  const short = await fetch(`http://127.0.0.1:${Gp}/aimptr`); const sh = await short.text();
+  const notCode = await fetch(`http://127.0.0.1:${Gp}/no-such-code`);
+  check("Referrals: the owner can set a partner's link; /aimptr opens their page with credit; unknown short paths stay 404", ownerSet.status === 200 && notOwner.status === 403
+    && short.status === 200 && /"code":"aimptr"/.test(sh) && /rls_ref=aimptr/.test(short.headers.get("set-cookie") || "") && notCode.status === 404, `${ownerSet.status} ${short.status} ${notCode.status}`);
+  await postAs(Gp, "default", "/api/account/admin/partner-link", { email: "gary.partner@test.com", code: "gary" });
   const lead2 = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Agent Bo", phone: "5552019999", ref: "gary" }) });
   const mine = await (await api(Gp, "/api/partner/leads", undefined, { as: "gary3" })).json();
   check("Leads: partners see their own requests", lead2.status === 200 && mine.leads?.length === 2 && mine.leads.some(l => l.email === "amy@realty.test"), JSON.stringify(mine).slice(0, 200));

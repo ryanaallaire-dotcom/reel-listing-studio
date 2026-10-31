@@ -413,6 +413,8 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
           </div>
         </form>
         <p class="status" id="partnerStatus"></p>
+        <form id="plinkForm" style="margin-top:14px;flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:8px"><label style="flex:1 1 200px">Partner's email<input type="email" id="plinkEmail" required></label><label style="flex:1 1 160px">Their link<input id="plinkCode" placeholder="e.g. aimptr" required></label><button class="btn" type="submit">Set partner link</button></form>
+        <p class="status" id="plinkStatus"></p>
         <div style="margin-top:14px"><button class="btn sm" type="button" id="allLeadsBtn">Show all agent requests</button> <a class="btn sm" href="/agents" target="_blank" rel="noopener">Open the agent sales page</a></div>
         <div id="allLeads" style="margin-top:10px"></div>
         <div id="partnerOut"></div>
@@ -2319,6 +2321,12 @@ $("#partnerForm").addEventListener("submit",async e=>{
     const b=d.querySelector("button"); if(b) b.onclick=async()=>{ try{ await navigator.clipboard.writeText(x.link); b.textContent="Copied \u2713"; }catch(err){ prompt("Copy this link:",x.link); } };
     out.appendChild(d); });
 });
+$("#plinkCode").addEventListener("input",e=>{ e.target.value=e.target.value.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,""); });
+$("#plinkForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const st=$("#plinkStatus");
+  const r=await fetch("/api/account/admin/partner-link",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:$("#plinkEmail").value.trim(),code:$("#plinkCode").value})}); const j=await r.json().catch(()=>({}));
+  st.className=r.ok?"status ok":"status bad"; st.textContent=r.ok?`Done. Their link is now ${location.origin}/${j.code} (their old link still works).`:(j.error||"Didn't work.");
+});
 $("#allLeadsBtn").onclick=async()=>{
   const box=$("#allLeads"); box.textContent="Loading\u2026"; const r=await fetch("/api/account/admin/leads"); const j=await r.json().catch(()=>({}));
   if(!r.ok){ box.textContent=j.error||"Couldn't load."; return; }
@@ -2367,7 +2375,7 @@ function saveToolsMe(){
 }
 const fmtPhone=p=>{ const d=String(p||"").replace(/\D/g,""); return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:d.length===11&&d[0]==="1"?`(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`:String(p||""); };
 function scriptList(me){
-  const code=ACCT&&ACCT.user&&ACCT.user.refCode, first=(me.name||"").split(" ")[0]||"[your name]", name=me.name||"[your name]", phone=fmtPhone(me.phone)||"[your phone]", email=me.email||"[your email]", demo=me.linkMode==="video"||!code?mediaURL(me.demo):`${location.origin}/r/${code}`;
+  const code=ACCT&&ACCT.user&&ACCT.user.refCode, first=(me.name||"").split(" ")[0]||"[your name]", name=me.name||"[your name]", phone=fmtPhone(me.phone)||"[your phone]", email=me.email||"[your email]", demo=me.linkMode==="video"||!code?mediaURL(me.demo):`${location.origin}/${code}`;
   const sig=`${name}\n${phone}\n${email}`;
   return [
    {g:"Text messages",items:[
@@ -2422,8 +2430,8 @@ $$("#toolsSeg button").forEach(b=>b.onclick=()=>{ segSync("toolsSeg",b.dataset.v
 ["tmName","tmPhone","tmEmail","tmP1","tmP2","tmP3","tmDemo","tmLinkMode"].forEach(id=>$("#"+id).addEventListener("input",saveToolsMe));
 $("#tmDemo").addEventListener("change",saveToolsMe); $("#tmLinkMode").addEventListener("change",saveToolsMe);
 function renderMyLink(){
-  const code=ACCT&&ACCT.user&&ACCT.user.refCode, url=code?`${location.origin}/r/${code}`:`${location.origin}/agents`;
-  $("#myLink").value=url; $("#openMyLink").href=url; $("#codePrefix").textContent=`${location.host}/r/`; $("#myCode").value=code||"";
+  const code=ACCT&&ACCT.user&&ACCT.user.refCode, url=code?`${location.origin}/${code}`:`${location.origin}/agents`;
+  $("#myLink").value=url; $("#openMyLink").href=url; $("#codePrefix").textContent=`${location.host}/`; $("#myCode").value=code||"";
   $("#codeForm").hidden=!code;
 }
 $("#copyMyLink").onclick=async()=>{ const b=$("#copyMyLink"); try{ await navigator.clipboard.writeText($("#myLink").value); b.textContent="Copied \u2713"; setTimeout(()=>b.textContent="Copy link",1600); }catch(e){ prompt("Copy your link:",$("#myLink").value); } };

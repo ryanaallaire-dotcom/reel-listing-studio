@@ -78,8 +78,10 @@ export const server = http.createServer(async (req, res) => {
   if (process.env.TRUST_PROXY === "1") res.setHeader("strict-transport-security", "max-age=31536000");
   try {
     // agent sales page, with partner referral links: /r/ken-george or /agents?ref=ken-george
-    if (req.method === "GET" && (u.pathname === "/agents" || u.pathname.startsWith("/r/"))) {
-      const code = u.pathname.startsWith("/r/") ? u.pathname.slice(3) : u.searchParams.get("ref");
+    // short partner links at the top level too: /aimptr works the same as /r/aimptr
+    const shortCode = req.method === "GET" && /^\/[a-z0-9][a-z0-9-]{1,28}[a-z0-9]\/?$/i.test(u.pathname) && acct.partnerByRef(u.pathname.replace(/\//g, "")) ? u.pathname.replace(/\//g, "") : null;
+    if (req.method === "GET" && (u.pathname === "/agents" || u.pathname.startsWith("/r/") || shortCode)) {
+      const code = shortCode || (u.pathname.startsWith("/r/") ? u.pathname.slice(3) : u.searchParams.get("ref"));
       const partner = (code && refCookie(req, res, code)) || acct.partnerByRef(cookieVal(req, "rls_ref"));
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(agentsPage(partner));
     }
@@ -153,6 +155,12 @@ export const server = http.createServer(async (req, res) => {
       if (u.pathname === "/api/partner/leads" && req.method === "GET") {
         const user = needUser(req); if (!user.partner && !acct.isAdmin(user)) return json(res, 403, { error: "Partner accounts only." });
         return json(res, 200, acct.partnerLeads(user.id));
+      }
+      if (u.pathname === "/api/account/admin/partner-link" && req.method === "POST") {
+        const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
+        const { email, code } = await readJson(req); const p = acct.findUserByEmail(email);
+        if (!p || !p.partner) return json(res, 404, { error: "No partner account with that email." });
+        return json(res, 200, { code: acct.setRefCode(p, code) });
       }
       if (u.pathname === "/api/account/admin/leads" && req.method === "GET") {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
