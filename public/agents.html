@@ -125,6 +125,15 @@ ol.steps{padding:0;margin-block:36px 0}
 .clip .frame{position:relative;aspect-ratio:9/16;border-radius:20px;overflow:hidden;background:#000}
 .clip video{width:100%;height:100%;object-fit:cover;display:block}
 .clip p{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.watch{margin-top:48px;padding-top:32px;border-top:1px solid var(--line)}
+.watch-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+.watch-h p{color:var(--muted);font-size:15px}
+.gallery.reels{grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
+.gallery.reels .clip:first-child .frame{outline:3px solid var(--amber);outline-offset:3px}
+.gallery.walks{grid-template-columns:repeat(5,1fr);gap:16px}
+@media (max-width:1000px){ .gallery.reels,.gallery.walks{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px}
+  .gallery.reels .clip,.gallery.walks .clip{flex:0 0 min(230px,62vw);scroll-snap-align:start} }
+.clip.wide video{object-fit:contain}
 .clip.next .frame{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;text-align:center;padding:24px;background:var(--amber-soft);border:2px dashed var(--amber)}
 .clip.next h3{font-size:30px}
 
@@ -306,6 +315,16 @@ html{scroll-behavior:smooth}
     <li><h3>We bring it to life</h3><p>Real motion from your real photos: fans, flames, water, light, plus camera pans and push-ins. Every clip is checked, and any frozen or warped shot is redone before you see it.</p></li>
     <li><h3>Post it everywhere</h3><p>Files ready for Reels, TikTok, YouTube, your website and the MLS, with a caption written for you.</p></li>
   </ol>
+  <div class="watch">
+    <div class="watch-h"><h3>Watch it work</h3><p>Each clip is under 30 seconds. Start with the first one.</p></div>
+  <div class="gallery reels">
+    <div class="clip"><div class="frame"><video src="/media/ad-commercial.mp4" poster="/media/ad-commercial.jpg" controls playsinline preload="none" aria-label="Reel Listing Studio commercial"></video></div><p>How it works · 8 seconds</p></div>
+    <div class="clip"><div class="frame"><video src="/media/ad-presenter.mp4" poster="/media/ad-presenter.jpg" controls playsinline preload="none" aria-label="Presenter explains Reel Listing Studio"></video></div><p>Why agents use it</p></div>
+    <div class="clip"><div class="frame"><video src="/media/ad-creator-commercial.mp4" poster="/media/ad-creator-commercial.jpg" controls playsinline preload="none" aria-label="Creator explains turning a photo into a video"></video></div><p>Photo to video, explained</p></div>
+    <div class="clip"><div class="frame"><video src="/media/ad-3-steps.mp4" poster="/media/ad-3-steps.jpg" controls playsinline preload="none" aria-label="Three steps ad"></video></div><p>It only takes 3 steps</p></div>
+    <div class="clip"><div class="frame"><video src="/media/ad-3-steps-v2.mp4" poster="/media/ad-3-steps-v2.jpg" controls playsinline preload="none" aria-label="Three steps ad, short"></video></div><p>3 steps · short cut</p></div>
+  </div>
+  </div>
 </div></section>
 
 <section style="padding-top:0"><div class="wrap">
@@ -327,10 +346,11 @@ html{scroll-behavior:smooth}
   <p class="eyebrow">Examples</p>
   <h2>See it before you decide.</h2>
   <p class="lede" style="margin-top:12px">Tap to play. Your listing gets this treatment from your own listing photos, with nothing added to the home.</p>
-  <div class="gallery">
-    <div class="clip"><div class="frame"><video src="/media/ad-commercial.mp4" poster="/media/ad-commercial.jpg" controls playsinline preload="none" aria-label="Reel Listing Studio in 8 seconds"></video></div><p>How it works · 8 seconds</p></div>
-    <div class="clip"><div class="frame"><video src="/media/example-walkthrough-modern.mp4" poster="/media/example-walkthrough-modern.jpg" controls muted playsinline preload="none" aria-label="Listing walkthrough example"></video></div><p>Family home · living, kitchen, sunroom · made from listing photos</p></div>
-    <div class="clip"><div class="frame"><video src="/media/example-luxury-dallas.mp4" poster="/media/example-luxury-dallas.jpg" controls muted playsinline preload="none" aria-label="Luxury listing reel, Dallas"></video></div><p>Dallas, TX · luxury home · vertical reel</p></div>
+  <div class="gallery walks">
+    <div class="clip"><div class="frame"><video src="/media/example-walkthrough-modern.mp4" poster="/media/example-walkthrough-modern.jpg" controls playsinline preload="none" aria-label="Family home walkthrough"></video></div><p>Family home · living, kitchen, sunroom</p></div>
+    <div class="clip wide"><div class="frame"><video src="/media/demo-lakefront-walkthrough.mp4" poster="/media/demo-lakefront-walkthrough.jpg" controls playsinline preload="none" aria-label="Lakefront rental walkthrough"></video></div><p>Lakefront rental · pool, living, kitchen</p></div>
+    <div class="clip"><div class="frame"><video src="/media/example-luxury-dallas.mp4" poster="/media/example-luxury-dallas.jpg" controls playsinline preload="none" aria-label="Luxury home reel, Dallas"></video></div><p>Dallas, TX · luxury home · vertical reel</p></div>
+    <div class="clip"><div class="frame"><video src="/media/example-3d-interior.mp4" poster="/media/example-3d-interior.jpg" controls playsinline preload="none" aria-label="Designer interiors walkthrough"></video></div><p>Designer interiors · smooth camera moves</p></div>
     <div class="clip next"><div class="frame"><h3>Your listing, next.</h3><p>Send the link today. Have it back within 24 hours.</p><a class="btn btn-primary" href="#request">I want one for my listing</a></div><p>Mid-priced homes and rentals welcome</p></div>
   </div>
 </div></section>
