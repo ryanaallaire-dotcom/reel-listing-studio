@@ -248,9 +248,10 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   const relog = await api(Gp, "/api/account/login", { email: "gary.partner@test.com", password: "gary-secret-99" }, { as: "gary3" });
   check("Partners: the setup link works once; the chosen password signs in", again.status === 404 && relog.status === 200);
   // referral links + leads
-  check("Referrals: partners get a link code from their name", gme.refCode === "gary-test", gme.refCode);
-  const land = await fetch(`http://127.0.0.1:${Gp}/r/gary-test`); const landHtml = await land.text(); const rc = (land.headers.get("set-cookie") || "").split(";")[0];
-  check("Referrals: /r/<code> shows the sales page with the partner's details and sets a 90-day cookie", land.status === 200 && /Your listing photos, filmed/.test(landHtml) && /"name":"Gary Test"/.test(landHtml) && rc === "rls_ref=gary-test" && /Max-Age=7776000/.test(land.headers.get("set-cookie")), rc);
+  const gid = gme.refCode;
+  check("Referrals: partners get a random link ID, never their name", /^[a-z2-9]{6}$/.test(gid || "") && !/gary/.test(gid), gid);
+  const land = await fetch(`http://127.0.0.1:${Gp}/r/${gid}`); const landHtml = await land.text(); const rc = (land.headers.get("set-cookie") || "").split(";")[0];
+  check("Referrals: /r/<code> shows the sales page with the partner's details and sets a 90-day cookie", land.status === 200 && /Your listing photos, filmed/.test(landHtml) && /"name":"Gary Test"/.test(landHtml) && rc === `rls_ref=${gid}` && /Max-Age=7776000/.test(land.headers.get("set-cookie")), rc);
   const unk = await fetch(`http://127.0.0.1:${Gp}/r/nobody-here`); const oh = await unk.text();
   check("Referrals: an unknown code still shows the page, without a partner", unk.status === 200 && /const REF=null/.test(oh) && !unk.headers.get("set-cookie"));
   const lead = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json", cookie: rc }, body: JSON.stringify({ name: "Agent Amy", email: "amy@realty.test", phone: "555-201-3344", listing: "https://zillow.test/1", package: "Signature ($399)" }) });
@@ -260,7 +261,7 @@ const Gp = 18917; const sg = await startServer(Gp, { TRUST_PROXY: "1", CLIP_IMAG
   check("Leads: a request needs an email or phone", badLead.status === 400);
   const setc = await api(Gp, "/api/partner/link", { code: "gary" }, { as: "gary3" });
   const taken = await api(Gp, "/api/partner/link", { code: "agents" }, { as: "gary3" });
-  const oldLink = await fetch(`http://127.0.0.1:${Gp}/r/gary-test`); const ol = await oldLink.text();
+  const oldLink = await fetch(`http://127.0.0.1:${Gp}/r/${gid}`); const ol = await oldLink.text();
   check("Referrals: partners choose their own link; reserved names are refused; the old link still credits them", setc.status === 200 && (await setc.json()).code === "gary" && taken.status === 409 && /"code":"gary"/.test(ol));
   const lead2 = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Agent Bo", phone: "5552019999", ref: "gary" }) });
   const mine = await (await api(Gp, "/api/partner/leads", undefined, { as: "gary3" })).json();

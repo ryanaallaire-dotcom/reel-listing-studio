@@ -364,8 +364,8 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
     <div id="toolsLink" class="tools-pane" hidden>
       <p class="small" style="margin:0 0 6px">Send agents to <b>your own sales page</b>. Anyone who opens your link is tagged as your referral for 90 days, so every request and sign-up from them is credited to you.</p>
       <div class="linkbox"><input id="myLink" readonly aria-label="Your link"><button class="btn sm primary" id="copyMyLink" type="button">Copy link</button><a class="btn sm" id="openMyLink" target="_blank" rel="noopener">Open page</a></div>
-      <form id="codeForm" class="linkbox" style="margin-top:10px"><span class="small" id="codePrefix"></span><input id="myCode" aria-label="Choose your link" maxlength="30" spellcheck="false" autocapitalize="off"><button class="btn sm" type="submit">Save my link</button></form>
-      <p class="status" id="codeStatus"></p>
+      <form id="codeForm" class="linkbox" style="margin-top:10px"><span class="small" id="codePrefix"></span><input id="myCode" aria-label="Choose a custom link" maxlength="30" spellcheck="false" autocapitalize="off" placeholder="e.g. listingvideos"><button class="btn sm" type="submit">Save my link</button></form>
+      <p class="small" style="margin:6px 0 0">Your link uses a private ID. Want something easier to say? Type a custom link (letters, numbers, dashes) and save it.</p><p class="status" id="codeStatus"></p>
       <div class="tools-group">Requests from agents</div><div id="myLeads" class="small">Loading…</div>
       <div class="tools-group">Agents who signed up through you</div><div id="mySignups" class="small"></div>
     </div>
