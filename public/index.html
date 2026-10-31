@@ -3082,6 +3082,20 @@ async function clipIsBlack(vp){
   try{ await seekTo(v,vp.inPoint||0); }catch(e){}
   return dark===3;
 }
+// did the AI move the camera even though we asked for a locked-off shot? If so, the Studio must not add its own
+// camera move on top (the two fight and the shot pans back and forth). Measures how far the whole picture slides.
+async function camDrift(vp){
+  const v=vp.video, Wd=96, Hd=Math.max(8,Math.round(Wd*v.videoHeight/v.videoWidth)), c=mk(Wd,Hd), g=c.getContext("2d",{willReadFrequently:true});
+  const prof=async t=>{ await seekTo(v,t); g.drawImage(v,0,0,Wd,Hd); const d=g.getImageData(0,0,Wd,Hd).data, col=new Float32Array(Wd), row=new Float32Array(Hd);
+    for(let y=0;y<Hd;y++) for(let x=0;x<Wd;x++){ const i=(y*Wd+x)*4, L=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]; col[x]+=L/Hd; row[y]+=L/Wd; } return {col,row}; };
+  const best=(a,b,n)=>{ const M=Math.round(n*.18); let bo=0, be=1e9; for(let o=-M;o<=M;o++){ let e=0, k=0; for(let i=Math.max(0,-o);i<Math.min(n,n-o);i++){ e+=Math.abs(a[i]-b[i+o]); k++; } e/=k; if(e<be){ be=e; bo=o; } } return bo/n; };
+  try{
+    const D=v.duration, A=await prof(D*.08), B=await prof(D*.5), C=await prof(D*.92);
+    const dx=Math.max(Math.abs(best(A.col,B.col,Wd)),Math.abs(best(A.col,C.col,Wd))), dy=Math.max(Math.abs(best(A.row,B.row,Hd)),Math.abs(best(A.row,C.row,Hd)));
+    await seekTo(v,vp.inPoint||0);
+    return Math.max(dx,dy);
+  }catch(e){ return 0; }
+}
 async function clipOne(p,onState,retry,modelOverride){
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
   const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["rpan","rtilt","rdiag","truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"rpan";
@@ -3105,6 +3119,7 @@ async function clipOne(p,onState,retry,modelOverride){
     if(usedModel) return clipOne(p,onState,retry,"");     // that model's clips don't draw here: use the standard model for this shot
     throw new Error("The AI clip came back black, so this shot uses a camera move instead.");
   }
+  if(vp.camLocked){ const dr=await camDrift(vp); vp.aiDrift=dr; if(dr>=.035){ vp.camLocked=false; vp.aiCamMoved=true; } }
   return vp;
 }
 function renderReport(){
@@ -3405,7 +3420,7 @@ async function boot(){
     cl.use("sample").then(s=>{ SAMPLE=s; document.body.classList.toggle("ai-off",!s); }).catch(()=>document.body.classList.add("ai-off"));
     cl.use("downloads").then(d=>{ DL=d; }).catch(()=>{});
   } else document.body.classList.add("ai-off");
-  window.__LR={openTools,scriptList,get PENDING(){return PENDING;},activityScore,boxMotion,clipReport:()=>CLIP_REPORT.map(r=>({check:r.photo.aiCheck||null,name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
+  window.__LR={camDrift,openTools,scriptList,get PENDING(){return PENDING;},activityScore,boxMotion,clipReport:()=>CLIP_REPORT.map(r=>({check:r.photo.aiCheck||null,name:r.name,status:r.status,remade:r.remade,reason:r.reason,locked:r.locked,mustMove:!!r.photo.mustMove,opener:!!r.opener})),renderReport,breakGL:()=>{ if(gl){ gl.drawArrays=()=>{ gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); }; } },frameIsBlack,glState:()=>glOK,findBars,makeVideoPhoto,setLogo,syncBrand,mls,S,renderFrame,build,fillFields,autoPace,camAt,get TOTAL(){return TOTAL;},get SEGS(){return SEGS;},glOK:()=>glOK,exportWebCodecs,renderAudioOffline,depthAll,makeClips,setSample:x=>{SAMPLE=x;},syncClipsExact,doFill,doLabel,priceText,countUp};
 }
 document.body.classList.add("ai-off");
 document.body.classList.add("booting");
