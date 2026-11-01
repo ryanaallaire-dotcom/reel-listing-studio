@@ -625,7 +625,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         <div class="f"><span>Camera</span>
           <div class="seg" role="group" aria-label="Camera movement" id="motionSeg"><button data-v="gentle">Gentle</button><button data-v="cine">Cinematic</button><button data-v="energetic">Energetic</button></div>
         </div>
-        <label class="f"><span>Photo framing</span><select id="frame"><option value="fill">Full screen (recommended)</option><option value="smart">Framed, large, with blurred bars</option><option value="fit">Framed, whole photo, smaller</option></select></label>
+        <label class="f"><span>Photo framing</span><select id="frame"><option value="smart">Show most of the room (recommended)</option><option value="fill">Full screen, cropped (shows less of wide rooms)</option><option value="fit">Framed, whole photo, smaller</option></select></label>
         <label class="f"><span>Color grade</span><select id="grade"><option value="">Style default</option><option value="cine">Cinematic (teal &amp; warm)</option><option value="punch">Punchy</option><option value="airy">Bright &amp; airy</option><option value="bright">Bright &amp; natural</option><option value="natural">Natural</option></select></label>
       </div>
       <div class="opt-row">
@@ -781,18 +781,19 @@ const MAX_PHOTOS=300, MAX_ZIP=2.5e9;
 const S={
   photos:[], head:null, sampleDetails:true, raw:[], left:[], track:null, trackName:"",
   d:{...SAMPLE_D},
-  o:{target:"social", brand:"branded", brandEvery:true, pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"fill", clips:99}
+  o:{target:"social", brand:"branded", brandEvery:true, pace:"auto", tpl:"walk", fmt:"9:16", dur:3.0, stats:false, music:"score", price:true, accent:null, count:12, enh:"natural", autoRender:true, grade:"", motion:"cine", fps:30, bars:false, sfx:true, frame:"smart", v10:true, clips:99}
 };
 try{
   const saved=JSON.parse(localStorage.getItem("lr-draft-3")||"null");
   if(saved&&saved.d){ S.d={...EMPTY_D,...saved.d}; S.o={...S.o,...saved.o};
     if(!saved.o||!saved.o.v6){ S.o.tpl="walk"; S.o.dur=1.6; S.o.stats=false; S.o.frame="fill"; }
     if(!saved.o||!saved.o.v8){ S.o.pace="auto"; }
+    if(!saved.o||!saved.o.v10){ S.o.frame="smart"; S.o.v10=true; }
     S.o.autoRender=true; if(!saved.o||!saved.o.v9){ if(S.o.clips>0) S.o.clips=99; } if(!saved.o||!saved.o.target) applyTarget(S.o.brand==="mls"?"mls":S.o.fmt==="16:9"?"youtube":"social"); S.sampleDetails=!!saved.sample; if(typeof saved.paste==="string") S.pasteDraft=saved.paste.slice(0,40000); }
 }catch(e){}
 (function validateSaved(){
-  const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v8:true,v7:true,clips:99,v6:true,v5:true,frame:"fill",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
-  const ok={aiModel:v=>["","kling26","kling3","hf3"].includes(v),target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v9:v=>true,v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
+  const def={target:"social",brand:"branded",brandEvery:true,pace:"auto",v10:true,v8:true,v7:true,clips:99,v6:true,v5:true,frame:"smart",tpl:"walk",fmt:"9:16",dur:3.0,stats:false,music:"score",price:true,accent:null,count:12,enh:"natural",autoRender:true,grade:"",motion:"cine",fps:30,bars:false,sfx:true};
+  const ok={aiModel:v=>["","kling26","kling3","hf3"].includes(v),target:v=>["social","youtube","mls","all"].includes(v),brand:v=>v==="branded"||v==="mls",brandEvery:v=>typeof v==="boolean",pace:v=>v==="auto"||v in PACE,v8:v=>true,v10:v=>true,v7:v=>true,clips:v=>[0,4,6,99].includes(v),v9:v=>true,v6:v=>true,v5:v=>true,frame:v=>["smart","fit","fill"].includes(v),tpl:v=>v in TPL, fmt:v=>v in FMT, motion:v=>v in MOTION, fps:v=>v===30||v===60, music:v=>["score","track","off"].includes(v), enh:v=>["off","natural","punchy"].includes(v),
     grade:v=>v===""||v in GRADES, count:v=>[8,10,12,15,20].includes(v), dur:v=>typeof v==="number"&&v>=1.4&&v<=5, accent:v=>v===null||/^#[0-9a-f]{6}$/i.test(v),
     stats:v=>typeof v==="boolean", price:v=>typeof v==="boolean", autoRender:v=>typeof v==="boolean", bars:v=>typeof v==="boolean", sfx:v=>typeof v==="boolean"};
   for(const k in def){ if(!ok[k](S.o[k])) S.o[k]=def[k]; }
@@ -1448,7 +1449,9 @@ function build(){
         : kind==="ext" ? ["rpan","rpan","rdiag",dep?"truck":"rpan","rtilt"]
         : kind==="detail" ? ["rpan","rdiag","rtilt"]
         : ["rpan","rpan","rtilt","rdiag","rdiag",dep?"glide":"rpan",dep?"truck":"rtilt"];
-      let m, tries=0; do{ m=pool[Math.floor(rnd()*pool.length)]; tries++; } while(tries<12&&(m===lastMove||(m===prevMove&&rnd()<.4)));
+      const wideCard=S.o.frame!=="fill"&&(ia/sa)>(S.o.frame==="fit"?1.12:1.6);
+      const use=wideCard?["truck","glide","truck"]:pool;
+      let m, tries=0; do{ m=use[Math.floor(rnd()*use.length)]; tries++; } while(tries<12&&(m===lastMove||(m===prevMove&&rnd()<.4))&&!wideCard);
       prevMove=lastMove; s.move=m; lastMove=m; s.mode = kind==="ext"?1:0;
       // a real operator usually keeps moving the same way across cuts, then changes direction
       s.dir = k===0||rnd()<.45 ? (rnd()<.5?-1:1)*(k===0?1:-walkDir) : walkDir; walkDir=s.dir;
@@ -1462,7 +1465,7 @@ function build(){
     if(s.fit){
       let cw,ch,cy;
       if(ratio>1){
-        if(fr==="smart"){ cw=1; ch=Math.min(sa<.7?.58:.72, cw*sa/ia*1.6); cy=sa<.7?.38:.42; }   // big, edge-to-edge shot that glides across the room
+        if(fr==="smart"){ cw=1; ch=Math.min(sa<.7?.58:.72, cw*sa/ia*1.35); cy=sa<.7?.4:.42; }   // big, edge-to-edge shot that glides across the room
         else { cw=.94; ch=cw*sa/ia; if(ch>.62){ ch=.62; cw=ch*ia/sa; } cy=.4; }               // the whole photo, nothing cropped
       }
       else { ch=fr==="smart"?.94:.86; cw=ch*ia/sa; if(cw>.9){ cw=.9; ch=cw*sa/ia; } cy=.5; }
@@ -1629,7 +1632,9 @@ function brandOverlay(seg,local,alpha){
     ctx.drawImage(S.logo,m+pd,m+pd,lw,lh);
   }
   const who=[d.agent,d.phone].filter(Boolean).join("  \u00b7  ");
-  if(who){ font(600,24*u,BODY); const tw=ctx.measureText(who).width, bh=50*u, bw=tw+40*u, x=m, y=H-m-bh-(W<H?110*u:0);
+  if(who){ font(600,24*u,BODY); const tw=ctx.measureText(who).width, bh=50*u, bw=tw+40*u, fb=frameBottom(seg), card=fb&&W<H;
+    // framed shot in a vertical video: the contact sits centred under the room's label, clear of the address at the bottom
+    const x=card?(W-bw)/2:m, y=card?fb+112*u:H-m-bh-(W<H?110*u:0);
     ctx.fillStyle="rgba(10,10,14,.55)"; ctx.beginPath(); ctx.roundRect(x,y,bw,bh,bh/2); ctx.fill();
     ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(who,x+20*u,y+bh/2+1*u); }
   ctx.restore();
@@ -3072,7 +3077,9 @@ function syncClipNote(){
   n.textContent=k?`AI motion turns ${all?`all ${k} shots`:`your top ${k} shots`} into real moving footage. Takes 2–5 minutes and costs about $${(k*CLIP_COST).toFixed(2)} per video in AI credits. It's made for the video shape you've picked.`:"AI motion is off: every shot uses free camera moves with 3D depth.";
 }
 function cropForClip(p){
-  const [fw,fh]=FMT[S.o.fmt], ta=fw/fh, src=p.src, ia=src.width/src.height;
+  const [fw,fh]=FMT[S.o.fmt], src=p.src, ia=src.width/src.height;
+  // vertical/square video + landscape photo + framed layout: the AI films the whole room (16:9), the Studio shows it large
+  const ta=(fw/fh<1.2&&ia>1.2&&S.o.frame!=="fill")?16/9:fw/fh;
   let sw=src.width, sh=src.height; if(ia>ta) sw=sh*ta; else sh=sw/ta;
   const sx=(src.width-sw)/2, sy=(src.height-sh)/2, sc=Math.min(1,1280/Math.max(sw,sh));
   const c=mk(sw*sc,sh*sc); c.getContext("2d").drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height);
