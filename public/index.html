@@ -2819,7 +2819,7 @@ async function exportWebCodecs(onProg){ blackRun=0;
     if(err) throw err;
     await syncClipsExact(i/fps);
     renderFrame(i/fps,.5/fps);
-    if(glOK&&i%(fps*2)===fps){ const sg=SEGS.find(s=>i/fps>=s.start&&i/fps<s.start+s.dur); if(sg&&sg.type==="photo"&&!sg.img.isVideo&&frameIsBlack()){ blackRun=(blackRun||0)+1; if(blackRun>=2) throw new Error("black-frames"); } else blackRun=0; }
+    if(glOK&&i%(fps*2)===fps){ const sg=SEGS.find(s=>i/fps>=s.start&&i/fps<s.start+s.dur); if(sg&&sg.type==="photo"&&!sg.img.isVideo&&!photoIsDark(sg.img)&&frameIsBlack()){ blackRun=(blackRun||0)+1; if(blackRun>=2) throw new Error("black-frames"); } else blackRun=0; }
     const vf=new VideoFrame(cv,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});
     ve.encode(vf,{keyFrame:i%(fps*2)===0}); vf.close();
     while(ve.encodeQueueSize>6) await new Promise(r=>setTimeout(r,2));
@@ -2856,8 +2856,13 @@ $("#render").onclick=()=>renderVideo();
 const probeCv=mk(24,24);
 function frameIsBlack(){ const g=probeCv.getContext("2d",{willReadFrequently:true}); g.drawImage(cv,0,0,24,24); const d=g.getImageData(0,0,24,24).data, L=[];
   for(let i=0;i<d.length;i+=4) L.push(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]); L.sort((a,b)=>a-b); return L[L.length>>1]<6; }
+// median brightness of the photo itself: a night shot is dark on purpose and must not trip the black-frame check
+function photoIsDark(img){ if(img._dark!==undefined) return img._dark; try{ const g=probeCv.getContext("2d",{willReadFrequently:true}); g.drawImage(img.src,0,0,24,24); const d=g.getImageData(0,0,24,24).data, L=[];
+  for(let i=0;i<d.length;i+=4) L.push(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]); L.sort((a,b)=>a-b); img._dark=L[L.length>>1]<40; }catch(e){ img._dark=true; } return img._dark; }
+// after a fallback, try the graphics card again on the next video (a one-off hiccup shouldn't turn 3D off for the whole visit)
+function reviveGL(){ if(glOK||!gl) return; try{ if(gl.isContextLost&&gl.isContextLost()) return; U={}; TEX.clear(); glOK=glInit(); if(glOK&&glLooksBroken()) glOK=false; }catch(e){ glOK=false; } }
 function glLooksBroken(){
-  if(!glOK) return false; const shots=SEGS.filter(s=>s.type==="photo"&&!s.img.isVideo).slice(0,3); if(!shots.length) return false;
+  if(!glOK) return false; const shots=SEGS.filter(s=>s.type==="photo"&&!s.img.isVideo&&!photoIsDark(s.img)).slice(0,3); if(!shots.length) return false;
   let black=0; for(const s of shots){ renderFrame(s.start+s.dur*.5,1/120); if(frameIsBlack()) black++; }
   return black===shots.length;
 }
@@ -3406,6 +3411,7 @@ async function autoBuild(files){
       S.photos=photos; build(); renderPhotos(); renderLeft(); curT=Math.min(2.2,TOTAL||2.2); refresh();
       stage("fix","done",S.o.enh==="off"?"off":S.o.enh);
     }
+    reviveGL();
     if(IMPORT&&IMPORT.depth&&glOK){
       stage("depth","on");
       const nd=await depthAll((i,n)=>stage("depth","on",`${i+1}/${n}`));
