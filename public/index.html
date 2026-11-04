@@ -132,6 +132,11 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outli
 .ph-ctl{display:flex;gap:4px}
 .ph-ctl button{flex:1;background:transparent;border:1px solid var(--line);border-radius:7px;padding:4px 0;cursor:pointer;color:var(--muted);font-size:14px;line-height:1.2}
 .ph-ctl button:hover{color:var(--fg);border-color:var(--accent)}
+.ph-moves{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center}
+.ph-moves .lbl{font-size:11px;color:var(--muted);width:100%}
+.ph-moves button{flex:1;background:transparent;border:1px solid var(--line);border-radius:999px;padding:3px 6px;cursor:pointer;color:var(--muted);font-size:12px;line-height:1.2;white-space:nowrap}
+.ph-moves button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.ph-moves .remake{flex-basis:100%;border-radius:7px;color:var(--fg);border-color:var(--accent)}
 .empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:30px 20px;border:1.5px dashed var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel-2) 50%,transparent)}
 .empty svg{width:64px;height:52px;color:var(--accent)}
 .empty h3{font-family:var(--f-display);font-size:18px;font-weight:650;margin:0}
@@ -504,6 +509,11 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
           <label class="f"><span>Your name (shown on the video)</span><input type="text" data-k="agent" maxlength="60" placeholder="Agent or host name"></label>
           <label class="f"><span>Phone</span><input type="tel" data-k="phone" maxlength="30" placeholder="(555) 555-0123"></label>
           <div class="f"><span>Logo</span><button class="btn" id="quickLogo" type="button">Add logo</button></div>
+        </div>
+        <div class="lockable" style="margin-top:12px">
+          <label class="f"><span>Booking or listing link shown on the video (start and end)</span>
+            <div class="link-row"><input type="text" data-k="web" id="webQuick" maxlength="80" placeholder="e.g. tinyurl.com/alan-cabin"><button class="btn" type="button" id="shortBtn">Make a short link</button></div></label>
+          <p class="small" id="shortStatus" style="margin:4px 0 0">Viewers can't click a video, so a short link is easy to read and type. We make it from your listing link above.</p>
         </div>
         <details class="mini lockable" style="margin-top:12px"><summary>More options: number of shots, photo touch-up</summary>
           <div class="opt-row" style="margin-top:0">
@@ -1653,6 +1663,7 @@ function introText(local,outAt){
     it.push(textItem({text:d.address||d.headline,size:74,w:600,lh:1.04,maxLines:2}), gap(14));
     const sub=[d.type==="stay"?"":d.city, price].filter(Boolean).join("   ·   "); if(sub) it.push(textItem({text:sub,size:29,w:500,ls:4,upper:true,color:"rgba(255,255,255,.92)",fx:"track"}));
     if(openHouseOn()) it.push(gap(16), textItem({text:d.openHouse,size:27,w:500,ls:6,upper:true,fx:"track"}));
+    if(d.web) it.push(gap(22), pillItem((d.type==="stay"?"Book: ":"Details: ")+d.web,30));
     layout(it,local,"bottom",.45,.12,outAt); return;
   }
   if(tpl==="luxe"){
@@ -1675,6 +1686,7 @@ function introText(local,outAt){
     if(price) it.push(textItem({text:price,size:62,w:600,fam:t.disp,color:ACC()}));
     if(openHouseOn()) it.push(gap(20), textItem({text:d.openHouse,size:32,w:500}));
   }
+  if(d.web) it.push(gap(24), pillItem((d.type==="stay"?"Book: ":"Details: ")+d.web,32));
   layout(it,local,"bottom",.75,.16,outAt);
 }
 const frameBottom=seg=>seg&&seg.fit&&seg.card?(seg.card[1]+seg.card[3])*H:0;
@@ -2003,7 +2015,28 @@ function renderPhotos(){
       <div class="ph-ctl"><button data-a="l" aria-label="Move earlier">←</button><button data-a="r" aria-label="Move later">→</button>${p.fixed?`<button data-a="t" aria-label="${p.useFixed?"Show original":"Show touched-up"}" title="Compare with original">◐</button>`:""}<button data-a="x" aria-label="Remove photo">✕</button></div></div>`;
     el.querySelector("img").src=p.thumb; el.querySelector(".shot").textContent=shotOf(p); el.querySelector(".shot").hidden=!shotOf(p);
     const inp=el.querySelector("input"); inp.value=p.caption; inp.oninput=()=>{ p.caption=inp.value; refresh(); saveSession(); };
-    el.querySelectorAll("button").forEach(b=>b.onclick=async ()=>{ const a=b.dataset.a;
+    // what really moves in this room: the client corrects the AI here (the label above is shown on the video)
+    const base=p.aiClip&&p.srcPhoto?p.srcPhoto:p;
+    if(!(p.isVideo&&!p.aiClip)&&IMPORT&&IMPORT.clips){
+      const mv=document.createElement("div"); mv.className="ph-moves";
+      const WATER=["pool","water","hot_tub"], on=k=>k==="water"?(base.live||[]).some(x=>WATER.includes(x)):(base.live||[]).includes(k);
+      mv.innerHTML=`<span class="lbl">What really moves here (AI motion)</span>`+[["ceiling_fan","Fan"],["fireplace","Fire"],["water","Water"]].map(([k,t])=>`<button type="button" data-m="${k}" aria-pressed="${on(k)}">${t}</button>`).join("")
+        +`<button type="button" class="remake" data-m="remake" hidden>Re-make this shot (1 AI credit)</button>`;
+      mv.querySelectorAll("button[data-m]").forEach(b=>b.onclick=async e=>{ e.stopPropagation(); const k=b.dataset.m;
+        if(k!=="remake"){
+          let L=(base.live||[]).filter(x=>k==="water"?!WATER.includes(x):x!==k);
+          if(b.getAttribute("aria-pressed")!=="true") L.push(k==="water"?((base.kind||"int")==="ext"?"pool":"hot_tub"):k);
+          base.live=L; base.movers=""; base.userMoves=true; b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"));
+          mv.querySelector(".remake").hidden=false; saveSession(); return; }
+        if(building||busy) return; b.disabled=true; b.textContent="Re-making\u2026"; lock(true);
+        try{ const j=S.photos.indexOf(p); if(p!==base&&j>=0) S.photos[j]=base;
+          await makeClips(1,(d,n,note)=>activity("Re-making this shot\u2026",note?`Quality check: ${note}`:"Takes 1\u20133 minutes."),[base]);
+          renderReport(); build(); renderPhotos(); refresh(); await renderForTarget(false); }
+        finally{ lock(false); }
+      });
+      el.querySelector(".ph-body").appendChild(mv);
+    }
+    el.querySelectorAll(".ph-ctl button").forEach(b=>b.onclick=async ()=>{ const a=b.dataset.a;
       if(a==="t"){ p.useFixed=!p.useFixed; await derive(p); }
       else if(a==="x"){ const [gone]=S.photos.splice(i,1); if(gone.raw&&gone.raw.thumbO){ S.left.unshift({p:gone.raw,why:"Removed"}); renderLeft(); } }
       else { const j=a==="l"?i-1:i+1; if(j<0||j>=S.photos.length) return; [S.photos[i],S.photos[j]]=[S.photos[j],S.photos[i]]; }
@@ -2643,6 +2676,18 @@ async function importFromLink(){
   finally{ busyBtn(btn,false,"Import listing"); }
 }
 $("#importBtn").onclick=()=>importFromLink();
+$("#shortBtn").onclick=async()=>{
+  const st=$("#shortStatus"), b=$("#shortBtn"), url=(S.d.url||$("#url").value||"").trim();
+  if(!/^https?:\/\//i.test(url)){ st.className="status warn"; st.textContent="Paste the Airbnb or listing link in step 1 first, then press Make a short link."; return; }
+  if(IMPORT&&IMPORT.accounts&&!signedIn()){ openAuth("Sign in to make a short link.","login"); return; }
+  busyBtn(b,true,"Making\u2026");
+  try{ const r=await fetch("/api/shorten",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({url})}); const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.short) throw new Error(j.error||"");
+    S.d.web=j.short.replace(/^https?:\/\//,""); $("#webQuick").value=S.d.web; $$('[data-k="web"]').forEach(x=>x.value=S.d.web); persist(); build(); refresh();
+    st.className="status ok"; st.textContent=`Done: ${S.d.web} opens your listing. It shows at the start and end of the video.`; }
+  catch(e){ st.className="status warn"; st.textContent=(e.message||"Couldn't make a short link right now.")+" You can make one at tinyurl.com and paste it in the box."; }
+  finally{ busyBtn(b,false,"Make a short link"); }
+};
 $("#url").addEventListener("keydown",e=>{ if(e.key==="Enter"&&IMPORT){ e.preventDefault(); importFromLink(); } });
 
 /* ---------- details UI ---------- */
@@ -2977,7 +3022,7 @@ async function doLabel(){
 2) Classify each: "ext" (exterior, yard, pool, view, aerial), "int" (a room), or "detail" (close-up of a fixture, finish or decor).
 3) Order them like a home tour film: strongest exterior hero first, then flow through living, kitchen, bedrooms and baths, best view or outdoor living near the end.
 4) For each photo, list which of these are clearly visible (only if you're sure): "ceiling_fan", "fireplace", "pool", "hot_tub", "faucet" (a kitchen or bathroom faucet clearly in view), "water" (lake, ocean, pond, fountain), "curtains", "trees" (trees or palms that are part of an outdoor scene), "sky".
-5) For each photo, write ONE short sentence (max 20 words) for a video animator saying exactly what visibly moves in real life and where it is, e.g. "The two white ceiling fans on the ceiling spin steadily." or "Flames flicker in the stone fireplace on the left." Only ceiling fans, fireplaces, pools, hot tubs and curtains (never faucets, sinks or running water); for outdoor photos also trees and clouds. Look closely at the ceiling in every room photo: a ceiling fan that is small, far away, white on a white ceiling or partly cut off still counts, so include "ceiling_fan" and mention it. Never mention trees seen through a window. Use "" if nothing moves.
+5) For each photo, write ONE short sentence (max 20 words) for a video animator saying exactly what visibly moves in real life and where it is, e.g. "The two white ceiling fans on the ceiling spin steadily." or "Flames flicker in the stone fireplace on the left." Only ceiling fans, fireplaces, pools, hot tubs and curtains (never faucets, sinks or running water); for outdoor photos also trees and clouds. Only list things you can clearly see in that photo; when unsure, leave it out. A ceiling light or lamp is not a ceiling fan, and a TV, heater, mirror reflection or rug is not a fireplace. Never mention trees seen through a window. Use "" if nothing moves.
 Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|"detail", ...],"live":[["ceiling_fan","fireplace"], ...],"movers":["sentence for photo 1", ...],"order":[photo numbers in recommended order]}`,{images:P.map(p=>p.aiBlob),modelTier:"default"});
     if(!r||typeof r!=="object"||Array.isArray(r)) throw {code:"invalid_json"};
     let used=0;
@@ -2991,7 +3036,7 @@ Reply with only JSON: {"labels":["label for photo 1", ...],"kinds":["ext"|"int"|
     const restP=S.photos.filter(p=>!P.includes(p)&&!p.isVideo&&!p.sample);
     for(let k=0;k<restP.length;k+=max){ const B=restP.slice(k,k+max); st.textContent=`Labeling more photos: ${Math.min(k+max,restP.length)} of ${restP.length}\u2026`;
       try{ const r2=await SAMPLE.json(`These are ${B.length} more photos from the same ${S.d.type==="stay"?"vacation rental":"listing"}, numbered 1 to ${B.length}.
-For each: a 2-4 word Title Case label; "ext"|"int"|"detail"; which of "ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains","trees","sky" are clearly visible (trees/sky only for outdoor photos); and ONE short sentence (max 20 words) saying exactly what visibly moves and where (only fans, fireplaces, pools, hot tubs, curtains — never faucets or running water; and for outdoor photos trees and clouds; never trees seen through a window; "" if nothing). Look closely at every ceiling: a small, white or partly cut-off ceiling fan still counts.
+For each: a 2-4 word Title Case label; "ext"|"int"|"detail"; which of "ceiling_fan","fireplace","pool","hot_tub","faucet","water","curtains","trees","sky" are clearly visible (trees/sky only for outdoor photos); and ONE short sentence (max 20 words) saying exactly what visibly moves and where (only fans, fireplaces, pools, hot tubs, curtains — never faucets or running water; and for outdoor photos trees and clouds; never trees seen through a window; "" if nothing). Only list what you can clearly see; when unsure, leave it out. A light fixture is not a ceiling fan; a TV, heater or reflection is not a fireplace.
 Reply with only JSON: {"labels":[...],"kinds":[...],"live":[[...], ...],"movers":[...]}`,{images:B.map(p=>p.aiBlob),modelTier:"default"});
         if(r2&&typeof r2==="object"){ B.forEach((p,i)=>{ const l=aStr(r2.labels?.[i],40); if(l) p.caption=l; const kd=r2.kinds?.[i]; if(["ext","int","detail"].includes(kd)) p.kind=kd;
           const L=Array.isArray(r2.live?.[i])?r2.live[i]:[]; p.live=[...new Set(L.filter(x=>LIVE_KEYS.includes(x)))]; p.movers=cleanMovers(r2.movers?.[i]); }); } }catch(e){ break; } }

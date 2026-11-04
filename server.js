@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { importListing } from "./lib/import.js";
 import { providerInfo } from "./lib/providers.js";
-import { assertPublicUrl } from "./lib/safe-fetch.js";
+import { assertPublicUrl, plainFetch } from "./lib/safe-fetch.js";
 import { runAI, aiEnabled } from "./lib/ai.js";
 import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel, clipSource, premiumEnabled } from "./lib/clips.js";
 import * as acct from "./lib/accounts.js";
@@ -48,7 +48,7 @@ const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__
 const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!doctype/i.test(body) ? body : SKELETON_HEAD + body + "</body></html>"; };
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
-const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map();
+const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map(); const shortHits = new Map();
 const reloadHits = new Map(), emailHits = new Map(), leadHits = new Map();
 const AUTH_PER_IP = +process.env.AUTH_PER_IP || 300;   // a workshop room shares one Wi-Fi address
 function allow(ip, map = hits, limit = PER_HOUR) {
@@ -96,6 +96,20 @@ export const server = http.createServer(async (req, res) => {
       const code = shortCode || (u.pathname.startsWith("/r/") ? u.pathname.slice(3) : u.searchParams.get("ref"));
       const partner = (code && refCookie(req, res, code)) || acct.partnerByRef(cookieVal(req, "rls_ref"));
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(agentsPage(partner));
+    }
+    // short link for the video (TinyURL): viewers can't click a video, so the link has to be easy to read and type
+    if (req.method === "POST" && u.pathname === "/api/shorten") {
+      const user = needUser(req);
+      if (!allow("s" + user.id, shortHits, 20)) return json(res, 429, { error: "That's a lot of short links this hour. Try again later." });
+      const { url } = await readJson(req);
+      let target; try { target = new URL(String(url || "").trim()); } catch { return json(res, 400, { error: "That listing link doesn't look right." }); }
+      if (!/^https?:$/.test(target.protocol) || String(url).length > 2000) return json(res, 400, { error: "That listing link doesn't look right." });
+      try {
+        const r = await plainFetch(`${process.env.TINYURL_BASE || "https://tinyurl.com"}/api-create.php?url=${encodeURIComponent(target.href)}`, { timeout: 15000, maxBytes: 4096, headers: { "user-agent": "ReelListingStudio/1.0" } });
+        const short = r.buf.toString("utf8").trim();
+        if (r.status >= 400 || !/^https?:\/\/(www\.)?tinyurl\.com\/[\w-]+$/i.test(short)) { console.error("tinyurl", r.status, short.slice(0, 200)); return json(res, 502, { error: "TinyURL didn't make the link." }); }
+        return json(res, 200, { short });
+      } catch (e) { console.error("tinyurl", e.message); return json(res, 502, { error: "TinyURL couldn't be reached." }); }
     }
     if (req.method === "POST" && u.pathname === "/api/leads") {
       if (!allow(clientIp(req), leadHits, 120)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes, or call us." });
