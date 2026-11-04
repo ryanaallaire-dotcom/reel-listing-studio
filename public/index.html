@@ -541,6 +541,10 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
           <h3 class="wz"><span>✓</span>Your video is ready</h3>
           <div id="heroRenders"></div>
           <div class="report" id="shotReport" hidden></div>
+          <div class="report" id="fixBox" hidden><b>Something not right? Describe it and we'll fix those shots</b>
+            <p class="small" style="margin:4px 0 8px">Paste notes the way you'd tell an editor, e.g. "fire in front of the bed, no ceiling fan in the bathroom, couch changes color". We find the shots, correct what moves, and re-make only those.</p>
+            <textarea id="fixNote" rows="3" maxlength="1500" style="width:100%" placeholder="What should we fix?"></textarea>
+            <div class="row" style="margin-top:8px;gap:10px;align-items:center"><button class="btn primary" type="button" id="fixBtn">Fix these shots</button><span class="status" id="fixStatus" aria-live="polite"></span></div></div>
           <p class="small" style="margin:10px 0 0">Want to change something? Open <b>Fine-tune</b> below (reorder shots, edit text, branding, style, music), then press <b>Update my video</b>.</p>
         </div>
       </div>
@@ -3011,6 +3015,37 @@ ${text.slice(0,22000)}`,{modelTier:"quick"});
   busyBtn(btn,false,"Fill fields from description"); return false;
 }
 $("#aiLabel").onclick=()=>doLabel();
+// "Fix with a note": the client's own words (like an editor's notes) are matched to the shots they're about,
+// what moves in those rooms is corrected, and only those shots are re-made
+$("#fixBtn").onclick=async()=>{
+  const st=$("#fixStatus"), btn=$("#fixBtn"), note=($("#fixNote").value||"").trim().slice(0,1500);
+  if(note.length<4){ st.className="status warn"; st.textContent="Type what looks wrong first."; return; }
+  if(building||busy) return;
+  const shots=S.photos.map((p,i)=>({p,i,base:p.aiClip&&p.srcPhoto?p.srcPhoto:p})).filter(x=>!x.p.sample&&(x.p.aiClip||!x.p.isVideo)&&x.base.aiBlob);
+  if(!shots.length){ st.className="status warn"; st.textContent="There are no AI shots to fix in this video yet."; return; }
+  busyBtn(btn,true,"Reading your notes\u2026"); st.className="status"; st.textContent="";
+  const todo=new Set();
+  try{
+    for(let k=0;k<shots.length;k+=8){ const B=shots.slice(k,k+8);
+      const r=await SAMPLE.json(`A client watched an AI walkthrough video made from these ${B.length} listing photos, numbered 1 to ${B.length} in the order attached. Shot labels: ${B.map((x,j)=>`${j+1}) ${x.p.caption||"untitled"}`).join("; ")}.
+The AI video sometimes adds things that are NOT in the photo (fire or flames, ceiling fans), changes colors of furniture, or misses real movement. The client's notes:
+"""${note}"""
+For each of these photos that the notes are about, decide what really moves in that photo, choosing only from "ceiling_fan","fireplace","pool","hot_tub","water","curtains","trees","sky" and only if it is clearly visible in that photo, plus ONE instruction (max 25 words) for the animator saying what must not happen or must stay the same (e.g. "No fire anywhere; the bed area stays exactly as in the photo."). Ignore notes that don't match any of these photos. Never invent problems.
+Reply with only JSON: {"fixes":[{"photo":1,"live":["ceiling_fan"],"note":"..."}]}`,{images:B.map(x=>x.base.aiBlob),modelTier:"default"});
+      for(const f of (r&&Array.isArray(r.fixes)?r.fixes:[])){ const x=B[Math.round(+f.photo)-1]; if(!x) continue;
+        x.base.live=[...new Set((Array.isArray(f.live)?f.live:[]).filter(v=>LIVE_KEYS.includes(v)))]; x.base.movers=""; x.base.userMoves=true;
+        x.base.fixNote=cleanMovers(f.note).slice(0,200); todo.add(x); }
+    }
+    if(!todo.size){ st.className="status warn"; st.textContent="We couldn't match those notes to a shot. Try naming the room, e.g. \u201cbedroom: no fire\u201d."; return; }
+    const list=[...todo]; list.forEach(x=>{ const j=S.photos.indexOf(x.p); if(x.p!==x.base&&j>=0) S.photos[j]=x.base; });
+    st.textContent=`Re-making ${list.length} shot${list.length>1?"s":""}: ${list.map(x=>x.p.caption||`shot ${x.i+1}`).join(", ")}. Takes 2\u20135 minutes.`;
+    lock(true);
+    try{ await makeClips(list.length,(d,n,nt)=>activity(`Fixing shots \u00b7 ${d} of ${n} done\u2026`,nt?`Quality check: ${nt}`:"Following your notes."),list.map(x=>x.base)); renderReport(); build(); renderPhotos(); refresh(); await renderForTarget(false); }
+    finally{ lock(false); }
+    st.className="status ok"; st.textContent=`Fixed ${list.length} shot${list.length>1?"s":""} and updated the video. Watch it again; anything else, add another note.`;
+  }catch(e){ st.className="status bad"; st.textContent=aiErr(e); }
+  finally{ busyBtn(btn,false,"Fix these shots"); }
+};
 async function doLabel(){
   const st=$("#aiLabelStatus"), btn=$("#aiLabel");
   let max=8; try{ const lim=await SAMPLE.limits(); if(!lim.images){ st.className="status warn"; st.textContent="Photo AI isn't available in this view."; return false; } max=lim.images.maxCount; }catch(e){}
@@ -3154,7 +3189,7 @@ async function camDrift(vp){
 async function clipOne(p,onState,retry,modelOverride){
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired) headers["x-access-key"]=$("#accessKey").value.trim();
   const seg=SEGS.find(s=>s.img===p&&(s.type==="photo"||s.type==="intro")), move=seg&&["rpan","rtilt","rdiag","truck","arc","tilt","glide","macro"].includes(seg.move)?seg.move:"rpan";
-  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[],movers:p.movers||"",retry:!!retry,model:modelOverride??(S.o.aiModel||""),lockCam:lockFor(p)})});
+  const r=await fetch("/api/clips",{method:"POST",headers,body:JSON.stringify({image:cropForClip(p),kind:p.kind||"int",move,live:p.live||[],movers:p.movers||"",fix:p.fixNote||"",retry:!!retry,model:modelOverride??(S.o.aiModel||""),lockCam:lockFor(p)})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"The AI video service couldn't start.");
   const t0=Date.now(), usedModel=modelOverride??(S.o.aiModel||"");
   for(;;){
@@ -3178,6 +3213,7 @@ async function clipOne(p,onState,retry,modelOverride){
   return vp;
 }
 function renderReport(){
+  const fb=$("#fixBox"); if(fb) fb.hidden=!S.photos.some(p=>p.aiClip);
   const box=$("#shotReport"); if(!box) return; if(!CLIP_REPORT.length){ box.hidden=true; return; }
   const good=CLIP_REPORT.filter(r=>r.status==="ok").length, weak=CLIP_REPORT.filter(r=>r.status!=="ok");
   const stills=S.photos.filter(p=>!p.isVideo&&!p.sample).length;
