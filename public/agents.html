@@ -221,7 +221,16 @@ html{scroll-behavior:smooth}
 .creds div{border-top:2px solid var(--amber);padding-top:12px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .creds b{font-family:var(--display);font-size:28px;font-weight:600;text-transform:uppercase;line-height:1.05}
 .creds span{color:var(--muted);font-size:15px}
-.worked{margin-top:18px;font-size:17px}
+.founder .wrap>div{min-width:0}
+.ig{margin-top:16px}.ig a{color:var(--amber);font-weight:700;text-decoration:none;font-size:17px}.ig a:hover{text-decoration:underline}
+.worked{margin-top:18px;font-size:17px;max-width:70ch}
+.namereel{margin-top:22px;overflow:hidden;border-block:1px solid var(--line);padding-block:14px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.nr-track{display:flex;gap:44px;width:max-content;animation:nr 38s linear infinite}
+.namereel:hover .nr-track{animation-play-state:paused}
+.nr{display:flex;flex-direction:column;white-space:nowrap;font-family:var(--display);font-size:24px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:var(--ink)}
+.nr small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--amber);font-weight:500}
+@keyframes nr{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){ .nr-track{animation:none;flex-wrap:wrap;width:auto;gap:18px 32px} .nr[aria-hidden]{display:none} .namereel{-webkit-mask-image:none;mask-image:none} }
 @media (max-width:700px){ .creds{grid-template-columns:1fr} .head{font-size:32px} }
 .pcard{margin-top:6px;padding:20px 22px;border-radius:18px;border:1px solid rgba(242,240,235,.2);display:flex;flex-direction:column;gap:4px}
 .pcard span{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--band-muted)}
@@ -385,7 +394,14 @@ footer a{color:inherit}
       <div><b>Hundreds of millions</b><span>in sales generated</span></div>
       <div><b>Hundreds of thousands</b><span>sold, with video ads at the core</span></div>
     </div>
-    <p class="worked">We’ve worked on campaigns with names like <b>Paula Abdul</b> and <b>Kevin Harrington</b> of Shark Tank.</p>
+    <p class="worked">We’ve been top referral partners for <b>ClickFunnels</b> and <b>Shopify</b>, driven by video ads built on the same framework behind Reel Listing Studio. We’ve also worked on campaigns with names like <b>Paula Abdul</b> and <b>Kevin Harrington</b> of Shark Tank, multi-platinum and Grammy-winning artists, and influencers with hundreds of millions of followers combined. <b>All with the power of video.</b></p>
+    <div class="namereel" aria-label="Who our video ads have worked for">
+      <div class="nr-track">
+        <span class="nr"><small>Top referral partner</small>ClickFunnels</span><span class="nr"><small>Top referral partner</small>Shopify</span><span class="nr"><small>Campaigns with</small>Paula Abdul</span><span class="nr"><small>Campaigns with</small>Kevin Harrington · Shark Tank</span><span class="nr"><small>Music</small>Multi-platinum artists</span><span class="nr"><small>Music</small>Grammy-winning artists</span><span class="nr"><small>Creators</small>100s of millions of followers</span>
+        <span class="nr" aria-hidden="true"><small>Top referral partner</small>ClickFunnels</span><span class="nr" aria-hidden="true"><small>Top referral partner</small>Shopify</span><span class="nr" aria-hidden="true"><small>Campaigns with</small>Paula Abdul</span><span class="nr" aria-hidden="true"><small>Campaigns with</small>Kevin Harrington · Shark Tank</span><span class="nr" aria-hidden="true"><small>Music</small>Multi-platinum artists</span><span class="nr" aria-hidden="true"><small>Music</small>Grammy-winning artists</span><span class="nr" aria-hidden="true"><small>Creators</small>100s of millions of followers</span>
+      </div>
+    </div>
+    <p class="ig"><a href="https://www.instagram.com/theryanallaire" target="_blank" rel="noopener">See the portfolio on Instagram: @theryanallaire →</a></p>
     <blockquote style="margin-top:22px">“I watched agents lose their best marketing window waiting on a videographer. So we built a faster way. I check the work before it goes out, and if your photos won’t make a great video, I’ll tell you before you pay a cent.”</blockquote>
     <cite>Ryan Allaire, founder, Advance Marketing Group<span data-site-sep="city"></span><span data-site-sep="phone"></span><span data-site-sep="email"></span></cite>
   </div>
