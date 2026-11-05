@@ -209,6 +209,22 @@ footer .wrap{display:flex;flex-direction:column;gap:8px}
 @media (max-width:520px){ form{grid-template-columns:1fr} .gallery{grid-template-columns:1fr} header .btn{display:none} }
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 html{scroll-behavior:smooth}
+/* agents who said yes */
+.yes .dms{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px}
+.dm{display:flex;flex-direction:column;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;min-width:0;margin:0}
+.dm .shot{position:relative;border-radius:14px;overflow:hidden;background:#fff;border:1px solid var(--line);aspect-ratio:1/1}
+.dm .shot img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.dm .chip{position:absolute;top:12px;left:12px;background:var(--amber);color:var(--on-amber);font:700 13px var(--body);padding:5px 12px;border-radius:999px}
+.dm h3{font-size:22px}
+.dm p{color:var(--muted);font-size:16px}
+.faces{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:24px;padding:0}
+.faces li{list-style:none;display:flex;gap:14px;align-items:center;min-width:0}
+.faces img{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 64px;border:3px solid var(--amber)}
+.faces b{display:block;font-size:15px}
+.faces span{font-size:14px;color:var(--muted)}
+.yes .src{margin-top:18px}
+@media (max-width:900px){.yes .dms{grid-template-columns:1fr}.faces{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.faces{grid-template-columns:1fr}}
 .hide{display:none!important}
 .bonus{padding-top:0}
 .bonus-in{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:48px;align-items:center;padding:36px;border-radius:24px;border:2px solid var(--amber);background:var(--amber-soft)}
@@ -304,9 +320,9 @@ footer a{color:inherit}
 <section class="proof"><div class="wrap">
   <div class="proof-body">
     <p class="eyebrow">One listing agent’s math</p>
-    <div class="who"><img src="/media/candace-f.jpg" alt="Candace F." width="64" height="64"><span><b>Candace F.</b><br>Listing agent · St. Pete Beach, FL</span></div>
+
     <h2>She was paying $2,400 a listing.</h2>
-    <p><strong>Candace F.</strong> is a multi-seven-figure listing agent in St. Pete Beach, Florida. Before Reel Listing Studio she paid <strong>$1,200 to $2,400 per listing</strong> for a video, the social versions, an unbranded MLS cut and the re-edits. And she waited weeks to book the videographers worth hiring.</p>
+    <p><strong>C.F.</strong> is a multi-seven-figure listing agent in St. Pete Beach, Florida. Before Reel Listing Studio she paid <strong>$1,200 to $2,400 per listing</strong> for a video, the social versions, an unbranded MLS cut and the re-edits. And she waited weeks to book the videographers worth hiring.</p>
     <p>With us she got her best listing video yet, and the home sold sooner. <strong>Now she refers her entire agency.</strong></p>
     <p data-site="candaceQuote"></p>
   </div>
@@ -318,10 +334,25 @@ footer a{color:inherit}
     <div class="bignum">−$800+</div>
     <span>saved on one listing, at her low end</span>
   </div>
-  <div class="quick" style="grid-column:1/-1;grid-template-columns:1fr 1fr">
-    <div class="who"><img src="/media/josh-n.jpg" alt="Josh N." width="56" height="56"><span><b>Josh N., listing agent · Alaska</b>Ordered on his first look at the videos. Josh is also a Reel Listing Studio partner.</span></div>
-    <div class="who"><img src="/media/alan-g.jpg" alt="Alan G." width="56" height="56"><span><b>Alan G., Airbnb host · prepaid 3 Full Launch packages</b>He was floored watching his own photos move: the woman in his yard photo walks her dog across the lawn, curtains drift in the breeze, the fireplace flickers. He prepaid for three Full Launch packages for his short-term rentals.</span></div>
+</div></section>
+
+<section class="yes" id="agents"><div class="wrap">
+  <p class="eyebrow">Real agents · Real messages</p>
+  <h2>They saw their own listing move.</h2>
+  <p class="lede" style="margin-top:12px">We sent each agent a video made from their own listing photos. Here’s what came back.</p>
+  <div class="dms">
+    <figure class="dm"><div class="shot"><span class="chip">Ordered in under 9 minutes</span><img src="/media/dm-jp.jpg" alt="Messenger: the agent replies “Let’s do it!!! I’m in” after seeing his walkthrough video" loading="lazy"></div>
+      <figcaption><h3>J.P. · Midwest listing agent</h3><p>Saw his walkthrough video and replied in one message: “Let’s do it!!! I’m in.”</p></figcaption></figure>
+    <figure class="dm"><div class="shot"><span class="chip">Bringing in her whole agency</span><img src="/media/dm-am.jpg" alt="Messenger: the agent’s covered-porch listing turned into a walkthrough video, with her heart reaction" loading="lazy" style="object-position:center"></div>
+      <figcaption><h3>A.M. · Midwest listing agent</h3><p>Her own covered-porch listing, turned into a walkthrough. She ❤️’d it, hopped on a call, and is introducing us to the rest of her agency.</p></figcaption></figure>
   </div>
+  <ul class="faces">
+    <li><img src="/media/p-cf.jpg" alt="" loading="lazy"><div><b>C.F. · St. Pete Beach, FL</b><span>Best listing video she’s had. Now refers her agency.</span></div></li>
+    <li><img src="/media/p-jp.jpg" alt="" loading="lazy"><div><b>J.P. · Midwest</b><span>Ordered in under 9 minutes.</span></div></li>
+    <li><img src="/media/p-jn.jpg" alt="" loading="lazy"><div><b>J.N. · Alaska</b><span>Ordered on first look. Also a Reel Listing Studio partner.</span></div></li>
+    <li><img src="/media/p-ag.jpg" alt="" loading="lazy"><div><b>A.G. · Airbnb host</b><span>Watched his rental come alive. Prepaid three Full Launch packages.</span></div></li>
+  </ul>
+  <p class="src">Shared with permission. Names shortened to initials; last names and contact details hidden.</p>
 </div></section>
 
 <section id="before-after"><div class="wrap">
