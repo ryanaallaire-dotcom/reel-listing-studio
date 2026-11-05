@@ -210,6 +210,13 @@ footer .wrap{display:flex;flex-direction:column;gap:8px}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 html{scroll-behavior:smooth}
 .hide{display:none!important}
+.bonus{padding-top:0}
+.bonus-in{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:48px;align-items:center;padding:36px;border-radius:24px;border:2px solid var(--amber);background:var(--amber-soft)}
+.bonus-copy{min-width:0}
+.bonus-list{margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.bonus-list li{list-style:none;padding-left:26px;position:relative}
+.bonus-list li::before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
+@media (max-width:900px){ .bonus-in{grid-template-columns:1fr;padding:24px;gap:28px} .bonus-in .clip{max-width:320px} }
 .who{display:flex;align-items:center;gap:14px}
 .who img{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:2px solid #F2A541}
 .quick .who img{width:56px;height:56px}
@@ -434,7 +441,7 @@ footer a{color:inherit}
       <a class="btn btn-ghost" href="#request" data-pick="Full Launch">Choose Full Launch</a>
     </div>
   </div>
-  <p class="addons">Add-ons: extra reel $49 · 12-hour rush $75 · Airbnb or VRBO version $99. Not sure which? Pick “Not sure yet” on the form and we’ll recommend one from your photos.</p>
+  <p class="addons"><b style="color:var(--ink)">Bonus:</b> on your first listing we also build and launch a live ad with your video, free setup. <a href="#bonus" style="color:inherit">See how</a><br>Add-ons: extra reel $49 · 12-hour rush $75 · Airbnb or VRBO version $99. Not sure which? Pick “Not sure yet” on the form and we’ll recommend one from your photos.</p>
   <div class="guard">
     <h3>You don’t pay to find out.</h3>
     <p>Send the form and nothing is charged. We look at your photos first. If they won’t make a great video, we tell you before you pay. You approve the invoice before we start.</p>
@@ -458,6 +465,25 @@ footer a{color:inherit}
     <details><summary>Is it worth it on a mid-priced listing, or a rental?</summary><p>Yes. At $199 you get all three versions and a caption, when published rates run $350 for one 30-second vertical alone, it makes a mid-priced listing look like a luxury one, and it’s a strong piece for your next listing presentation. Rentals get a dedicated Airbnb or VRBO version for $99.</p></details>
   </div>
   <p class="after-faq"><span id="askCall" hidden>Still have a question? Call or text <a data-site-tel></a>.</span></p>
+</div></section>
+
+<section class="bonus" id="bonus"><div class="wrap">
+  <div class="bonus-in">
+    <figure class="clip"><div class="frame"><video src="/media/ad-launch-bonus.mp4" poster="/media/ad-launch-bonus.jpg" controls playsinline preload="metadata" aria-label="How we launch the ad for your listing"></video></div><figcaption>How the launch works · 30 seconds</figcaption></figure>
+    <div class="bonus-copy">
+      <p class="eyebrow">Bonus on your first listing</p>
+      <h2>We don’t just make the video. We put it in front of buyers.</h2>
+      <p class="lede" style="margin-top:14px">Most listing videos get posted once and seen by friends and family. On your first listing, we also build and launch a live ad with your walkthrough, so it reaches people shopping for homes in your area, not just your followers. The video gets attention. The ad pours gas on the fire.</p>
+      <ul class="bonus-list">
+        <li><b>Built from your video</b> with ad copy written for your listing</li>
+        <li><b>Live within 24 hours</b> of you approving it</li>
+        <li><b>Local buyers, not just followers</b>, set up under Meta’s housing ad rules</li>
+        <li><b>You see the results</b>: views, clicks and messages</li>
+      </ul>
+      <p class="risk" style="margin-top:14px"><b>Free setup on your first listing, with any package.</b> You choose the daily ad budget, paid straight to Meta. Want this on every listing? That’s the Full Launch.</p>
+      <a class="btn btn-primary" href="#request" style="margin-top:18px">Claim my listing bonus</a>
+    </div>
+  </div>
 </div></section>
 
 <section class="request" id="request"><div class="wrap">
