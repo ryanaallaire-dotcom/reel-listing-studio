@@ -213,6 +213,11 @@ html{scroll-behavior:smooth}
 .bonus{padding-top:0}
 .bonus-in{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:48px;align-items:center;padding:36px;border-radius:24px;border:2px solid var(--amber);background:var(--amber-soft)}
 .bonus-copy{min-width:0}
+.bonus-steps{margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;counter-reset:b}
+.bonus-steps li{list-style:none;display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:2px solid var(--amber);min-width:0}
+.bonus-steps li::before{counter-increment:b;content:"0" counter(b);font-family:var(--mono);font-size:12px;color:var(--amber)}
+.bonus-steps span{font-size:14px;color:var(--muted)}
+@media (max-width:700px){ .bonus-steps{grid-template-columns:1fr} }
 .bonus-list{margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
 .bonus-list li{list-style:none;padding-left:26px;position:relative}
 .bonus-list li::before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
@@ -480,6 +485,11 @@ footer a{color:inherit}
         <li><b>Local buyers, not just followers</b>, set up under Meta’s housing ad rules</li>
         <li><b>You see the results</b>: views, clicks and messages</li>
       </ul>
+      <ol class="bonus-steps">
+        <li><b>We build it</b><span>Campaign, audience and ad copy around your walkthrough, in Meta’s Housing category.</span></li>
+        <li><b>You approve it</b><span>You see a preview of the ad, audience and budget. Nothing runs or spends until you say go.</span></li>
+        <li><b>It goes live</b><span>Your listing reaches local buyers within 24 hours, and we send you the results.</span></li>
+      </ol>
       <p class="risk" style="margin-top:14px"><b>Free setup on your first listing, with any package.</b> You choose the daily ad budget, paid straight to Meta. Want this on every listing? That’s the Full Launch.</p>
       <a class="btn btn-primary" href="#request" style="margin-top:18px">Claim my listing bonus</a>
     </div>
