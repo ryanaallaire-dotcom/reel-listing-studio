@@ -130,7 +130,7 @@ const A = 18911; const sa = await startServer(A, { ALLOW_LOCAL_FETCH: "1", IMPOR
   check("Refuses file:// links", rf.status === 400, jf.error);
   // rate limit: 6/hour, 4 uncached calls used so far (listing, redirect, nophotos, blocked) + a couple more
   let last; for (let k = 0; k < 4; k++) last = await post(A, { url: `http://127.0.0.1:${FX}/nophotos?x=${k}` });
-  check("Rate limit kicks in with a clear message", last.status === 429, (await last.json()).error);
+  check("Rate limit: the owner isn't stopped at a visitor's cap (live demos never stall)", last.status !== 429, (await last.json()).error);
 }
 sa.kill();
 
@@ -210,7 +210,7 @@ const E = 18915; const se = await startServer(E, { ANTHROPIC_API_KEY: "sk-test",
   check("AI: rejects non-image uploads", bad.status === 400, (await bad.json()).error);
   const lim = await fetch(`http://127.0.0.1:${E}/api/ai`, { method: "POST", headers: { "content-type": "application/json", cookie: jar[`${E}:default`] }, body: JSON.stringify({ prompt: "x" }) });
   const lim2 = await fetch(`http://127.0.0.1:${E}/api/ai`, { method: "POST", headers: { "content-type": "application/json", cookie: jar[`${E}:default`] }, body: JSON.stringify({ prompt: "x" }) });
-  check("AI: hourly limit per visitor", lim2.status === 429, (await lim2.json()).error);
+  check("AI: the owner isn't stopped at a visitor's hourly cap", lim2.status !== 429, (await lim2.json()).error);
 }
 se.kill();
 // AI off when no key

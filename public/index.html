@@ -436,7 +436,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         <p class="status" id="partnerStatus"></p>
         <form id="plinkForm" style="margin-top:14px;flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:8px"><label style="flex:1 1 200px">Partner's email<input type="email" id="plinkEmail" required></label><label style="flex:1 1 160px">Their link<input id="plinkCode" placeholder="e.g. aimptr" required></label><button class="btn" type="submit">Set partner link</button></form>
         <p class="status" id="plinkStatus"></p>
-        <div style="margin-top:14px"><button class="btn sm" type="button" id="allLeadsBtn">Show all agent requests</button> <a class="btn sm" href="/agents" target="_blank" rel="noopener">Open the agent sales page</a></div>
+        <div style="margin-top:14px"><button class="btn sm" type="button" id="allLeadsBtn">Show all agent requests</button> <button class="btn sm" type="button" id="partnersBtn">Show partners</button> <a class="btn sm" href="/agents" target="_blank" rel="noopener">Open the agent sales page</a></div>
         <div id="allLeads" style="margin-top:10px"></div>
         <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)"><b>Compare AI motion (blind test)</b><p class="small" style="margin:4px 0 8px">Makes the same shots with each AI model, shown as A, B, C in random order. Pick the best for each, then reveal which model won. Uses the photos in your current listing (fan, fireplace and pool shots first).</p>
         <button class="btn sm" type="button" id="cmpBtn">Run the comparison (3 photos)</button> <span class="status" id="cmpStatus"></span><div id="cmpOut" style="margin-top:10px"></div></div>
@@ -2485,6 +2485,12 @@ $("#cmpBtn").onclick=async()=>{
     const lines=models.map(m=>`${escapeHtml(m.n)}: ${tally[m.n]||0} of ${picks.length}`).join("<br>");
     const res=document.createElement("p"); res.className="small"; res.style.marginTop="8px"; res.innerHTML=`<b>Your picks</b><br>${lines}`; rv.replaceWith(res); };
   out.appendChild(rv);
+};
+$("#partnersBtn").onclick=async()=>{
+  const box=$("#allLeads"); box.textContent="Loading\u2026"; const r=await fetch("/api/account/admin/partners"); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ box.textContent=j.error||"Couldn't load."; return; }
+  box.innerHTML=""; const h=document.createElement("p"); h.className="small"; h.textContent=`${j.partners.length} partner account${j.partners.length===1?"":"s"}. A partner sees Agency tools only when signed in with the email listed here.`; box.appendChild(h);
+  j.partners.forEach(p=>{ const d=document.createElement("div"); d.className="lead"; d.textContent=`${p.name||"(no name)"} \u2013 ${p.email} \u2013 link /${p.ref_code||"?"} \u2013 ${p.pending?"hasn't set a password yet (send a new welcome email)":p.signed_in?"signed in":"password set"}`; box.appendChild(d); });
 };
 $("#allLeadsBtn").onclick=async()=>{
   const box=$("#allLeads"); box.textContent="Loading\u2026"; const r=await fetch("/api/account/admin/leads"); const j=await r.json().catch(()=>({}));

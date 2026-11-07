@@ -51,6 +51,10 @@ const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!do
 const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map(); const shortHits = new Map();
 const reloadHits = new Map(), emailHits = new Map(), leadHits = new Map();
 const AUTH_PER_IP = +process.env.AUTH_PER_IP || 300;   // a workshop room shares one Wi-Fi address
+// check a limit without counting this request (used where only failures should count)
+function under(key, map, limit) { const now = Date.now(), list = (map.get(key) || []).filter(t => now - t < 3600e3); map.set(key, list); return list.length < limit; }
+// the owner and partners are trusted: their hourly caps are 10x higher so a live demo or a busy day never stalls
+const trusted = u => !!(u && (acct.isAdmin(u) || u.partner));
 function allow(ip, map = hits, limit = PER_HOUR) {
   const now = Date.now(), list = (map.get(ip) || []).filter(t => now - t < 3600e3);
   if (list.length >= limit) { map.set(ip, list); return false; }
@@ -164,9 +168,13 @@ export const server = http.createServer(async (req, res) => {
       }
       if (req.method === "POST" && (u.pathname === "/api/account/signup" || u.pathname === "/api/account/login")) {
         const body = await readJson(req);
-        if (!allow(clientIp(req), authHits, AUTH_PER_IP) || !allow("e:" + String(body.email || "").trim().toLowerCase(), emailHits, 10))
-          return json(res, 429, { error: "Too many sign-in attempts. Wait a few minutes, then try again." });
-        const token = u.pathname.endsWith("signup") ? acct.signup(body) : acct.login(body);
+        const ek = "e:" + String(body.email || "").trim().toLowerCase(), ipk = clientIp(req);
+        if (!under(ipk, authHits, AUTH_PER_IP) || !under(ek, emailHits, 10))
+          return json(res, 429, { error: "Too many wrong passwords. Wait a few minutes, or use Forgot password." });
+        let token;
+        try { token = u.pathname.endsWith("signup") ? acct.signup(body) : acct.login(body); }
+        catch (e) { allow(ipk, authHits, AUTH_PER_IP); allow(ek, emailHits, 10); throw e; }     // only failures count
+        emailHits.delete(ek);
         if (u.pathname.endsWith("signup")) { const nu = acct.userFrom({ headers: { cookie: acct.sessionCookie(token, false).split(";")[0] } }); if (nu) acct.setReferredBy(nu.id, cookieVal(req, "rls_ref")); }
         res.setHeader("set-cookie", acct.sessionCookie(token, SECURE));
         return json(res, 200, { user: meJson(acct.userFrom({ headers: { cookie: `${acct.cookieName}=${token}` } })) });
@@ -232,6 +240,10 @@ export const server = http.createServer(async (req, res) => {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
         return json(res, 200, acct.allLeads());
       }
+      if (u.pathname === "/api/account/admin/partners" && req.method === "GET") {
+        const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
+        return json(res, 200, { partners: acct.partnerList() });
+      }
       if (u.pathname === "/api/account/admin/partners" && req.method === "POST") {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
         const { partners, tier, videos } = await readJson(req);
@@ -288,7 +300,7 @@ export const server = http.createServer(async (req, res) => {
         if (!clipsEnabled()) return json(res, 404, { error: "AI motion isn't set up on this server." });
         const body = await readJson(req, 6e6);
         const charge = acct.spend(user.id, 1, "ai_clip", crypto.randomUUID());     // 1 credit per clip, refunded if the clip fails
-        if (!acct.isAdmin(user) && !allow(owner, clipHits, CLIPS_PER_HOUR)) { acct.refund(user.id, charge, "clip_refund", "limit-" + crypto.randomUUID()); return json(res, 429, { error: `You've made ${CLIPS_PER_HOUR} AI clips this hour. Wait a bit, then try again.` }); }
+        if (!acct.isAdmin(user) && !allow(owner, clipHits, user.partner ? CLIPS_PER_HOUR * 4 : CLIPS_PER_HOUR)) { acct.refund(user.id, charge, "clip_refund", "limit-" + crypto.randomUUID()); return json(res, 429, { error: `You've made ${CLIPS_PER_HOUR} AI clips this hour. Wait a bit, then try again.` }); }
         let id;
         const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
         const publicBase = process.env.PUBLIC_URL || (process.env.TRUST_PROXY === "1" && /^[\w.-]+(:\d+)?$/.test(host) ? `${String(req.headers["x-forwarded-proto"] || "http").split(",")[0]}://${host}` : "");
@@ -309,7 +321,7 @@ export const server = http.createServer(async (req, res) => {
       assertPublicUrl(url);
       const key = cacheKey(url), hit = cacheGet(key);
       if (!hit) {
-        if (!allow("u" + user.id)) return json(res, 429, { error: `You've imported ${PER_HOUR} listings this hour. Wait a bit, then try again.` });
+        if (!allow("u" + user.id, hits, trusted(user) ? PER_HOUR * 10 : PER_HOUR)) return json(res, 429, { error: `You've imported ${PER_HOUR} listings this hour. Wait a bit, then try again.` });
         // a busy room waits its turn for a few seconds instead of getting an error
         for (let waited = 0; running >= MAX_PARALLEL; waited += 500) {
           if (waited > 90e3) return json(res, 503, { error: "The importer is very busy right now. Try again in a minute." });
@@ -326,7 +338,7 @@ export const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && u.pathname === "/api/ai") {
       const aiUser = needUser(req);
       if (!aiEnabled()) return json(res, 404, { error: "AI isn't set up on this server." });
-      if (!allow("u" + aiUser.id, aiHits, AI_PER_HOUR)) return json(res, 429, { error: `You've used the AI ${AI_PER_HOUR} times this hour. Wait a bit, then try again.` });
+      if (!allow("u" + aiUser.id, aiHits, trusted(aiUser) ? AI_PER_HOUR * 10 : AI_PER_HOUR)) return json(res, 429, { error: `You've used the AI ${AI_PER_HOUR} times this hour. Wait a bit, then try again.` });
       const body = await readJson(req, 25e6);
       return json(res, 200, await runAI(body));
     }
