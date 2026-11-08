@@ -12,6 +12,17 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FIX = path.join(DIR, "fixtures");
 const results = [];
 const check = (name, ok, detail = "") => { results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail !== "" ? `  (${String(detail).slice(0, 160)})` : ""}`); };
+// every page's own JavaScript must parse: one stray character stops the whole Studio from working
+{
+  const vm = await import("node:vm");
+  for (const f of fs.readdirSync(path.join(DIR, "..", "public")).filter(f => f.endsWith(".html"))) {
+    const html = fs.readFileSync(path.join(DIR, "..", "public", f), "utf8");
+    const scripts = [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)].filter(m => !/type=["']?(module|application\/(ld\+)?json)/.test(m[1]));
+    let err = "";
+    for (const m of scripts) { try { new vm.Script(m[2], { filename: f }); } catch (e) { err = `${e.message} near: ${String(e.stack).split("\n")[1] || ""}`.slice(0, 200); break; } }
+    check(`Page script parses: ${f}`, !err, err || `${scripts.length} script(s)`);
+  }
+}
 
 // ---------- fake listing site ----------
 const FX = 18901, MOCK = 18902;
