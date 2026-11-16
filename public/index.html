@@ -398,9 +398,9 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         <label>Your name<input id="tmName" autocomplete="name"></label>
         <label>Your phone<input id="tmPhone" autocomplete="tel"></label>
         <label>Your email<input id="tmEmail" type="email" autocomplete="email"></label>
-        <label>Starting price (Essentials)<input id="tmP1" value="$199"></label>
-        <label>Signature package<input id="tmP2" value="$399"></label>
-        <label>Premium package<input id="tmP3" value="$649"></label>
+        <label>Listing Reel price<input id="tmP1" value="$497"></label>
+        <label>Social Pack price<input id="tmP2" value="$797"></label>
+        <label>Full Launch price<input id="tmP3" value="$1,297"></label>
         <label style="grid-column:1/-1">Link in your scripts<select id="tmLinkMode"><option value="page">My sales page (tracks your referrals)</option><option value="video">A demo video only</option></select></label>
         <label style="grid-column:1/-1">Demo video (when sending a video link)<select id="tmDemo"></select></label>
       </div>
@@ -2543,7 +2543,7 @@ const siteURL=()=>(IMPORT&&IMPORT.publicUrl)||location.origin;   // the real dom
 const mediaURL=(id,ext="mp4")=>`${siteURL()}/media/${id}.${ext}`;
 function toolsMe(){
   const u=(ACCT&&ACCT.user)||{}; let saved={}; try{ saved=JSON.parse(localStorage.getItem("rls-tools-"+(u.email||""))||"{}"); }catch(e){}
-  return {name:saved.name||u.name||"", phone:saved.phone||u.phone||"", email:saved.email||u.email||"", p1:saved.p1||"$199", p2:saved.p2||"$399", p3:saved.p3||"$649", demo:saved.demo||"demo-lakefront-walkthrough", linkMode:saved.linkMode||"page"};
+  return {name:saved.name||u.name||"", phone:saved.phone||u.phone||"", email:saved.email||u.email||"", p1:(saved.p1&&saved.p1!=="$199")?saved.p1:"$497", p2:(saved.p2&&saved.p2!=="$399")?saved.p2:"$797", p3:(saved.p3&&saved.p3!=="$649")?saved.p3:"$1,297", demo:saved.demo||"demo-lakefront-walkthrough", linkMode:saved.linkMode||"page"};
 }
 function saveToolsMe(){
   const u=(ACCT&&ACCT.user)||{}; const me={name:$("#tmName").value.trim(),phone:$("#tmPhone").value.trim(),email:$("#tmEmail").value.trim(),p1:$("#tmP1").value.trim(),p2:$("#tmP2").value.trim(),p3:$("#tmP3").value.trim(),demo:$("#tmDemo").value,linkMode:$("#tmLinkMode").value};
@@ -2561,7 +2561,7 @@ function scriptList(me){
     {t:"Follow-up (3\u20135 days later)",w:"If they haven't replied.",b:`Hi [Agent], following up on the listing video. If you send me the listing link, I'll tell you exactly what you'd get and when it would be ready. No shoot, no scheduling.\n${name} \u00b7 ${phone}`}]},
    {g:"Emails",items:[
     {t:"Intro email",w:"To agents you know or met.",s:`A walkthrough video for [address]?`,b:`Hi [Agent],\n\nI've started making listing walkthrough videos from existing listing photos, no videographer or second visit needed. The rooms come to life: ceiling fans spin, fireplaces flicker, pools ripple, with smooth camera moves, so it looks like it was filmed.\n\nHere's an example: ${demo}\n\nFor each listing you get:\n\u2022 A vertical reel for Instagram, TikTok and Facebook\n\u2022 A branded widescreen video for YouTube and your website\n\u2022 An unbranded version for the MLS\n\u2022 A ready-to-post caption\n\nPackages start at ${me.p1} and are usually ready within 24 hours. Want me to make one for [address] or your next listing?\n\nBest,\n${sig}`},
-    {t:"Packages email",w:"When they ask about pricing.",s:`Listing video packages`,b:`Hi [Agent],\n\nThanks for asking! Here are the listing video packages:\n\n\u2022 Essentials \u2014 ${me.p1}: walkthrough video (up to 10 shots) in vertical, branded widescreen and unbranded MLS versions, plus a post caption. 24 hours.\n\u2022 Signature \u2014 ${me.p2}: up to 20 shots, all 3 versions, 2 extra social reels, \u201cJust Listed\u201d and \u201cOpen House\u201d cuts, 3 Facebook/Instagram ad copy variations, 1 revision round. 24 hours.\n\u2022 Premium \u2014 ${me.p3}: everything in Signature plus 5 extra reels, a \u201cJust Sold\u201d cut, 5 ad copy variations with hashtags, 2 revision rounds and top-of-the-queue 24-hour delivery.\n\nAll I need is the listing link or the photos. Example video: ${demo}\n\nWhich package fits your next listing?\n\n${sig}`},
+    {t:"Packages email",w:"When they ask about pricing.",s:`Listing video packages`,b:`Hi [Agent],\n\nThanks for asking! Here are the listing video packages:\n\n\u2022 Listing Reel \u2014 ${me.p1}: walkthrough video (up to 10 shots) in vertical, branded widescreen and unbranded MLS versions, plus a post caption. 24 hours.\n\u2022 Social Pack \u2014 ${me.p2}: up to 20 shots, all 3 versions, 2 extra social reels, \u201cJust Listed\u201d and \u201cOpen House\u201d cuts, 3 Facebook/Instagram ad copy variations, 1 revision round. 24 hours.\n\u2022 Full Launch \u2014 ${me.p3}: everything in the Social Pack plus 5 extra reels, a \u201cJust Sold\u201d cut, 5 ad copy variations with hashtags, 2 revision rounds and top-of-the-queue 24-hour delivery.\n\nAll I need is the listing link or the photos. Example video: ${demo}\n\nWhich package fits your next listing?\n\n${sig}`},
     {t:"Follow-up email",w:"A week after the intro.",s:`Re: A walkthrough video for [address]?`,b:`Hi [Agent],\n\nJust bumping this up. Listings with video tend to get more attention on social, and this takes nothing from you but the listing link.\n\nHappy to answer any questions. Example again: ${demo}\n\n${sig}`}]},
    {g:"Facebook Messenger & Instagram DMs",items:[
     {t:"Friendly DM",w:"To agents you're connected with.",b:`Hey [Agent]! Saw your listings and had to reach out. I make walkthrough videos from listing photos (fans spinning, fireplaces on, smooth camera moves) for Reels, YouTube and the MLS. Here's one: ${demo}\n\nWould you want one for your next listing? \u2013 ${first}`},
