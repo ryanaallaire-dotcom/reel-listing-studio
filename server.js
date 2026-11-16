@@ -28,7 +28,7 @@ const CLIPS_PER_HOUR = +process.env.CLIPS_PER_HOUR || 30;       // per visitor â
 const MAX_CLIPS_PER_VIDEO = +process.env.MAX_CLIPS_PER_VIDEO || 6;
 const DEPTH_MODEL = path.join(DIR, "public", "models", "depth_q8.onnx");
 const STATIC = { "/vendor/": path.join(DIR, "public", "vendor"), "/models/": path.join(DIR, "public", "models"), "/media/": path.join(DIR, "public", "media") };
-const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".onnx": "application/octet-stream", ".mp4": "video/mp4", ".jpg": "image/jpeg" };
+const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".onnx": "application/octet-stream", ".mp4": "video/mp4", ".jpg": "image/jpeg", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
 
 const STUDIO = path.join(DIR, "public", "index.html");
 const SKELETON_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>`;
@@ -89,6 +89,10 @@ export const server = http.createServer(async (req, res) => {
     const canon = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
     if (canon && (req.method === "GET" || req.method === "HEAD") && /\.onrender\.com$/i.test(String(req.headers.host || "").split(":")[0]) && !u.pathname.startsWith("/api/")) {
       res.writeHead(301, { location: canon + u.pathname + u.search }); return res.end();
+    }
+    if ((req.method === "GET" || req.method === "HEAD") && (u.pathname === "/favicon.ico" || u.pathname === "/apple-touch-icon.png")) {
+      const f = u.pathname === "/favicon.ico" ? "favicon.ico" : "apple-touch-icon.png";
+      res.writeHead(200, { "content-type": f.endsWith(".ico") ? "image/x-icon" : "image/png", "cache-control": "public, max-age=86400" }); return res.end(fs.readFileSync(path.join(DIR, "public", "media", f)));
     }
     if (req.method === "GET" && (u.pathname === "/privacy" || u.pathname === "/privacy/")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" }); return res.end(fs.readFileSync(path.join(DIR, "public", "privacy.html")));
