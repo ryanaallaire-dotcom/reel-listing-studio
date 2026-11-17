@@ -267,6 +267,32 @@ html{scroll-behavior:smooth}
 .pcard a{color:#F2A541;font-weight:700;text-decoration:none;font-size:17px}
 .ribbon a{color:inherit;font-weight:700}
 footer a{color:inherit}
+/* sales assistant */
+.qa-btn{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;align-items:center;gap:8px;background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:13px 18px;font:700 15px var(--body);cursor:pointer;box-shadow:0 12px 30px -10px rgba(0,0,0,.45)}
+.qa-btn i{width:9px;height:9px;border-radius:50%;background:#F06A55;display:inline-block}
+body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+.qa{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:31;width:min(390px,calc(100vw - 32px));height:min(600px,calc(100dvh - 40px));display:flex;flex-direction:column;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5);overflow:hidden}
+.qa[hidden]{display:none}
+.qa-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:var(--band);color:var(--on-band)}
+.qa-head b{font-family:var(--display);text-transform:uppercase;font-weight:600;font-size:19px;letter-spacing:.02em}
+.qa-head span{display:block;font-size:13px;color:var(--band-muted)}
+.qa-head button{background:none;border:0;color:inherit;font-size:24px;cursor:pointer;line-height:1;padding:4px}
+.qa-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.qa-m{max-width:88%;padding:10px 13px;border-radius:16px;font-size:15px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.qa-m.bot{background:var(--paper);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:6px}
+.qa-m.me{background:var(--amber);color:var(--on-amber);align-self:flex-end;border-bottom-right-radius:6px}
+.qa-m.dots{color:var(--muted)}
+.qa-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.qa-chips button{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 11px;font:500 13px var(--body);cursor:pointer}
+.qa-chips button:hover{border-color:var(--amber)}
+.qa-cta{display:flex;gap:8px;padding:0 16px 10px}
+.qa-cta a{flex:1;text-align:center;font-size:14px;font-weight:700;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px}
+.qa-cta a.go{background:var(--amber);border-color:var(--amber);color:var(--on-amber)}
+.qa-form{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.qa-form input{flex:1;min-width:0;border-radius:999px;padding:11px 15px}
+.qa-form button{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:0 16px;font:700 15px var(--body);cursor:pointer}
+.qa-note{font-size:11px;color:var(--muted);padding:0 16px 8px;text-align:center}
+@media (max-width:520px){.qa{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0}}
 </style>
 </head>
 <body>
@@ -564,6 +590,16 @@ footer a{color:inherit}
 
 <div class="sticky" id="sticky"><a class="btn btn-primary" href="#request" id="stickyBtn">Get my listing video, from $497</a></div>
 
+
+<button class="qa-btn" id="qaOpen" type="button" aria-haspopup="dialog"><i aria-hidden="true"></i>Questions? Ask us</button>
+<div class="qa" id="qa" role="dialog" aria-label="Ask a question" hidden>
+  <div class="qa-head"><div><b>Ask us anything</b><span>MLS, pricing, photos, how it works</span></div><button type="button" id="qaClose" aria-label="Close">×</button></div>
+  <div class="qa-log" id="qaLog" aria-live="polite"></div>
+  <div class="qa-chips" id="qaChips"></div>
+  <div class="qa-cta"><a class="go" href="#request" id="qaGo">Send my listing</a><a id="qaCall" href="tel:+17152226776">Call or text</a></div>
+  <form class="qa-form" id="qaForm"><input id="qaIn" maxlength="600" autocomplete="off" placeholder="Type your question…" aria-label="Your question"><button type="submit">Send</button></form>
+  <p class="qa-note">Answers from our assistant. Confirm MLS and brokerage rules with your MLS or broker.</p>
+</div>
 <script>
 // ===== Site settings: fill these in and the matching lines appear on the page (empty = hidden) =====
 const SITE = {
@@ -680,6 +716,49 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
     sticky.classList.toggle("on", past && !atForm);
   }
   addEventListener("scroll", onScroll, {passive:true}); onScroll();
+})();
+</script>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var box=$("qa"), log=$("qaLog"), input=$("qaIn"), chips=$("qaChips"), msgs=[], busy=false;
+  var partner = (typeof REF!=="undefined" && REF && REF.name) ? REF.name : "";
+  if(typeof REF!=="undefined" && REF && REF.phone){ var d=String(REF.phone).replace(/\D/g,""); if(d.length>=10) $("qaCall").href="tel:+1"+d.slice(-10); $("qaCall").textContent="Call or text "+partner.split(" ")[0]; }
+  var Q=["Does it go on the MLS?","Will the MLS block it?","Is it misleading to buyers?","What does it cost?","How fast do I get it?","What photos do you need?","Can I run ads with it?","Do I need the photographer's OK?"];
+  // answers used if the assistant is offline or busy (same facts as the page)
+  var FAQ=[
+    [/mls|multiple listing|virtual tour/i, /block|reject|allow|rule|ban|branding|brand/i, "Every package includes an unbranded MLS version with no name, logo, phone or brokerage, which is what most MLSs require for video and virtual-tour fields. You (or your admin) add it to your MLS's video or virtual tour field like any listing video; many MLSs take a YouTube or Vimeo link. Rules vary by market, so check your MLS's media rules."],
+    [/mls|multiple listing|virtual tour/i, null, "Yes. Every package includes an unbranded, MLS-ready version with no names, logos or contact info. You add it to your MLS's video or virtual tour field like any listing video. MLS rules vary, so check yours."],
+    [/price|cost|how much|\$|package|expensive|cheap/i, null, "Listing Reel $497 (up to 10 photos), Social Pack $797 (up to 20 photos, extra reels, Just Listed and Open House cuts, 1 revision), Full Launch $1,297 (adds ads built and launched for you, Just Sold cut, 2 revisions). All include vertical, widescreen and MLS versions. Sending the form is free, and nothing is charged until you approve the invoice."],
+    [/fast|long|turnaround|when|rush|24/i, null, "24 hours for every package, and Full Launch goes to the top of the queue. Need it sooner? 12-hour rush is $149."],
+    [/fake|mislead|real|honest|ai|disclos|ethic|fair housing/i, null, "Nothing is added to or removed from the property. Every frame comes from your actual listing photos; we only add motion like a fan turning or a fire flickering, plus camera movement. You can add “Motion enhanced from listing photos” to the caption, and we'll include it if you ask."],
+    [/photo|picture|image|quality|phone|drone/i, /copyright|own|license|permission|photographer/i, "Listing photos are usually licensed to you for marketing the listing, and a marketing video for that same listing is normally within that use. If you're unsure, check your photographer's license. We only use the photos to make your video."],
+    [/photo|picture|image|quality|phone|drone|how many/i, null, "Professional listing photos work best: bright, sharp and horizontal, ideally 10 to 25. Drone and twilight shots look great. We review your photos before you pay and tell you up front if they won't make a great video."],
+    [/ad|boost|facebook|instagram|own|use|post/i, null, "It's yours to post anywhere, boost, run as an ad and use in listing presentations. On your first listing we'll also build and launch a live Meta ad with your video, free setup; you approve it first and choose the budget, paid straight to Meta."],
+    [/change|revis|edit|fix|redo/i, null, "The Social Pack includes 1 revision and the Full Launch 2. On the Listing Reel we fix anything that's our mistake, like a frozen shot or a wrong detail, at no charge."],
+    [/airbnb|vrbo|rental|short.?term/i, null, "Yes, it works great for short-term rentals. There's a dedicated Airbnb or VRBO version for $149."],
+    [/videographer|compare|vs/i, null, "A videographer bills for the drive, the shoot day and each extra cut, and booking can take weeks. We work from the photos you already have, deliver in 24 hours, and include vertical, widescreen and MLS versions plus a caption."]
+  ];
+  function local(q){ for(var i=0;i<FAQ.length;i++){ var f=FAQ[i]; if(f[0].test(q)&&(!f[1]||f[1].test(q))) return f[2]; } return "Good question. I don't want to guess on that one. Call or text (715) 222-6776, email support@advancemarketinggroup.net, or send your listing on the form and we'll answer within one business day."; }
+  function add(role,text){ var d=document.createElement("div"); d.className="qa-m "+(role==="user"?"me":"bot"); d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+  function drawChips(){ chips.innerHTML=""; Q.forEach(function(q){ var b=document.createElement("button"); b.type="button"; b.textContent=q; b.onclick=function(){ ask(q); }; chips.appendChild(b); }); }
+  function ask(q){
+    q=String(q||"").trim(); if(!q||busy) return; busy=true; chips.innerHTML="";
+    add("user",q); msgs.push({role:"user",content:q});
+    var wait=add("bot","…"); wait.classList.add("dots");
+    fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:msgs,partner:partner})})
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok||!j.text) throw new Error(j.error||"x"); return j.text; }); })
+      .catch(function(){ return local(q); })
+      .then(function(a){ wait.classList.remove("dots"); wait.textContent=a; msgs.push({role:"assistant",content:a}); log.scrollTop=log.scrollHeight; busy=false; if(msgs.length<=2) drawChips(); });
+  }
+  function open(){ box.hidden=false; $("qaOpen").hidden=true; if(!log.children.length){ add("bot","Hi! Ask me anything about the walkthrough videos: MLS, pricing, photos, turnaround or how it works."+(partner?" You can also reach "+partner+" directly.":"")); drawChips(); } setTimeout(function(){ input.focus(); },50); }
+  function close(){ box.hidden=true; $("qaOpen").hidden=false; }
+  $("qaOpen").onclick=open; $("qaClose").onclick=close; $("qaGo").onclick=close;
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&!box.hidden) close(); });
+  $("qaForm").onsubmit=function(e){ e.preventDefault(); var v=input.value; input.value=""; ask(v); };
+  // keep the button clear of the sticky phone CTA
+  var st=$("sticky"); if(st&&window.MutationObserver){ var sync=function(){ document.body.classList.toggle("sticky-on",st.classList.contains("on")); }; new MutationObserver(sync).observe(st,{attributes:true,attributeFilter:["class"]}); sync(); }
 })();
 </script>
 </body>

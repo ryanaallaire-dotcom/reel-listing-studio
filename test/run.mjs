@@ -12,6 +12,12 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FIX = path.join(DIR, "fixtures");
 const results = [];
 const check = (name, ok, detail = "") => { results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail !== "" ? `  (${String(detail).slice(0, 160)})` : ""}`); };
+// sales-page assistant: knows the key MLS and pricing facts, and never mentions the self-serve tool
+{
+  const { FACTS } = await import("../lib/chat.js");
+  check("Chat: knows the MLS answer and current prices", /unbranded MLS-ready version/.test(FACTS) && /\$497/.test(FACTS) && /\$797/.test(FACTS) && /\$1,297/.test(FACTS));
+  check("Chat: no self-serve pricing or old prices in its facts", !/\$199|\$399|\$649|credits|Studio app|self-serve/i.test(FACTS));
+}
 // every page's own JavaScript must parse: one stray character stops the whole Studio from working
 {
   const vm = await import("node:vm");

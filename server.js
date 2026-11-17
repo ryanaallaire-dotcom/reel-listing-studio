@@ -12,6 +12,7 @@ import { importListing } from "./lib/import.js";
 import { providerInfo } from "./lib/providers.js";
 import { assertPublicUrl, plainFetch } from "./lib/safe-fetch.js";
 import { runAI, aiEnabled } from "./lib/ai.js";
+import { chatReply } from "./lib/chat.js";
 import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel, clipSource, premiumEnabled } from "./lib/clips.js";
 import * as acct from "./lib/accounts.js";
 import { paypalEnabled, ensureSetup, clientConfig, confirmSubscription, cancelSubscription, createTopup, captureTopup, handleWebhook } from "./lib/paypal.js";
@@ -48,7 +49,7 @@ const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__
 const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!doctype/i.test(body) ? body : SKELETON_HEAD + body + "</body></html>"; };
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
-const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map(); const shortHits = new Map();
+const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map(); const shortHits = new Map(); const chatHits = new Map(), chatDay = { d: "", n: 0 };
 const reloadHits = new Map(), emailHits = new Map(), leadHits = new Map();
 const AUTH_PER_IP = +process.env.AUTH_PER_IP || 300;   // a workshop room shares one Wi-Fi address
 // check a limit without counting this request (used where only failures should count)
@@ -338,6 +339,17 @@ export const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/zip", "content-length": out.zip.length, "x-photo-count": out.count, "x-import-via": out.via, "cache-control": "no-store",
         "content-disposition": "attachment; filename=listing.zip" });
       return res.end(out.zip);
+    }
+    // sales-page assistant: open to visitors, limited per IP and per day so it can't run up the bill
+    if (req.method === "POST" && u.pathname === "/api/chat") {
+      if (!allow(clientIp(req), chatHits, +process.env.CHAT_PER_HOUR || 40)) return json(res, 429, { error: "chat-limit" });
+      const day = new Date().toISOString().slice(0, 10);
+      if (chatDay.d !== day) { chatDay.d = day; chatDay.n = 0; }
+      if (++chatDay.n > (+process.env.CHAT_PER_DAY || 3000)) return json(res, 429, { error: "chat-limit" });
+      const body = await readJson(req, 40000);
+      const last = Array.isArray(body.messages) ? String(body.messages[body.messages.length - 1]?.content || "").slice(0, 200) : "";
+      console.log("sales chat:", JSON.stringify(last));
+      return json(res, 200, await chatReply(body));
     }
     if (req.method === "POST" && u.pathname === "/api/ai") {
       const aiUser = needUser(req);
