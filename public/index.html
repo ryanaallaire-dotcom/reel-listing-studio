@@ -394,7 +394,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
       </div>
     </div>
     <div id="toolsMe" class="tools-pane" hidden>
-      <p class="small">These fill in every script. They're saved on this device.</p>
+      <p class="small">These fill in every script. Your name, phone and prices are saved to your account and show on your sales page, its request form and its question assistant.</p>
       <div class="tools-form">
         <label>Your name<input id="tmName" autocomplete="name"></label>
         <label>Your phone<input id="tmPhone" autocomplete="tel"></label>
@@ -405,6 +405,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         <label style="grid-column:1/-1">Link in your scripts<select id="tmLinkMode"><option value="page">My sales page (tracks your referrals)</option><option value="video">A demo video only</option></select></label>
         <label style="grid-column:1/-1">Demo video (when sending a video link)<select id="tmDemo"></select></label>
       </div>
+      <p class="small" id="tmStatus" aria-live="polite" style="margin-top:8px"></p>
     </div>
   </div>
 </dialog>
@@ -2544,14 +2545,24 @@ const DEMO_VIDEOS=[
   {id:"example-luxury-dallas",t:"Example: luxury home tour (Dallas)",d:"Short luxury tour for inspiration. Show it as the look agents can get, not as a video of their listing."}];
 const siteURL=()=>(IMPORT&&IMPORT.publicUrl)||location.origin;   // the real domain, even when opened on an old address
 const mediaURL=(id,ext="mp4")=>`${siteURL()}/media/${id}.${ext}`;
+const money=n=>"$"+Number(n).toLocaleString("en-US");
 function toolsMe(){
-  const u=(ACCT&&ACCT.user)||{}; let saved={}; try{ saved=JSON.parse(localStorage.getItem("rls-tools-"+(u.email||""))||"{}"); }catch(e){}
-  return {name:saved.name||u.name||"", phone:saved.phone||u.phone||"", email:saved.email||u.email||"", p1:(saved.p1&&saved.p1!=="$199")?saved.p1:"$497", p2:(saved.p2&&saved.p2!=="$399")?saved.p2:"$797", p3:(saved.p3&&saved.p3!=="$649")?saved.p3:"$1,297", demo:saved.demo||"demo-lakefront-walkthrough", linkMode:saved.linkMode||"page"};
+  const u=(ACCT&&ACCT.user)||{}; const SP=(Array.isArray(u.prices)&&u.prices.length===3)?u.prices:[497,797,1297]; let saved={}; try{ saved=JSON.parse(localStorage.getItem("rls-tools-"+(u.email||""))||"{}"); }catch(e){}
+  return {name:saved.name||u.name||"", phone:saved.phone||u.phone||"", email:saved.email||u.email||"", p1:money(SP[0]), p2:money(SP[1]), p3:money(SP[2]), demo:saved.demo||"demo-lakefront-walkthrough", linkMode:saved.linkMode||"page"};
 }
 function saveToolsMe(){
   const u=(ACCT&&ACCT.user)||{}; const me={name:$("#tmName").value.trim(),phone:$("#tmPhone").value.trim(),email:$("#tmEmail").value.trim(),p1:$("#tmP1").value.trim(),p2:$("#tmP2").value.trim(),p3:$("#tmP3").value.trim(),demo:$("#tmDemo").value,linkMode:$("#tmLinkMode").value};
   try{ localStorage.setItem("rls-tools-"+(u.email||""),JSON.stringify(me)); }catch(e){}
   renderScripts();
+  // name, phone and prices also go to the account, so they show on the partner's sales page, form and question assistant
+  if(u.partner){ clearTimeout(saveToolsMe.t); const st=$("#tmStatus"); st.className="small"; st.textContent="Saving\u2026";
+    saveToolsMe.t=setTimeout(async()=>{
+      const prices=[me.p1,me.p2,me.p3].map(v=>Math.round(Number(String(v).replace(/[^\d.]/g,""))));
+      try{ const r=await fetch("/api/partner/profile",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:me.name,phone:me.phone,prices})}); const j=await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(j.error||"Couldn't save.");
+        u.prices=j.prices; u.name=j.name; u.phone=j.phone; st.className="small ok"; st.textContent=j.prices?`Saved. Your sales page now shows ${j.prices.map(money).join(" / ")}.`:"Saved. Your sales page shows the standard prices."; }
+      catch(e){ st.className="small warn"; st.textContent=e.message; }
+    },900); }
 }
 const fmtPhone=p=>{ const d=String(p||"").replace(/\D/g,""); return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:d.length===11&&d[0]==="1"?`(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`:String(p||""); };
 function scriptList(me){

@@ -45,7 +45,7 @@ function refCookie(req, res, code) {
   res.setHeader("set-cookie", `rls_ref=${p.code}; Max-Age=${REF_DAYS * 86400}; Path=/; SameSite=Lax${SECURE ? "; Secure" : ""}`);
   return p;
 }
-const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code } : null).replace(/</g, "\\u003c"));
+const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, prices: partner.prices } : null).replace(/</g, "\\u003c"));
 const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!doctype/i.test(body) ? body : SKELETON_HEAD + body + "</body></html>"; };
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
@@ -202,6 +202,10 @@ export const server = http.createServer(async (req, res) => {
       if (req.method === "POST" && u.pathname === "/api/account/topup/capture") {
         const user = needUser(req); const { orderID } = await readJson(req); return json(res, 200, { user: meJson(await captureTopup(user, orderID)) });
       }
+      if (u.pathname === "/api/partner/profile" && req.method === "POST") {
+        const user = needUser(req);
+        return json(res, 200, acct.setPartnerProfile(user, await readJson(req)));
+      }
       if (u.pathname === "/api/partner/link" && req.method === "POST") {
         const user = needUser(req); const { code } = await readJson(req);
         return json(res, 200, { code: acct.setRefCode(user, code) });
@@ -349,7 +353,8 @@ export const server = http.createServer(async (req, res) => {
       const body = await readJson(req, 40000);
       const last = Array.isArray(body.messages) ? String(body.messages[body.messages.length - 1]?.content || "").slice(0, 200) : "";
       console.log("sales chat:", JSON.stringify(last));
-      return json(res, 200, await chatReply(body));
+      const ref = body.ref ? acct.partnerByRef(String(body.ref)) : null;
+      return json(res, 200, await chatReply({ messages: body.messages, partner: ref ? ref.name : "", prices: ref ? ref.prices : null }));
     }
     if (req.method === "POST" && u.pathname === "/api/ai") {
       const aiUser = needUser(req);

@@ -12,6 +12,13 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FIX = path.join(DIR, "fixtures");
 const results = [];
 const check = (name, ok, detail = "") => { results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail !== "" ? `  (${String(detail).slice(0, 160)})` : ""}`); };
+// partners set their own package prices
+{
+  const A = await import("../lib/accounts.js");
+  let bad = ""; try { A.setPartnerProfile({ id: 1, partner: 0 }, { prices: [1, 2, 3] }); } catch (e) { bad = e.message; }
+  check("Prices: only partners can set their own prices", /Only partners/.test(bad));
+  check("Prices: stored prices are read back safely", JSON.stringify(A.readPrices("[597,997,1497]")) === "[597,997,1497]" && A.readPrices("junk") === null && A.readPrices("[1,2]") === null);
+}
 // sales-page assistant: knows the key MLS and pricing facts, and never mentions the self-serve tool
 {
   const { FACTS } = await import("../lib/chat.js");

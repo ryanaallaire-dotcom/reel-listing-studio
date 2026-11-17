@@ -356,9 +356,9 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   <div class="receipt" aria-label="Cost comparison for one listing">
     <div class="row"><span>Videographer, listing video + social cuts + MLS + re-edits</span><span>$1,200–2,400</span></div>
     <div class="row"><span>Wait to book</span><span>weeks</span></div>
-    <div class="row tot"><span>Reel Listing Studio, Social Pack</span><span>$797</span></div>
+    <div class="row tot"><span>Reel Listing Studio, Social Pack</span><span id="rcptPrice">$797</span></div>
     <div class="row"><span>Wait</span><span>24 hours</span></div>
-    <div class="bignum">Up to −$1,600</div>
+    <div class="bignum" id="rcptSave">Up to −$1,600</div>
     <span>saved on one listing, plus weeks of waiting</span>
   </div>
 </div></section>
@@ -399,7 +399,7 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   <div class="tbl"><table>
     <thead><tr><th scope="col"></th><th scope="col">Hiring a videographer</th><th scope="col">Reel Listing Studio</th></tr></thead>
     <tbody>
-      <tr><th scope="row">Cost per listing</th><td>$250–$600 for one walkthrough. Published rates run $350 for a single 30-second vertical. Social cuts and MLS versions cost extra.</td><td class="us">From $497, with all 3 versions, the caption and re-dos included. No extras added on.</td></tr>
+      <tr><th scope="row">Cost per listing</th><td>$250–$600 for one walkthrough. Published rates run $350 for a single 30-second vertical. Social cuts and MLS versions cost extra.</td><td class="us"><span data-std-price>From $497. </span>All 3 versions, the caption and re-dos included. No extras added on.</td></tr>
       <tr><th scope="row">Scheduling</th><td>Book a date, then prep and stage the home a second time</td><td class="us">Nothing to book. Send the link.</td></tr>
       <tr><th scope="row">Turnaround</th><td>Days to a week or more</td><td class="us">24 hours (12 with rush)</td></tr>
       <tr><th scope="row">Versions</th><td>Usually one edit</td><td class="us">Vertical, widescreen and MLS-ready</td></tr>
@@ -627,6 +627,18 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
   // who referred this visitor (the server keeps the 90-day credit)
   var ref = REF && REF.code ? REF : null, name = ref && ref.name, first = name ? name.split(" ")[0] : "";
   var contactPhone = (ref && ref.phone) || SITE.phone;
+  // the partner's own package prices, if they've set them
+  if(ref && Array.isArray(ref.prices) && ref.prices.length===3){
+    var money=function(n){ return "$"+Number(n).toLocaleString("en-US"); }, P=ref.prices, names=["Listing Reel","Social Pack","Full Launch"];
+    document.querySelectorAll(".amt[data-tier]").forEach(function(el){ var v=P[+el.getAttribute("data-tier")]; if(v) el.textContent=money(v); });
+    var opts=$("fPkg").options; for(var k=0;k<3;k++) if(opts[k+1]) opts[k+1].text=names[k]+" "+money(P[k]);
+    $("fromPrice").textContent="From "+money(Math.min(P[0],P[1],P[2]));
+    $("rcptPrice").textContent=money(P[1]);
+    var save=2400-P[1]; if(save>=100) $("rcptSave").textContent="Up to −"+money(Math.floor(save/100)*100); else { $("rcptSave").parentNode.removeChild($("rcptSave")); }
+    $("stickyBtn").textContent="Get my listing video, from "+money(Math.min(P[0],P[1],P[2]));
+    if(name) $("priceNote").textContent="Pricing from "+name+", who referred you.";
+    document.querySelectorAll("[data-std-price]").forEach(function(el){ el.parentNode.removeChild(el); });
+  }
   if(ref){
     $("fRef").value = ref.code;
     $("ribbon").hidden = false;
@@ -740,6 +752,8 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
     [/airbnb|vrbo|rental|short.?term/i, null, "Yes, it works great for short-term rentals. There's a dedicated Airbnb or VRBO version for $149."],
     [/videographer|compare|vs/i, null, "A videographer bills for the drive, the shoot day and each extra cut, and booking can take weeks. We work from the photos you already have, deliver in 24 hours, and include vertical, widescreen and MLS versions plus a caption."]
   ];
+  if(typeof REF!=="undefined"&&REF&&Array.isArray(REF.prices)&&REF.prices.length===3){ var m=function(n){return "$"+Number(n).toLocaleString("en-US");}, P=REF.prices;
+    FAQ.forEach(function(f){ if(/Listing Reel \$497/.test(f[2])) f[2]="Listing Reel "+m(P[0])+" (up to 10 photos), Social Pack "+m(P[1])+" (up to 20 photos, extra reels, Just Listed and Open House cuts, 1 revision), Full Launch "+m(P[2])+" (adds ads built and launched for you, Just Sold cut, 2 revisions). All include vertical, widescreen and MLS versions. Sending the form is free, and nothing is charged until you approve the invoice."; }); }
   function local(q){ for(var i=0;i<FAQ.length;i++){ var f=FAQ[i]; if(f[0].test(q)&&(!f[1]||f[1].test(q))) return f[2]; } return "Good question. I don't want to guess on that one. Call or text (715) 222-6776, email support@advancemarketinggroup.net, or send your listing on the form and we'll answer within one business day."; }
   function add(role,text){ var d=document.createElement("div"); d.className="qa-m "+(role==="user"?"me":"bot"); d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
   function drawChips(){ chips.innerHTML=""; Q.forEach(function(q){ var b=document.createElement("button"); b.type="button"; b.textContent=q; b.onclick=function(){ ask(q); }; chips.appendChild(b); }); }
@@ -747,7 +761,7 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
     q=String(q||"").trim(); if(!q||busy) return; busy=true; chips.innerHTML="";
     add("user",q); msgs.push({role:"user",content:q});
     var wait=add("bot","…"); wait.classList.add("dots");
-    fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:msgs,partner:partner})})
+    fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:msgs,ref:(typeof REF!=="undefined"&&REF&&REF.code)||""})})
       .then(function(r){ return r.json().then(function(j){ if(!r.ok||!j.text) throw new Error(j.error||"x"); return j.text; }); })
       .catch(function(){ return local(q); })
       .then(function(a){ wait.classList.remove("dots"); wait.textContent=a; msgs.push({role:"assistant",content:a}); log.scrollTop=log.scrollHeight; busy=false; if(msgs.length<=2) drawChips(); });
