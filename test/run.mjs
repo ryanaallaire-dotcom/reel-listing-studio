@@ -30,8 +30,8 @@ const check = (name, ok, detail = "") => { results.push(`${ok ? "PASS" : "FAIL"}
 // sales-page assistant: knows the key MLS and pricing facts, and never mentions the self-serve tool
 {
   const { FACTS } = await import("../lib/chat.js");
-  check("Chat: knows the MLS answer and current prices", /unbranded MLS-ready version/.test(FACTS) && /\$497/.test(FACTS) && /\$797/.test(FACTS) && /\$1,297/.test(FACTS));
-  check("Chat: no self-serve pricing or old prices in its facts", !/\$199|\$399|\$649|credits|Studio app|self-serve/i.test(FACTS));
+  check("Chat: knows the MLS answer and sends pricing to the agent", /unbranded MLS-ready version/.test(FACTS) && /QUOTED PERSONALLY/.test(FACTS));
+  check("Chat: has no package prices to quote", !/\$(199|399|497|649|797|1,297|99|149)\b|credits|Studio app|self-serve/i.test(FACTS));
 }
 // every page's own JavaScript must parse: one stray character stops the whole Studio from working
 {

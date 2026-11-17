@@ -394,7 +394,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
       </div>
     </div>
     <div id="toolsMe" class="tools-pane" hidden>
-      <p class="small">These fill in every script. Your name, phone and prices are saved to your account and show on your sales page, its request form and its question assistant.</p>
+      <p class="small">These fill in every script and are saved to your account. Your sales page doesn't list prices: it says <b>"Contact [your first name] for pricing"</b> and points agents to your phone and form, so you quote each listing yourself. The prices below are your own reference and appear only in your scripts.</p>
       <div class="tools-form">
         <label>Your name<input id="tmName" autocomplete="name"></label>
         <label>Your phone<input id="tmPhone" autocomplete="tel"></label>
@@ -2571,7 +2571,7 @@ function saveToolsMe(){
       const prices=[me.p1,me.p2,me.p3].map(v=>Math.round(Number(String(v).replace(/[^\d.]/g,""))));
       try{ const r=await fetch("/api/partner/profile",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:me.name,phone:me.phone,prices})}); const j=await r.json().catch(()=>({}));
         if(!r.ok) throw new Error(j.error||"Couldn't save.");
-        u.prices=j.prices; u.name=j.name; u.phone=j.phone; st.className="small ok"; st.textContent=j.prices?`Saved. Your sales page now shows ${j.prices.map(money).join(" / ")}.`:"Saved. Your sales page shows the standard prices."; }
+        u.prices=j.prices; u.name=j.name; u.phone=j.phone; st.className="small ok"; st.textContent="Saved."; }
       catch(e){ st.className="small warn"; st.textContent=e.message; }
     },900); }
 }

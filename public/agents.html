@@ -6,7 +6,7 @@
 <link rel="icon" href="/media/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="apple-touch-icon" href="/media/apple-touch-icon.png">
 <title>Reel Listing Studio for Agents</title>
 <meta name="description" content="Send a listing link. Get a walkthrough video that looks shot on site, in vertical, widescreen and MLS-ready versions. Nothing charged until you approve.">
-<meta property="og:title" content="Your listing photos, filmed. In 24 hours, from $497.">
+<meta property="og:title" content="Your listing photos, filmed. In 24 hours.">
 <meta property="og:description" content="Send a listing link. Get a walkthrough video that looks shot on site, in vertical, widescreen and MLS-ready versions. Nothing charged until you approve.">
 <meta property="og:image" content="/media/walk-still.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -137,6 +137,7 @@ figure{margin:0}
 .how-copy{min-width:0}.how .steps{grid-template-columns:1fr;gap:22px;margin-top:28px}
 .clip.mini{flex-direction:row;align-items:center;gap:14px;padding:12px;border-radius:14px;background:var(--amber-soft)}.clip.mini .frame{flex:0 0 72px;aspect-ratio:9/16;border-radius:10px}.clip.mini video{object-fit:cover}
 .price span.amt{font:inherit;color:inherit}
+.price.ask{font-size:inherit;line-height:1.3}.ask-link{display:inline-block;font:700 19px var(--body);color:var(--amber);text-decoration:none;border-bottom:2px solid currentColor;padding-bottom:2px}
 .faq a,.under a{color:inherit}
 /* founder */
 .founder .wrap{display:grid;grid-template-columns:160px 1fr;gap:36px;align-items:start}
@@ -227,6 +228,7 @@ html{scroll-behavior:smooth}
 @media (max-width:900px){.yes .dms{grid-template-columns:1fr}.faces{grid-template-columns:1fr 1fr}}
 @media (max-width:520px){.faces{grid-template-columns:1fr}}
 .hide{display:none!important}
+.offer[hidden]{display:none}
 .offer{background:var(--band);color:var(--on-band);border-radius:18px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:24px}
 .offer b{font-family:var(--display);text-transform:uppercase;font-size:24px;font-weight:600;letter-spacing:.01em;color:#F2A541}
 .offer p{color:var(--band-muted);font-size:15px;margin-top:2px}
@@ -330,7 +332,7 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="stats">
       <div><b>24 hrs</b><span>standard turnaround</span></div>
       <div><b>3 versions</b><span>vertical, widescreen, MLS</span></div>
-      <div><b id="fromPrice">From $497</b><span>per listing, no subscription</span></div>
+      <div><b id="fromPrice">Your quote</b><span>per listing, no subscription</span></div>
     </div>
   </div>
   <div class="cam">
@@ -363,10 +365,10 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   <div class="receipt" aria-label="Cost comparison for one listing">
     <div class="row"><span>Videographer, listing video + social cuts + MLS + re-edits</span><span>$1,200–2,400</span></div>
     <div class="row"><span>Wait to book</span><span>weeks</span></div>
-    <div class="row tot"><span>Reel Listing Studio, Social Pack</span><span id="rcptPrice">$797</span></div>
+    <div class="row tot"><span>Reel Listing Studio, Social Pack</span><span id="rcptPrice">a fraction of that</span></div>
     <div class="row"><span>Wait</span><span>24 hours</span></div>
-    <div class="bignum" id="rcptSave">Up to −$1,600</div>
-    <span>saved on one listing, plus weeks of waiting</span>
+    <div class="bignum" id="rcptSave">Weeks → 24 hrs</div>
+    <span>and far less per listing</span>
   </div>
 </div></section>
 
@@ -406,7 +408,7 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   <div class="tbl"><table>
     <thead><tr><th scope="col"></th><th scope="col">Hiring a videographer</th><th scope="col">Reel Listing Studio</th></tr></thead>
     <tbody>
-      <tr><th scope="row">Cost per listing</th><td>$250–$600 for one walkthrough. Published rates run $350 for a single 30-second vertical. Social cuts and MLS versions cost extra.</td><td class="us"><span data-std-price>From $497. </span>All 3 versions, the caption and re-dos included. No extras added on.</td></tr>
+      <tr><th scope="row">Cost per listing</th><td>$250–$600 for one walkthrough. Published rates run $350 for a single 30-second vertical. Social cuts and MLS versions cost extra.</td><td class="us">All 3 versions, the caption and re-dos included. No extras added on.</td></tr>
       <tr><th scope="row">Scheduling</th><td>Book a date, then prep and stage the home a second time</td><td class="us">Nothing to book. Send the link.</td></tr>
       <tr><th scope="row">Turnaround</th><td>Days to a week or more</td><td class="us">24 hours (12 with rush)</td></tr>
       <tr><th scope="row">Versions</th><td>Usually one edit</td><td class="us">Vertical, widescreen and MLS-ready</td></tr>
@@ -487,33 +489,33 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 
 <section id="pricing" style="padding-top:0"><div class="wrap">
   <p class="eyebrow">Pricing</p>
-  <h2>Pick a package. Send the link.</h2>
+  <h2>Pick a package. Get your quote.</h2>
   <p class="lede" style="margin-top:12px">No subscription. No contract. You get an invoice to approve before any work starts.</p>
-  <p class="risk" id="priceNote" style="margin-top:8px">Standard pricing shown. If a partner sent you, they can tailor the package and price for you.</p>
+  <p class="risk" id="priceNote" style="margin-top:8px">Every listing gets a personal quote from your RLS agent. Send the form or reach out, and you’ll have it within one business day.</p>
   <div class="offer" id="offerBox" hidden><div><b id="offerHead"></b><p id="offerSub"></p></div><a class="btn btn-primary" href="#request" id="offerGo">Claim it</a></div>
   <div class="plans">
     <div class="plan">
       <div><h3>Listing Reel</h3><p class="for">For a quick, clean listing video.</p></div>
-      <p class="price"><span class="amt" data-tier="0">$497</span> <span>/ listing</span></p>
+      <p class="price ask"><a class="ask-link" href="#request" data-ask>Contact your RLS agent for pricing</a></p>
       <ul><li>Up to 10 photos brought to life</li><li>All 3 versions: vertical, widescreen, MLS</li><li>Ready-to-post caption</li><li>24-hour delivery</li></ul>
       <a class="btn btn-ghost" href="#request" data-pick="Listing Reel">Choose Listing Reel</a>
     </div>
     <div class="plan rec">
       <span class="badge">Recommended for most listings</span>
       <div><h3>Social Pack</h3><p class="for">Everything to market the listing on social, start to finish.</p></div>
-      <p class="price"><span class="amt" data-tier="1">$797</span> <span>/ listing</span></p>
+      <p class="price ask"><a class="ask-link" href="#request" data-ask>Contact your RLS agent for pricing</a></p>
       <ul><li>Up to 20 photos brought to life</li><li>All 3 versions</li><li>2 extra reels</li><li>Just Listed and Open House cuts</li><li>3 ad copy variations</li><li>1 revision</li><li>24-hour delivery</li></ul>
       <a class="btn btn-primary" href="#request" data-pick="Social Pack">Choose Social Pack</a>
     </div>
     <div class="plan">
       <div><h3>Full Launch</h3><p class="for">For your top listings, and the seller you’re trying to win.</p></div>
-      <p class="price"><span class="amt" data-tier="2">$1,297</span> <span>/ listing</span></p>
+      <p class="price ask"><a class="ask-link" href="#request" data-ask>Contact your RLS agent for pricing</a></p>
       <ul><li>Everything in the Social Pack</li><li><b>Ads built and launched for you</b> with our AI ad engine (ad spend separate)</li><li>5 extra reels</li><li>Just Sold cut</li><li>5 ad copy variations</li><li>2 revisions</li><li><b>Top of the queue</b></li></ul>
       <figure class="clip mini"><div class="frame"><video poster="/media/ad-commercial.jpg" src="/media/ad-commercial.mp4?v=5#t=0.5" controls playsinline preload="metadata" aria-label="8-second listing commercial"></video></div><figcaption>8-second listing commercial · the ad format we launch for you</figcaption></figure>
       <a class="btn btn-ghost" href="#request" data-pick="Full Launch">Choose Full Launch</a>
     </div>
   </div>
-  <p class="addons"><b style="color:var(--ink)">Bonus:</b> on your first listing we also build and launch a live ad with your video, free setup. <a href="#bonus" style="color:inherit">See how</a><br>Add-ons: extra reel $99 · 12-hour rush $149 · Airbnb or VRBO version $149. Not sure which? Pick “Not sure yet” on the form and we’ll recommend one from your photos.</p>
+  <p class="addons"><b style="color:var(--ink)">Bonus:</b> on your first listing we also build and launch a live ad with your video, free setup. <a href="#bonus" style="color:inherit">See how</a><br>Add-ons: extra reels, 12-hour rush, and an Airbnb or VRBO version. Not sure which? Pick “Not sure yet” on the form and we’ll recommend one from your photos.</p>
   <div class="guard">
     <h3>You don’t pay to find out.</h3>
     <p>Send the form and nothing is charged. We look at your photos first. If they won’t make a great video, we tell you before you pay. You approve the invoice before we start.</p>
@@ -529,12 +531,12 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <details><summary>Will it look like a slideshow?</summary><p>No. A slideshow pans across still pictures. This looks like someone walked through the home with a camera: things in each room move, and the camera moves through the space. Watch the <a href="#before-after">before and after clips</a> and judge for yourself.</p></details>
     <details><summary>Can I put it on the MLS?</summary><p>Yes. Every package includes an unbranded, MLS-ready version with no names, logos or contact info. MLS rules vary, so check yours.</p></details>
     <details><summary>What if my photos aren’t great?</summary><p>We look before you pay. If your photos won’t make a great video, we tell you up front and you owe nothing. Most professional listing photos work well.</p></details>
-    <details><summary>How fast is it, really?</summary><p>24 hours for every package, and the Full Launch goes to the top of the queue. Need it sooner? Add 12-hour rush for $149.</p></details>
+    <details><summary>How fast is it, really?</summary><p>24 hours for every package, and the Full Launch goes to the top of the queue. Need it sooner? Ask about 12-hour rush.</p></details>
     <details><summary>What do I actually have to do?</summary><p>Send the listing link or a photo folder. That’s it. No scheduling, no seller coordination, no second cleanup.</p></details>
     <details><summary>What if I want changes?</summary><p>The Social Pack includes 1 revision and the Full Launch includes 2. On the Listing Reel, we fix anything that’s our mistake, like a frozen shot or a wrong detail, at no charge.</p></details>
     <details><summary>Who owns the video? Can I run ads with it?</summary><p>You can post it anywhere, boost it, run it as an ad and show it in listing presentations. The Social Pack and Full Launch include ad copy, and with the Full Launch we build and launch the ads for you.</p></details>
     <details><summary>How does it compare to hiring a videographer?</summary><p>A videographer bills for the drive, the shoot day and each extra cut. We work from the photos you already paid for, so there’s nothing to book and the home isn’t staged twice, and every package includes the vertical, widescreen and MLS versions plus a caption. Agents who pay $1,200 to $2,400 for a full listing video package get more for less, in 24 hours instead of weeks.</p></details>
-    <details><summary>Is it worth it on a mid-priced listing, or a rental?</summary><p>Yes. It makes a mid-priced listing look like a luxury one, it gives you fresh content for every platform, and it’s a strong piece for your next listing presentation. Rentals get a dedicated Airbnb or VRBO version for $149.</p></details>
+    <details><summary>Is it worth it on a mid-priced listing, or a rental?</summary><p>Yes. It makes a mid-priced listing look like a luxury one, it gives you fresh content for every platform, and it’s a strong piece for your next listing presentation. Rentals can add a dedicated Airbnb or VRBO version.</p></details>
   </div>
   <p class="after-faq"><span id="askCall" hidden>Still have a question? Call or text <a data-site-tel></a>.</span></p>
 </div></section>
@@ -576,7 +578,7 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="f full"><label for="fEmail">Email</label><input id="fEmail" name="email" type="email" autocomplete="email" required></div>
     <div class="f full"><label for="fListing">Listing link or address</label><input id="fListing" name="listing" placeholder="Zillow, MLS or your website link, or the address" required></div>
     <div class="f full"><label for="fPkg">Package</label>
-      <select id="fPkg" name="package"><option>Not sure yet, recommend one</option><option>Listing Reel $497</option><option>Social Pack $797</option><option>Full Launch $1,297</option></select></div>
+      <select id="fPkg" name="package"><option>Not sure yet, recommend one</option><option>Listing Reel</option><option>Social Pack</option><option>Full Launch</option></select></div>
     <div class="f full" id="freeRow" hidden><label class="claim"><input type="checkbox" id="fFree"> <span id="freeText">Claim my free listing video</span></label></div>
     <div class="f full"><label for="fCode">Coupon code <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input id="fCode" name="coupon" maxlength="20" autocomplete="off" style="text-transform:uppercase" placeholder="e.g. KEN20"><p class="codenote" id="codeNote" hidden></p></div>
     <div class="f full"><label for="fNotes">Anything we should know? <span style="font-weight:400;color:var(--muted)">(optional)</span></label><textarea id="fNotes" name="notes" placeholder="Go-live date, must-show rooms, branding notes"></textarea></div>
@@ -598,7 +600,7 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   <p>Reel Listing Studio · Ryan Allaire<span data-site-sep="city"></span><span data-site-sep="phone"></span><span data-site-sep="email"></span><span data-site-link="privacy">Privacy</span><span data-site-link="terms">Terms</span><span data-site-link="partners">Partner program</span></p>
 </div></footer>
 
-<div class="sticky" id="sticky"><a class="btn btn-primary" href="#request" id="stickyBtn">Get my listing video, from $497</a></div>
+<div class="sticky" id="sticky"><a class="btn btn-primary" href="#request" id="stickyBtn">Get my listing video</a></div>
 
 
 <button class="qa-btn" id="qaOpen" type="button" aria-haspopup="dialog"><i aria-hidden="true"></i>Questions? Ask us</button>
@@ -664,18 +666,12 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
       n.textContent = j.valid ? "✓ " + j.label + (j.partner ? " from " + j.partner : "") + ". We’ll apply it to your quote." : "We don’t recognize that code. Send the form anyway and we’ll check it.";
     }).catch(function(){ n.hidden=true; });
   });
-  // the partner's own package prices, if they've set them
-  if(ref && Array.isArray(ref.prices) && ref.prices.length===3){
-    var money=function(n){ return "$"+Number(n).toLocaleString("en-US"); }, P=ref.prices, names=["Listing Reel","Social Pack","Full Launch"];
-    document.querySelectorAll(".amt[data-tier]").forEach(function(el){ var v=P[+el.getAttribute("data-tier")]; if(v) el.textContent=money(v); });
-    var opts=$("fPkg").options; for(var k=0;k<3;k++) if(opts[k+1]) opts[k+1].text=names[k]+" "+money(P[k]);
-    $("fromPrice").textContent="From "+money(Math.min(P[0],P[1],P[2]));
-    $("rcptPrice").textContent=money(P[1]);
-    var save=2400-P[1]; if(save>=100) $("rcptSave").textContent="Up to −"+money(Math.floor(save/100)*100); else { $("rcptSave").parentNode.removeChild($("rcptSave")); }
-    $("stickyBtn").textContent="Get my listing video, from "+money(Math.min(P[0],P[1],P[2]));
-    if(name) $("priceNote").textContent="Pricing from "+name+", who referred you.";
-    document.querySelectorAll("[data-std-price]").forEach(function(el){ el.parentNode.removeChild(el); });
-  }
+  // pricing is quoted by the agent: every price spot points to them
+  var who = first ? first : "your RLS agent";
+  document.querySelectorAll("[data-ask]").forEach(function(a){ a.textContent = "Contact " + who + " for pricing";
+    if(ref && ref.phone){ var d=String(ref.phone).replace(/\D/g,""); if(d.length>=10){ a.href="sms:+1"+d.slice(-10); a.title="Call or text " + fmtPhone(ref.phone); } } });
+  if(name) $("priceNote").textContent = name + " quotes every listing personally. Send the form or call or text, and you’ll have your quote within one business day.";
+  $("rcptSave") && 0;
   if(ref){
     $("fRef").value = ref.code;
     $("ribbon").hidden = false;
@@ -779,18 +775,16 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
   var FAQ=[
     [/mls|multiple listing|virtual tour/i, /block|reject|allow|rule|ban|branding|brand/i, "Every package includes an unbranded MLS version with no name, logo, phone or brokerage, which is what most MLSs require for video and virtual-tour fields. You (or your admin) add it to your MLS's video or virtual tour field like any listing video; many MLSs take a YouTube or Vimeo link. Rules vary by market, so check your MLS's media rules."],
     [/mls|multiple listing|virtual tour/i, null, "Yes. Every package includes an unbranded, MLS-ready version with no names, logos or contact info. You add it to your MLS's video or virtual tour field like any listing video. MLS rules vary, so check yours."],
-    [/price|cost|how much|\$|package|expensive|cheap/i, null, "Listing Reel $497 (up to 10 photos), Social Pack $797 (up to 20 photos, extra reels, Just Listed and Open House cuts, 1 revision), Full Launch $1,297 (adds ads built and launched for you, Just Sold cut, 2 revisions). All include vertical, widescreen and MLS versions. Sending the form is free, and nothing is charged until you approve the invoice."],
-    [/fast|long|turnaround|when|rush|24/i, null, "24 hours for every package, and Full Launch goes to the top of the queue. Need it sooner? 12-hour rush is $149."],
+    [/price|cost|how much|\$|package|expensive|cheap/i, null, "Pricing is quoted per listing by your RLS agent. Choose from the Listing Reel (up to 10 photos), Social Pack (up to 20 photos, extra reels, Just Listed and Open House cuts) or Full Launch (adds ads built and launched for you). Send the form for your quote within one business day; nothing is charged until you approve it."],
+    [/fast|long|turnaround|when|rush|24/i, null, "24 hours for every package, and Full Launch goes to the top of the queue. Need it sooner? Ask your RLS agent about 12-hour rush."],
     [/fake|mislead|real|honest|ai|disclos|ethic|fair housing/i, null, "Nothing is added to or removed from the property. Every frame comes from your actual listing photos; we only add motion like a fan turning or a fire flickering, plus camera movement. You can add “Motion enhanced from listing photos” to the caption, and we'll include it if you ask."],
     [/photo|picture|image|quality|phone|drone/i, /copyright|own|license|permission|photographer/i, "Listing photos are usually licensed to you for marketing the listing, and a marketing video for that same listing is normally within that use. If you're unsure, check your photographer's license. We only use the photos to make your video."],
     [/photo|picture|image|quality|phone|drone|how many/i, null, "Professional listing photos work best: bright, sharp and horizontal, ideally 10 to 25. Drone and twilight shots look great. We review your photos before you pay and tell you up front if they won't make a great video."],
     [/ad|boost|facebook|instagram|own|use|post/i, null, "It's yours to post anywhere, boost, run as an ad and use in listing presentations. On your first listing we'll also build and launch a live Meta ad with your video, free setup; you approve it first and choose the budget, paid straight to Meta."],
     [/change|revis|edit|fix|redo/i, null, "The Social Pack includes 1 revision and the Full Launch 2. On the Listing Reel we fix anything that's our mistake, like a frozen shot or a wrong detail, at no charge."],
-    [/airbnb|vrbo|rental|short.?term/i, null, "Yes, it works great for short-term rentals. There's a dedicated Airbnb or VRBO version for $149."],
+    [/airbnb|vrbo|rental|short.?term/i, null, "Yes, it works great for short-term rentals. You can add a dedicated Airbnb or VRBO version."],
     [/videographer|compare|vs/i, null, "A videographer bills for the drive, the shoot day and each extra cut, and booking can take weeks. We work from the photos you already have, deliver in 24 hours, and include vertical, widescreen and MLS versions plus a caption."]
   ];
-  if(typeof REF!=="undefined"&&REF&&Array.isArray(REF.prices)&&REF.prices.length===3){ var m=function(n){return "$"+Number(n).toLocaleString("en-US");}, P=REF.prices;
-    FAQ.forEach(function(f){ if(/Listing Reel \$497/.test(f[2])) f[2]="Listing Reel "+m(P[0])+" (up to 10 photos), Social Pack "+m(P[1])+" (up to 20 photos, extra reels, Just Listed and Open House cuts, 1 revision), Full Launch "+m(P[2])+" (adds ads built and launched for you, Just Sold cut, 2 revisions). All include vertical, widescreen and MLS versions. Sending the form is free, and nothing is charged until you approve the invoice."; }); }
   function local(q){ for(var i=0;i<FAQ.length;i++){ var f=FAQ[i]; if(f[0].test(q)&&(!f[1]||f[1].test(q))) return f[2]; } return "Good question. I don't want to guess on that one. Call or text (715) 222-6776, email support@advancemarketinggroup.net, or send your listing on the form and we'll answer within one business day."; }
   function add(role,text){ var d=document.createElement("div"); d.className="qa-m "+(role==="user"?"me":"bot"); d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
   function drawChips(){ chips.innerHTML=""; Q.forEach(function(q){ var b=document.createElement("button"); b.type="button"; b.textContent=q; b.onclick=function(){ ask(q); }; chips.appendChild(b); }); }
