@@ -227,6 +227,13 @@ html{scroll-behavior:smooth}
 @media (max-width:900px){.yes .dms{grid-template-columns:1fr}.faces{grid-template-columns:1fr 1fr}}
 @media (max-width:520px){.faces{grid-template-columns:1fr}}
 .hide{display:none!important}
+.offer{background:var(--band);color:var(--on-band);border-radius:18px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:24px}
+.offer b{font-family:var(--display);text-transform:uppercase;font-size:24px;font-weight:600;letter-spacing:.01em;color:#F2A541}
+.offer p{color:var(--band-muted);font-size:15px;margin-top:2px}
+.offer code{font:700 17px var(--mono);background:#F2A541;color:#13161B;padding:3px 10px;border-radius:8px}
+label.claim{display:flex;gap:10px;align-items:center;font-size:16px;background:var(--amber-soft);border:2px solid var(--amber);border-radius:12px;padding:12px 14px;cursor:pointer}
+label.claim input{width:20px;height:20px;accent-color:var(--amber)}
+.codenote{font-size:13px;color:var(--muted);margin:2px 0 0}
 .bonus{padding-top:0}
 .bonus-in{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:48px;align-items:center;padding:36px;border-radius:24px;border:2px solid var(--amber);background:var(--amber-soft)}
 .bonus-copy{min-width:0}
@@ -483,6 +490,7 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   <h2>Pick a package. Send the link.</h2>
   <p class="lede" style="margin-top:12px">No subscription. No contract. You get an invoice to approve before any work starts.</p>
   <p class="risk" id="priceNote" style="margin-top:8px">Standard pricing shown. If a partner sent you, they can tailor the package and price for you.</p>
+  <div class="offer" id="offerBox" hidden><div><b id="offerHead"></b><p id="offerSub"></p></div><a class="btn btn-primary" href="#request" id="offerGo">Claim it</a></div>
   <div class="plans">
     <div class="plan">
       <div><h3>Listing Reel</h3><p class="for">For a quick, clean listing video.</p></div>
@@ -569,6 +577,8 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
     <div class="f full"><label for="fListing">Listing link or address</label><input id="fListing" name="listing" placeholder="Zillow, MLS or your website link, or the address" required></div>
     <div class="f full"><label for="fPkg">Package</label>
       <select id="fPkg" name="package"><option>Not sure yet, recommend one</option><option>Listing Reel $497</option><option>Social Pack $797</option><option>Full Launch $1,297</option></select></div>
+    <div class="f full" id="freeRow" hidden><label class="claim"><input type="checkbox" id="fFree"> <span id="freeText">Claim my free listing video</span></label></div>
+    <div class="f full"><label for="fCode">Coupon code <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input id="fCode" name="coupon" maxlength="20" autocomplete="off" style="text-transform:uppercase" placeholder="e.g. KEN20"><p class="codenote" id="codeNote" hidden></p></div>
     <div class="f full"><label for="fNotes">Anything we should know? <span style="font-weight:400;color:var(--muted)">(optional)</span></label><textarea id="fNotes" name="notes" placeholder="Go-live date, must-show rooms, branding notes"></textarea></div>
     <input type="hidden" id="fRef" name="ref">
     <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
@@ -627,6 +637,33 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
   // who referred this visitor (the server keeps the 90-day credit)
   var ref = REF && REF.code ? REF : null, name = ref && ref.name, first = name ? name.split(" ")[0] : "";
   var contactPhone = (ref && ref.phone) || SITE.phone;
+  // the partner's offer: a coupon code or a free first listing video
+  var offer = ref && ref.offer, ofirst = first || "Your partner";
+  if(offer){
+    var endTxt = offer.ends ? " Offer ends " + new Date(offer.ends+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric"}) + "." : "";
+    $("offerBox").hidden = false;
+    if(offer.type==="free"){
+      $("offerHead").textContent = "Your first listing video is free";
+      $("offerSub").textContent = ofirst + " is covering a " + (offer.pkg||"Listing Reel") + " on your first listing. Send the form and tick the box." + endTxt;
+      $("offerGo").textContent = "Claim my free video";
+      $("freeRow").hidden = false; $("fFree").checked = true; $("freeText").textContent = "Claim my free " + (offer.pkg||"Listing Reel") + " (" + ofirst + "’s offer)";
+    } else {
+      var off = offer.pct ? offer.pct + "% off" : "$" + Number(offer.amt).toLocaleString("en-US") + " off";
+      $("offerHead").textContent = off + " your listing video";
+      $("offerSub").innerHTML = ""; $("offerSub").appendChild(document.createTextNode("Use code ")); var c=document.createElement("code"); c.textContent=offer.code; $("offerSub").appendChild(c); $("offerSub").appendChild(document.createTextNode(" from " + ofirst + ". It’s already filled in on the form." + endTxt));
+      $("fCode").value = offer.code;
+    }
+    $("ribbonPerk") && ($("ribbonPerk").textContent = offer.type==="free" ? " Your first listing video is free." : " Use code " + offer.code + " for " + (offer.pct ? offer.pct + "% off" : "$" + offer.amt + " off") + ".");
+  }
+  // check a typed coupon code as they leave the box
+  $("fCode").addEventListener("change", function(){
+    var v=$("fCode").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,""), n=$("codeNote"); $("fCode").value=v;
+    if(!v){ n.hidden=true; return; }
+    fetch("/api/coupon?code="+encodeURIComponent(v)).then(function(r){return r.json();}).then(function(j){
+      n.hidden=false; n.style.color = j.valid ? "var(--amber)" : "var(--muted)";
+      n.textContent = j.valid ? "✓ " + j.label + (j.partner ? " from " + j.partner : "") + ". We’ll apply it to your quote." : "We don’t recognize that code. Send the form anyway and we’ll check it.";
+    }).catch(function(){ n.hidden=true; });
+  });
   // the partner's own package prices, if they've set them
   if(ref && Array.isArray(ref.prices) && ref.prices.length===3){
     var money=function(n){ return "$"+Number(n).toLocaleString("en-US"); }, P=ref.prices, names=["Listing Reel","Social Pack","Full Launch"];
@@ -712,7 +749,7 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
     err.hidden = ok;
     if(!ok) return;
     var btn = form.querySelector("button[type=submit]"); btn.disabled = true; btn.textContent = "Sending…";
-    var data = { name:$("fName").value, phone:$("fPhone").value, email:$("fEmail").value, listing:$("fListing").value, package:$("fPkg").value,
+    var data = { name:$("fName").value, phone:$("fPhone").value, email:$("fEmail").value, listing:$("fListing").value, package:$("fPkg").value, coupon:$("fCode").value.trim().toUpperCase(), claimFree:!$("freeRow").hidden&&$("fFree").checked,
       notes:$("fNotes").value, ref:$("fRef").value, utm_source:$("fUtmS").value, utm_campaign:$("fUtmC").value, website:(form.website&&form.website.value)||"" };
     fetch("/api/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)})
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok) throw new Error(j.error||"That didn’t go through. Try again in a moment."); return j; }); })

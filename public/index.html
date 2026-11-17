@@ -406,6 +406,17 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         <label style="grid-column:1/-1">Demo video (when sending a video link)<select id="tmDemo"></select></label>
       </div>
       <p class="small" id="tmStatus" aria-live="polite" style="margin-top:8px"></p>
+      <h3 style="margin:20px 0 4px">Your offer</h3>
+      <p class="small">Give agents a reason to say yes now. It shows on your sales page (a banner above the prices), fills in on the request form, and the question assistant mentions it. Every request that uses it is marked in your leads.</p>
+      <div class="tools-form">
+        <label>Offer<select id="ofType"><option value="none">No offer</option><option value="code">Coupon code</option><option value="free">First listing video free</option></select></label>
+        <label class="of-code">Code<input id="ofCode" maxlength="20" style="text-transform:uppercase" placeholder="e.g. KEN20"></label>
+        <label class="of-disc">Discount<span style="display:flex;gap:6px"><input id="ofNum" inputmode="decimal" placeholder="20" style="flex:1"><select id="ofUnit" style="width:auto"><option value="pct">% off</option><option value="amt">$ off</option></select></span></label>
+        <label class="of-free" hidden>Free package<select id="ofPkg"><option>Listing Reel</option><option>Social Pack</option><option>Full Launch</option></select></label>
+        <label>Ends (optional)<input id="ofEnds" type="date"></label>
+      </div>
+      <div class="row" style="gap:10px;align-items:center;margin-top:8px"><button class="btn sm primary" type="button" id="ofSave">Save offer</button><span class="small" id="ofStatus" aria-live="polite"></span></div>
+      <p class="small" style="margin-top:6px">A free video uses one of your own video credits when you make it, so set an end date or turn it off when you've used them.</p>
     </div>
   </div>
 </dialog>
@@ -2569,7 +2580,13 @@ function scriptList(me){
   const code=ACCT&&ACCT.user&&ACCT.user.refCode, first=(me.name||"").split(" ")[0]||"[your name]", name=me.name||"[your name]", phone=fmtPhone(me.phone)||"[your phone]", email=me.email||"[your email]", demo=me.linkMode==="video"||!code?mediaURL(me.demo):`${siteURL()}/${code}`;
   const sig=`${name}\n${phone}\n${email}`;
   const cold=`${name}\n${phone}\n${email}\n[your business mailing address]\n\nIf you'd rather not hear from me, just reply "no thanks" and I won't email again.`;
-  return [
+  const of=(ACCT&&ACCT.user&&ACCT.user.offer)||null, ofTxt=!of?"":of.type==="free"?`your first listing video is free (a ${of.pkg||"Listing Reel"}, on me)`:`${of.pct?of.pct+"% off":"$"+of.amt+" off"} your listing video with code ${of.code}`;
+  const ofEnd=of&&of.ends?` through ${new Date(of.ends+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:"";
+  const offerGroup=!of?[]:[{g:"🎁 Your offer",items:[
+    {t:"Text",w:"Agents you know.",b:`Hi [Agent], ${first} here. I'm doing something for a few local agents: ${ofTxt}${ofEnd}. It's a walkthrough video made from your listing photos, back in 24 hours. Want in? ${demo}\n${name} \u00b7 ${phone}`},
+    {t:"Email",w:"Your agent list.",s:of.type==="free"?"Your first listing video is on me":`${of.pct?of.pct+"% off":"$"+of.amt+" off"} your next listing video`,b:`Hi [Agent],\n\nQuick offer for you${ofEnd}: ${ofTxt}.\n\nSend me a listing link and you'll get back a walkthrough video made from your photos, with fans spinning, fireplaces flickering and smooth camera moves, in vertical, widescreen and unbranded MLS versions, within 24 hours.\n\nClaim it here (the ${of.type==="free"?"offer is":"code is"} already filled in): ${demo}\n\n${cold}`},
+    {t:"Post caption",w:"Facebook, Instagram, LinkedIn.",b:`Agents: ${ofTxt}${ofEnd}. 🎬 Your listing photos, turned into a walkthrough video that looks filmed, back in 24 hours. ${demo}`}]}];
+  return [...offerGroup,
    {g:"🖤 Black Friday promo (40% off, through Cyber Monday)",items:[
     {t:"Post caption (Reels, Facebook, Instagram)",w:"Post with one of the Black Friday ad videos.",b:`BLACK FRIDAY 🖤 40% off listing walkthrough videos.\n\nYour listing photos, turned into a walkthrough video that looks filmed: fans spinning, fireplaces flickering, the camera gliding room to room. Vertical, widescreen and MLS versions, back in 24 hours. No shoot, no scheduling.\n\nThrough Cyber Monday only. Claim yours here: ${demo}\n\n#realestate #listingvideo #blackfriday #realtor`},
     {t:"Text to agents",w:"Agents you know. Send with the 9-second ad.",b:`Hi [Agent], ${first} here. Black Friday deal: 40% off listing walkthrough videos made from your photos, back in 24 hours. Good through Cyber Monday. Got a listing that could use a fresh push? ${demo}\n${name} \u00b7 ${phone}`},
@@ -2622,11 +2639,25 @@ function renderToolVideos(){
     grid.appendChild(c); });
   box.appendChild(grid);
 }
+function syncOffer(){ const t=$("#ofType").value; $$(".of-code").forEach(e=>e.hidden=t==="none"); $$(".of-disc").forEach(e=>e.hidden=t!=="code"); $$(".of-free").forEach(e=>e.hidden=t!=="free"); }
+function loadOffer(){ const o=(ACCT&&ACCT.user&&ACCT.user.offer)||null; $("#ofType").value=o?o.type:"none"; $("#ofCode").value=o?o.code:((ACCT&&ACCT.user&&ACCT.user.name)||"").split(" ")[0].toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,12)+"20";
+  $("#ofUnit").value=o&&o.amt?"amt":"pct"; $("#ofNum").value=o?(o.pct||o.amt||""):""; $("#ofPkg").value=o&&o.pkg||"Listing Reel"; $("#ofEnds").value=o&&o.ends||""; $("#ofStatus").textContent=""; syncOffer(); }
+$("#ofType").onchange=syncOffer;
+$("#ofSave").onclick=async()=>{
+  const st=$("#ofStatus"), t=$("#ofType").value, n=$("#ofNum").value.replace(/[^\d.]/g,"");
+  const body={type:t,code:$("#ofCode").value,ends:$("#ofEnds").value,pkg:$("#ofPkg").value}; if($("#ofUnit").value==="pct") body.pct=n; else body.amt=n;
+  st.className="small"; st.textContent="Saving\u2026";
+  try{ const r=await fetch("/api/partner/offer",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}); const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||"Couldn't save.");
+    if(ACCT&&ACCT.user) ACCT.user.offer=j.offer; loadOffer(); renderScripts();
+    st.className="small ok"; st.textContent=j.offer?(j.offer.type==="free"?`Live: first ${j.offer.pkg} free, code ${j.offer.code}.`:`Live: ${j.offer.pct?j.offer.pct+"%":"$"+j.offer.amt} off with code ${j.offer.code}.`)+" Check your sales page.":"Offer turned off."; }
+  catch(e){ st.className="small warn"; st.textContent=e.message; }
+};
 function openTools(){
   const me=toolsMe(); $("#tmName").value=me.name; $("#tmPhone").value=fmtPhone(me.phone); $("#tmEmail").value=me.email; $("#tmP1").value=me.p1; $("#tmP2").value=me.p2; $("#tmP3").value=me.p3;
   const sel=$("#tmDemo"); if(!sel.options.length) DEMO_VIDEOS.forEach(v=>sel.add(new Option(v.t,v.id))); sel.value=me.demo;
   $("#tmLinkMode").value=me.linkMode;
-  renderToolVideos(); renderScripts(); renderMyLink(); dlgOpen($("#toolsDlg"));
+  loadOffer(); renderToolVideos(); renderScripts(); renderMyLink(); dlgOpen($("#toolsDlg"));
   if(ACCT&&ACCT.user&&ACCT.user.refCode) $('#toolsSeg button[data-v="link"]').click();
 }
 $("#toolsPill").onclick=openTools;
@@ -2650,7 +2681,7 @@ const when=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numer
 function leadRow(l,showPartner){
   const d=document.createElement("div"); d.className="lead";
   d.innerHTML=`<b></b> <span class="meta"></span><div class="c"></div><div class="x"></div>`;
-  d.querySelector("b").textContent=l.name||l.email; d.querySelector(".meta").textContent=` ${when(l.created)}${l.package?" \u2013 "+l.package:""}${showPartner?` \u2013 via ${l.partner||"no partner (direct)"}`:""}`;
+  d.querySelector("b").textContent=l.name||l.email; d.querySelector(".meta").textContent=` ${when(l.created)}${l.package?" \u2013 "+l.package:""}${l.offer?" \u2013 \ud83c\udf81 "+l.offer:l.coupon?" \u2013 code "+l.coupon:""}${showPartner?` \u2013 via ${l.partner||"no partner (direct)"}`:""}`;
   const c=d.querySelector(".c");
   if(l.phone){ const a=document.createElement("a"); a.href="tel:"+l.phone.replace(/[^\d+]/g,""); a.textContent=fmtPhone(l.phone); c.appendChild(a); c.append("  "); }
   if(l.email){ const a=document.createElement("a"); a.href="mailto:"+l.email; a.textContent=l.email; c.appendChild(a); }

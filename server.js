@@ -45,7 +45,7 @@ function refCookie(req, res, code) {
   res.setHeader("set-cookie", `rls_ref=${p.code}; Max-Age=${REF_DAYS * 86400}; Path=/; SameSite=Lax${SECURE ? "; Secure" : ""}`);
   return p;
 }
-const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, prices: partner.prices } : null).replace(/</g, "\\u003c"));
+const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, prices: partner.prices, offer: partner.offer } : null).replace(/</g, "\\u003c"));
 const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!doctype/i.test(body) ? body : SKELETON_HEAD + body + "</body></html>"; };
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
@@ -119,6 +119,11 @@ export const server = http.createServer(async (req, res) => {
         if (r.status >= 400 || !/^https?:\/\/(www\.)?tinyurl\.com\/[\w-]+$/i.test(short)) { console.error("tinyurl", r.status, short.slice(0, 200)); return json(res, 502, { error: "TinyURL didn't make the link." }); }
         return json(res, 200, { short });
       } catch (e) { console.error("tinyurl", e.message); return json(res, 502, { error: "TinyURL couldn't be reached." }); }
+    }
+    if (req.method === "GET" && u.pathname === "/api/coupon") {
+      if (!allow(clientIp(req), leadHits, 120)) return json(res, 429, { error: "Too many tries. Wait a few minutes." });
+      const c = acct.partnerByCoupon(u.searchParams.get("code"));
+      return json(res, 200, c ? { valid: true, label: acct.offerLabel(c.offer), partner: c.name.split(" ")[0] || "" } : { valid: false });
     }
     if (req.method === "POST" && u.pathname === "/api/leads") {
       if (!allow(clientIp(req), leadHits, 120)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes, or call us." });
@@ -205,6 +210,10 @@ export const server = http.createServer(async (req, res) => {
       if (u.pathname === "/api/partner/profile" && req.method === "POST") {
         const user = needUser(req);
         return json(res, 200, acct.setPartnerProfile(user, await readJson(req)));
+      }
+      if (u.pathname === "/api/partner/offer" && req.method === "POST") {
+        const user = needUser(req);
+        return json(res, 200, acct.setPartnerOffer(user, await readJson(req)));
       }
       if (u.pathname === "/api/partner/link" && req.method === "POST") {
         const user = needUser(req); const { code } = await readJson(req);
@@ -354,7 +363,7 @@ export const server = http.createServer(async (req, res) => {
       const last = Array.isArray(body.messages) ? String(body.messages[body.messages.length - 1]?.content || "").slice(0, 200) : "";
       console.log("sales chat:", JSON.stringify(last));
       const ref = body.ref ? acct.partnerByRef(String(body.ref)) : null;
-      return json(res, 200, await chatReply({ messages: body.messages, partner: ref ? ref.name : "", prices: ref ? ref.prices : null }));
+      return json(res, 200, await chatReply({ messages: body.messages, partner: ref ? ref.name : "", prices: ref ? ref.prices : null, offer: ref && ref.offer ? acct.offerLabel(ref.offer) : "" }));
     }
     if (req.method === "POST" && u.pathname === "/api/ai") {
       const aiUser = needUser(req);

@@ -19,6 +19,14 @@ const check = (name, ok, detail = "") => { results.push(`${ok ? "PASS" : "FAIL"}
   check("Prices: only partners can set their own prices", /Only partners/.test(bad));
   check("Prices: stored prices are read back safely", JSON.stringify(A.readPrices("[597,997,1497]")) === "[597,997,1497]" && A.readPrices("junk") === null && A.readPrices("[1,2]") === null);
 }
+// partner offers
+{
+  const A = await import("../lib/accounts.js");
+  let bad = ""; try { A.setPartnerOffer({ id: 1, partner: 0 }, { type: "code", code: "X20", pct: 20 }); } catch (e) { bad = e.message; }
+  check("Offers: only partners can create offers", /Only partners/.test(bad));
+  check("Offers: labels read clearly", A.offerLabel({ type: "code", code: "KEN20", pct: 20 }) === "20% off with code KEN20" && /First listing video free \(Listing Reel\)/.test(A.offerLabel({ type: "free", code: "K", pkg: "Listing Reel" })));
+  check("Offers: an expired offer stops showing", A.readOffer(JSON.stringify({ type: "code", code: "OLD", pct: 10, ends: "2020-01-01" })) === null);
+}
 // sales-page assistant: knows the key MLS and pricing facts, and never mentions the self-serve tool
 {
   const { FACTS } = await import("../lib/chat.js");
