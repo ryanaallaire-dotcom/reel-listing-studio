@@ -134,7 +134,7 @@ const A = 18911; const sa = await startServer(A, { ALLOW_LOCAL_FETCH: "1", IMPOR
   check("Serves the Studio page at /studio", page.includes("Reel Listing Studio") && page.includes("importBtn"));
   const home = await (await fetch(`http://127.0.0.1:${A}/`)).text();
   const oldSetup = await fetch(`http://127.0.0.1:${A}/?setup=abc`, { redirect: "manual" });
-  check("The home page is the agent sales page; old password links go to the Studio", /Your listing photos, filmed/.test(home) && !home.includes("importBtn") && oldSetup.status === 302 && oldSetup.headers.get("location") === "/studio?setup=abc");
+  check("The home page is the agent sales page; old password links go to the Studio", /Your listing photos, (<em>)?filmed/.test(home) && !home.includes("importBtn") && oldSetup.status === 302 && oldSetup.headers.get("location") === "/studio?setup=abc");
 
   const r = await post(A, { url: `http://127.0.0.1:${FX}/listing/889123?utm_source=fb` });
   const buf = new Uint8Array(await r.arrayBuffer()); let files = {};
@@ -289,7 +289,7 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   const gid = gme.refCode;
   check("Referrals: partners get a random link ID, never their name", /^[a-z2-9]{6}$/.test(gid || "") && !/gary/.test(gid), gid);
   const land = await fetch(`http://127.0.0.1:${Gp}/r/${gid}`); const landHtml = await land.text(); const rc = (land.headers.get("set-cookie") || "").split(";")[0];
-  check("Referrals: /r/<code> shows the sales page with the partner's details and sets a 90-day cookie", land.status === 200 && /Your listing photos, filmed/.test(landHtml) && /"name":"Gary Test"/.test(landHtml) && rc === `rls_ref=${gid}` && /Max-Age=7776000/.test(land.headers.get("set-cookie")), rc);
+  check("Referrals: /r/<code> shows the sales page with the partner's details and sets a 90-day cookie", land.status === 200 && /Your listing photos, (<em>)?filmed/.test(landHtml) && /"name":"Gary Test"/.test(landHtml) && rc === `rls_ref=${gid}` && /Max-Age=7776000/.test(land.headers.get("set-cookie")), rc);
   const unk = await fetch(`http://127.0.0.1:${Gp}/r/nobody-here`); const oh = await unk.text();
   check("Referrals: an unknown code still shows the page, without a partner", unk.status === 200 && /const REF=null/.test(oh) && !unk.headers.get("set-cookie"));
   // Reel Business Studio: its own sales page with the same partner credit

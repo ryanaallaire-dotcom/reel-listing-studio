@@ -9,8 +9,9 @@
 <meta property="og:title" content="Your listing photos, filmed. In 24 hours.">
 <meta property="og:description" content="Send a listing link. Get a walkthrough video that looks shot on site, in vertical, widescreen and MLS-ready versions. Nothing charged until you approve.">
 <meta property="og:image" content="/media/walk-still.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<meta name="theme-color" content="#F3F0E9">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: a viewfinder. Copy on the left, a live "camera" on the right; every section below is one plain column the agent reads top to bottom. */
 :root{
@@ -302,6 +303,167 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .qa-form button{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:0 16px;font:700 15px var(--body);cursor:pointer}
 .qa-note{font-size:11px;color:var(--muted);padding:0 16px 8px;text-align:center}
 @media (max-width:520px){.qa{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0}}
+
+/* ===== Brand v2: Reel Listing Studio. Calm, edgy, confident: bone paper, ink black, a brass accent, a big editorial serif,
+   sharp corners and hairline rules. Same family as Reel Business Studio (wordmark, viewfinder, Archivo), quieter voice. ===== */
+:root{
+  --paper:#F3F0E9; --card:#FBFAF6; --ink:#121211; --muted:#5F5B53; --line:#DCD6CA;
+  --amber:#7D5F2C; --amber-soft:#EAE4D6; --on-amber:#F7F4EE; --rec:#C2412D; --band:#121211; --on-band:#F3F0E9; --band-muted:#A8A399; --fill:transparent;
+  --brass:#B08A4E; --champ:#D2B477;
+  --display:'Instrument Serif',Georgia,'Times New Roman',serif; --body:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E0E0D; --card:#171715; --ink:#F0ECE3; --muted:#A39E94; --line:#2C2A26;
+  --amber:#D2B477; --amber-soft:#2A2419; --on-amber:#121211; --rec:#E0644F; --band:#181816; --on-band:#F0ECE3; --band-muted:#A39E94; --fill:transparent; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E0E0D; --card:#171715; --ink:#F0ECE3; --muted:#A39E94; --line:#2C2A26;
+  --amber:#D2B477; --amber-soft:#2A2419; --on-amber:#121211; --rec:#E0644F; --band:#181816; --on-band:#F0ECE3; --band-muted:#A39E94; --fill:transparent; color-scheme:dark}
+body{margin:0;-webkit-font-smoothing:antialiased}
+section{padding-block:96px}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-transform:none;letter-spacing:-.015em;line-height:1}
+h1{font-size:clamp(56px,8.2vw,118px);line-height:.9;letter-spacing:-.03em}
+h1 em,h2 em{font-style:italic;color:var(--amber)}
+h2{font-size:clamp(40px,5.2vw,70px);line-height:.98;letter-spacing:-.02em}
+h3{font-family:var(--body);font-weight:700;font-size:19px;line-height:1.3;letter-spacing:-.005em}
+.eyebrow{display:flex;align-items:center;gap:14px;font:600 11.5px/1.4 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--amber);margin-bottom:18px}
+.eyebrow::before{content:"";flex:none;width:32px;height:1px;background:currentColor}
+.proof .eyebrow,.request .eyebrow{color:var(--champ)}
+.hero-copy .eyebrow,.proof-body .eyebrow,.request .eyebrow{margin-bottom:0}
+.lede{font-size:18px;line-height:1.65}
+.fill{background:none;padding:0;border-radius:0;font-family:var(--display);font-style:italic;font-weight:400;font-size:1.15em;color:var(--amber)}
+.btn{font:600 13px/1.1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:19px 30px;border-radius:2px;transition:background-color .2s ease,color .2s ease,border-color .2s ease}
+.btn-primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn-primary:hover{background:var(--amber);border-color:var(--amber);color:var(--on-amber)}
+.btn-ghost{border:1px solid var(--ink);color:var(--ink)}
+.btn-ghost:hover{background:var(--ink);color:var(--paper)}
+.offer .btn-primary{background:var(--champ);border-color:var(--champ);color:#121211}
+.btn:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.toggle button:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+.risk{font-size:14.5px}
+
+/* header: the shared wordmark */
+header .wrap{padding-block:22px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;color:var(--ink);text-decoration:none;font:inherit;text-transform:none;letter-spacing:0;min-width:0}
+.brand .mark{width:34px;height:34px;flex:none}
+.wm{display:flex;flex-direction:column;line-height:1;min-width:0}
+.wm b{font:900 24px/.9 var(--body);font-stretch:125%;text-transform:uppercase;letter-spacing:-.01em}
+.wm span{font:500 9px/1 var(--mono);letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-top:6px;white-space:nowrap}
+.hnav{gap:28px}
+.hnav .navl,.signin{font:600 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;text-decoration:none;color:var(--muted)}
+.signin{color:var(--ink)}
+.hnav .navl:hover{color:var(--ink)}
+header .btn{padding:14px 20px;font-size:11.5px}
+
+/* hero */
+.hero{padding-block:64px 104px}
+.hero .wrap{gap:80px}
+.hero-copy{gap:26px}
+.stats{gap:44px;padding-top:24px;border-top:1px solid var(--line)}
+.stats b{font-family:var(--display);font-weight:400;font-size:44px;line-height:1;letter-spacing:-.02em}
+.stats span{font:600 11px/1.4 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.viewfinder{border-radius:3px;box-shadow:0 50px 90px -45px rgba(0,0,0,.6);outline:1px solid var(--line);outline-offset:14px}
+.cam{gap:30px}
+.toggle{border:1px solid var(--ink);border-radius:2px;padding:3px}
+.toggle button{font:600 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:11px 18px;border-radius:1px}
+.cam small{font-size:13px;margin-top:-14px}
+
+/* proof */
+.proof .wrap{gap:80px}
+.bignum{font-family:var(--display);font-weight:400;color:var(--champ);letter-spacing:-.02em;font-size:clamp(56px,7.6vw,96px)}
+.receipt{border:1px solid rgba(243,240,233,.18);border-radius:2px;background:rgba(255,255,255,.02)}
+.receipt .tot{border-top:1px solid rgba(243,240,233,.18)}
+.quick div{border-top:1px solid var(--champ)}
+.who img{border:1px solid var(--champ)}
+.proof .fill{color:var(--champ)}
+
+/* agents who said yes */
+.dm{border-radius:3px}
+.dm .shot{border-radius:2px}
+.dm .chip{background:var(--ink);color:var(--paper);font:600 10.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;border-radius:2px;padding:8px 11px}
+.faces img{border:2px solid var(--paper);box-shadow:0 0 0 1px var(--amber)}
+
+/* clips and comparison */
+.clip .frame{border-radius:3px}
+.tag{border-radius:2px;background:rgba(18,18,17,.82);font:500 11px var(--mono);letter-spacing:.06em}
+.clip.next .frame{border:1px solid var(--amber);background:var(--amber-soft)}
+.clip.next h3{font-family:var(--display);font-weight:400;font-size:42px;letter-spacing:-.02em}
+.tbl{border-radius:3px}
+thead th{font:600 11px var(--body);letter-spacing:.18em}
+.why{border:1px solid var(--ink);border-radius:2px;padding:32px}
+.why p{font-size:18px}
+.steps li{border-top:1px solid var(--line);padding-top:18px}
+.steps li::before{font:italic 400 46px/1 var(--display);color:var(--amber);letter-spacing:-.02em}
+.gets li::before{flex:0 0 7px;height:7px;margin-top:9px;border-radius:0;transform:rotate(45deg);background:var(--amber)}
+.clip.mini{border-radius:3px}
+
+/* founder */
+.head{background:var(--ink);color:var(--champ);font-family:var(--display);font-size:50px;letter-spacing:0}
+.founder blockquote{font-family:var(--display);font-style:italic;font-size:clamp(24px,2.5vw,32px);line-height:1.28;letter-spacing:-.01em}
+.founder cite{font:600 11.5px/1.5 var(--body);letter-spacing:.16em;text-transform:uppercase}
+.creds div{border-top:1px solid var(--amber)}
+.creds b{font-family:var(--display);font-weight:400;text-transform:none;font-size:34px;letter-spacing:-.01em}
+.nr{font-family:var(--display);font-weight:400;text-transform:none;font-size:30px;letter-spacing:-.01em}
+.nr small{font:600 10px var(--body);letter-spacing:.2em;text-transform:uppercase}
+
+/* pricing */
+.plans{gap:24px}
+.plan{border-radius:3px;padding:32px}
+.plan.rec{border:1px solid var(--ink);box-shadow:0 40px 70px -50px rgba(0,0,0,.5)}
+.plan h3{font-family:var(--display);font-weight:400;font-size:38px;letter-spacing:-.015em;line-height:1}
+.badge{background:var(--ink);color:var(--paper);font:600 10.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;border-radius:2px;padding:8px 12px;top:-15px}
+.ask-link{font:600 15px var(--body);color:var(--amber);letter-spacing:.01em;border-bottom-width:1px}
+.guard{border-radius:3px;border-left:2px solid var(--amber)}
+.guard h3{font-family:var(--display);font-weight:400;font-size:40px;letter-spacing:-.015em}
+.offer{border-radius:3px}
+.offer b{font-family:var(--display);font-weight:400;text-transform:none;color:var(--champ);font-size:30px;letter-spacing:-.01em}
+.offer code{background:var(--champ);color:#121211;border-radius:2px}
+
+/* faq and bonus */
+summary{font-weight:600}
+summary::after{font-weight:300;font-size:28px}
+.bonus-in{border:1px solid var(--line);border-radius:3px}
+.bonus-steps li{border-top:1px solid var(--amber)}
+.bonus-steps li::before{font:italic 400 28px/1 var(--display);color:var(--amber)}
+
+/* request form */
+.request .wrap{gap:80px}
+#reqForm{border-radius:3px;padding:32px;box-shadow:0 50px 90px -50px rgba(0,0,0,.7)}
+#reqForm .f>label{font:600 11px/1.3 var(--body);letter-spacing:.16em;text-transform:uppercase}
+#reqForm input,#reqForm select,#reqForm textarea{border-radius:2px;border:1px solid var(--line);background:var(--paper)}
+#reqForm input:focus,#reqForm select:focus,#reqForm textarea:focus{border-color:var(--ink)}
+label.claim{border-radius:2px;border:1px solid var(--amber)}
+.pcard{border-radius:3px}
+.pcard b{font-family:var(--display);font-weight:400;text-transform:none;font-size:32px;letter-spacing:-.01em}
+.pcard a{color:var(--champ)}
+
+/* footer */
+footer{padding-block:80px 130px;border-top:1px solid var(--line)}
+.giant{font:400 clamp(54px,10.5vw,164px)/.9 var(--display);letter-spacing:-.035em;color:var(--ink);margin-bottom:40px;text-wrap:balance}
+.giant em{font-style:italic;color:var(--amber)}
+
+/* sales assistant */
+.qa-btn{border-radius:2px;font:600 12px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;padding:15px 18px}
+.qa-btn i{background:var(--brass)}
+.qa{border-radius:4px}
+.qa-head b{font-family:var(--display);font-weight:400;text-transform:none;font-size:25px;letter-spacing:-.01em}
+.qa-m{border-radius:3px}
+.qa-m.bot{border-bottom-left-radius:0}
+.qa-m.me{border-bottom-right-radius:0}
+.qa-chips button,.qa-cta a,.qa-form input,.qa-form button{border-radius:2px}
+
+@media (max-width:900px){
+  section{padding-block:68px}
+  .hero{padding-block:32px 72px}
+  .hero .wrap,.proof .wrap,.request .wrap{gap:48px}
+  .hnav .navl{display:none}
+  .viewfinder{outline-offset:10px}
+}
+@media (max-width:520px){
+  .wm b{font-size:21px}
+  .wm span{font-size:8px;letter-spacing:.24em}
+  .stats{gap:28px}
+  .stats b{font-size:38px}
+  #reqForm{padding:22px}
+}
 </style>
 </head>
 <body>
@@ -314,15 +476,15 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 </div>
 
 <header><div class="wrap">
-  <div class="brand"><i aria-hidden="true"></i>Reel Listing Studio</div>
-  <nav class="hnav"><a href="/studio" class="signin">Sign in</a><a class="btn btn-primary" href="#request">Get my listing video</a></nav>
+  <a class="brand" href="/" aria-label="Reel Listing Studio"><svg class="mark" viewBox="0 0 36 36" aria-hidden="true"><path d="M3 12V6a3 3 0 0 1 3-3h6M24 3h6a3 3 0 0 1 3 3v6M33 24v6a3 3 0 0 1-3 3h-6M12 33H6a3 3 0 0 1-3-3v-6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="18" cy="18" r="6.5" fill="#B08A4E"/></svg><span class="wm"><b>Reel</b><span>Listing Studio</span></span></a>
+  <nav class="hnav"><a href="#examples" class="navl">Examples</a><a href="#pricing" class="navl">Pricing</a><a href="/studio" class="signin">Sign in</a><a class="btn btn-primary" href="#request">Get my listing video</a></nav>
 </div></header>
 
 <main>
 <section class="hero"><div class="wrap">
   <div class="hero-copy">
     <p class="eyebrow">For listing agents · Done for you · No videographer to book</p>
-    <h1>Your listing photos, filmed.</h1>
+    <h1>Your listing photos, <em>filmed.</em></h1>
     <p class="lede">Send us your listing link. Within 24 hours you get a walkthrough video that looks shot on site: fans turning, fireplaces flickering, water moving, the camera gliding through each room. Nothing added. Nothing removed.</p>
     <div class="ctas">
       <a class="btn btn-primary" href="#request">Get my listing video</a>
@@ -596,6 +758,7 @@ body.sticky-on .qa-btn{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 </main>
 
 <footer><div class="wrap">
+  <p class="giant" aria-hidden="true">Reel Listing <em>Studio</em></p>
   <p>Motion is created from your listing photos. Nothing is added to or removed from the property.</p>
   <p>Reel Listing Studio · Ryan Allaire<span data-site-sep="city"></span><span data-site-sep="phone"></span><span data-site-sep="email"></span><span data-site-link="privacy">Privacy</span><span data-site-link="terms">Terms</span><span data-site-link="partners">Partner program</span></p>
 </div></footer>
