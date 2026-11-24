@@ -396,7 +396,11 @@ thead th{font:600 11px var(--body);letter-spacing:.18em}
 .clip.mini{border-radius:3px}
 
 /* founder */
-.head{background:var(--ink);color:var(--champ);font-family:var(--display);font-size:50px;letter-spacing:0}
+.founder .wrap{grid-template-columns:220px 1fr;gap:44px}
+.head{display:block;width:100%;height:auto;aspect-ratio:auto;border-radius:0;background:none;padding:0;margin-top:4px;object-fit:contain}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .head{background:#F3F0E9;padding:18px;border-radius:2px}}
+:root[data-theme="dark"] .head{background:#F3F0E9;padding:18px;border-radius:2px}
+@media (max-width:900px){ .founder .wrap{grid-template-columns:1fr;gap:28px} .head{width:200px} }
 .founder blockquote{font-family:var(--display);font-style:italic;font-size:clamp(24px,2.5vw,32px);line-height:1.28;letter-spacing:-.01em}
 .founder cite{font:600 11.5px/1.5 var(--body);letter-spacing:.16em;text-transform:uppercase}
 .creds div{border-top:1px solid var(--amber)}
@@ -626,7 +630,7 @@ footer{padding-block:80px 130px;border-top:1px solid var(--line)}
 </div></section>
 
 <section class="founder" style="padding-top:0"><div class="wrap">
-  <div class="head" aria-hidden="true">AMG</div>
+  <img class="head" src="/media/amg-logo.png" width="720" height="566" alt="Advance Marketing Group logo" loading="lazy" decoding="async">
   <div>
     <p class="eyebrow">Who’s behind this</p>
     <h2 style="margin-top:10px">Built by Advance Marketing Group.</h2>
