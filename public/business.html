@@ -257,6 +257,20 @@ dialog.player::backdrop{background:rgba(8,6,6,.86)}
 .sticky{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(13,12,12,.94);border-top:1px solid var(--rule-d);display:none}
 .sticky .btn{width:100%}
 
+/* real client: 4 photos in, 1 reel out */
+.client{padding-top:24px}
+.cl-h{display:grid;gap:16px;max-width:760px}
+.cl-row{margin-top:44px;display:grid;grid-template-columns:minmax(0,1.2fr) auto minmax(0,.8fr);gap:32px;align-items:center}
+.cl-lbl{margin:0 0 14px;font:700 12px/1.3 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.cl-photos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cl-photos li{position:relative;aspect-ratio:3/4;border-radius:4px;overflow:hidden;background:var(--ink3);box-shadow:0 0 0 1px var(--rule-d)}
+.cl-photos img{display:block;width:100%;height:100%;object-fit:cover}
+.cl-photos span{position:absolute;left:10px;top:10px;font:700 11px/1 var(--mono);letter-spacing:.14em;color:#fff;background:rgba(13,12,12,.74);padding:6px 8px;border-radius:2px}
+.cl-arrow{font:400 72px/1 var(--serif);color:var(--sig)}
+.cl-reel{margin:0;justify-self:center;width:100%;max-width:360px}
+.cl-reel video{display:block;width:100%;height:auto;max-height:78vh;border-radius:6px;background:#000;box-shadow:0 0 0 1px var(--rule-d),12px 12px 0 var(--sig)}
+.cl-cta{margin:44px 0 0}
+@media (max-width:960px){ .cl-row{grid-template-columns:1fr;gap:20px} .cl-photos{grid-template-columns:repeat(4,1fr);gap:8px} .cl-photos span{left:6px;top:6px;padding:4px 5px;font-size:10px} .cl-arrow{justify-self:center;transform:rotate(90deg);font-size:52px} .cl-reel{max-width:340px} }
 @media (max-width:1080px){ .hnav a:not(.btn):not(.signin){display:none} }
 @media (max-width:960px){
   section{padding-block:72px}
@@ -349,6 +363,31 @@ dialog.player::backdrop{background:rgba(8,6,6,.86)}
   </div>
   <div class="strip"><div class="gallery" id="gallery"></div></div>
   <p class="note">These examples use sample photos and made-up businesses. Yours is made from your real photos, with your name, offer, phone and logo.</p>
+</div></section>
+
+<section class="client" id="client"><div class="wrap">
+  <div class="cl-h">
+    <p class="kicker">Real client · <span id="clName">Big Guys BBQ</span></p>
+    <h2>These <span class="it">4 photos</span> made this video.</h2>
+    <p class="lede">Four breakfast photos from Big Guys BBQ in Hudson, WI became this reel. They loved it and signed on as a client.</p>
+  </div>
+  <div class="cl-row">
+    <div>
+      <p class="cl-lbl">4 photos in</p>
+      <ol class="cl-photos">
+        <li><img src="/media/client-bbq-1.jpg" alt="Big Guys BBQ photo 1" loading="lazy" decoding="async"><span>01</span></li>
+        <li><img src="/media/client-bbq-2.jpg" alt="Big Guys BBQ photo 2" loading="lazy" decoding="async"><span>02</span></li>
+        <li><img src="/media/client-bbq-3.jpg" alt="Big Guys BBQ photo 3" loading="lazy" decoding="async"><span>03</span></li>
+        <li><img src="/media/client-bbq-4.jpg" alt="Big Guys BBQ photo 4" loading="lazy" decoding="async"><span>04</span></li>
+      </ol>
+    </div>
+    <div class="cl-arrow" aria-hidden="true">→</div>
+    <figure class="cl-reel">
+      <p class="cl-lbl">1 reel out</p>
+      <video src="/media/client-bbq.mp4#t=0.5" poster="/media/client-bbq.jpg" controls playsinline preload="metadata" aria-label="The Big Guys BBQ reel made from those 4 photos"></video>
+    </figure>
+  </div>
+  <p class="cl-cta"><a class="btn btn-primary" href="#request">Get my video ad <span aria-hidden="true">→</span></a></p>
 </div></section>
 
 <section class="light" id="how"><div class="wrap">
