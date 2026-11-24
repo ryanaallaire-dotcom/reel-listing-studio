@@ -348,7 +348,7 @@ const BIZ=/*__BIZ__*/null;   // industries, captions and the sample businesses (
       v.currentTime=0; var p=v.play(); if(p&&p.catch) p.catch(function(){});
       v.classList.add("on"); o.classList.remove("on");
       cs.classList.remove("on"); cs.textContent=ex.captions[n]||""; setTimeout(function(){ if(!stopped) cs.classList.add("on"); },350);
-      if(n<3) setTimeout(function(){ prep(o,n+1); },400);
+      if(n<3) setTimeout(function(){ if(!stopped&&idx===n) prep(o,n+1); },650);
     }
     function next(){
       if(stopped) return;
@@ -366,9 +366,10 @@ const BIZ=/*__BIZ__*/null;   // industries, captions and the sample businesses (
 
   /* hero: the pizzeria story plays when it's on screen */
   var hero=Story($("heroPhone"),"restaurant");
+  var dlg=$("player"), story=null;
   if(hero){
-    var heroOn=false;
-    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting&&!heroOn){ heroOn=true; hero.start(); } else if(!e.isIntersecting&&heroOn){ heroOn=false; hero.stop(); } }); },{threshold:.35});
+    var heroOn=false, heroVis=false;
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ heroVis=e.isIntersecting; if(e.isIntersecting&&!heroOn&&!dlg.open){ heroOn=true; hero.start(); } else if(!e.isIntersecting&&heroOn){ heroOn=false; hero.stop(); } }); },{threshold:.35});
     if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)) io.observe($("heroPhone"));
   }
 
@@ -388,14 +389,13 @@ const BIZ=/*__BIZ__*/null;   // industries, captions and the sample businesses (
     near.observe(t);
   });
 
-  var dlg=$("player"), story=null;
   function openPlayer(k){
-    if(hero) hero.stop();
+    if(hero){ hero.stop(); heroOn=false; }
     $("plName").textContent=IND[k]||k;
     $("plGo").onclick=function(){ dlg.close(); var s=$("fInd"); if(s) s.value=k; };
     story=Story($("plPhone"),k); if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open",""); story&&story.start();
   }
-  dlg.addEventListener("close",function(){ story&&story.stop(); });
+  dlg.addEventListener("close",function(){ story&&story.stop(); if(hero&&heroVis){ heroOn=true; hero.start(); } });
   $("plClose").addEventListener("click",function(){ dlg.close(); });
   dlg.addEventListener("click",function(e){ if(e.target===dlg) dlg.close(); });
 
