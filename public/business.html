@@ -3,176 +3,293 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0D0C0C">
 <link rel="icon" href="/media/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="apple-touch-icon" href="/media/apple-touch-icon.png">
 <title>Reel Business Studio: your photos, turned into video ads</title>
 <meta name="description" content="Send 4 photos of your business. Get back a video ad with real camera moves, captions, music and your logo, sized for Reels, TikTok, Facebook and Google.">
 <meta property="og:title" content="Turn 4 photos into a video ad that fills your tables, chairs and calendar.">
 <meta property="og:description" content="Real camera moves, captions, music and your logo. Ready for Reels, TikTok, Facebook and Google. No film crew, no shoot day.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
+/* Reel Business Studio brand: a film set. Black and a lipstick red for the bold, blush paper and an italic serif
+   for the soft, wide heavy type for the brand voice, mono for camera readouts. */
 :root{
-  --paper:#F6F5F2; --card:#FFFFFF; --ink:#13161B; --muted:#5B616B; --line:#DEDBD4;
-  --amber:#C97A0E; --amber-soft:#F7E6CB; --on-amber:#13161B; --rec:#D8432E; --band:#13161B; --on-band:#F2F0EB; --band-muted:#A3A8B0; --hot:#F2A541;
-  --display:'Oswald','Arial Narrow',Arial,sans-serif; --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --ink:#0D0C0C; --ink2:#151213; --ink3:#1E191A; --cream:#F6E8E3; --paper:#FDF7F4; --white:#FFFFFF;
+  --sig:#D91F34; --sig-hi:#E8394C; --sig-ink:#B3152A; --rose:#F4A9A1; --petal:#F2CFC8; --sun:#FFC53D; --edge:#F2A7A0;
+  --on-dark:#F7EFEC; --dim:#A99F9D; --dim2:#7C7270; --rule-d:rgba(247,239,236,.14);
+  --on-light:#0D0C0C; --mute:#6A5A55; --rule-l:#E3CFC8;
+  --wide:'Archivo','Arial Black',Arial,sans-serif; --body:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --serif:'Instrument Serif',Georgia,'Times New Roman',serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#0F1114; --card:#171A1F; --ink:#EDEBE6; --muted:#9AA0A8; --line:#2A2E35;
-  --amber:#F2A541; --amber-soft:#3A2A12; --rec:#F06A55; --band:#1B1F25; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --paper:#0F1114; --card:#171A1F; --ink:#EDEBE6; --muted:#9AA0A8; --line:#2A2E35;
-  --amber:#F2A541; --amber-soft:#3A2A12; --rec:#F06A55; --band:#1B1F25; color-scheme:dark}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
-.wrap{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-section{padding-block:72px}
-h1,h2,h3{font-family:var(--display);text-transform:uppercase;line-height:1.02;letter-spacing:.01em;text-wrap:balance;margin:0}
-h1{font-size:clamp(46px,7vw,88px);font-weight:700}
-h2{font-size:clamp(32px,4.6vw,52px);font-weight:600}
-h3{font-size:22px;font-weight:600}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ink);color:var(--on-dark);font-family:var(--body);font-size:17px;line-height:1.55;overflow-x:hidden;overflow-x:clip}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;opacity:.06;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+section{padding-block:104px;position:relative}
+h1,h2,h3{margin:0;font-family:var(--wide);font-weight:800;text-wrap:balance}
+h1{font-size:clamp(40px,5.3vw,78px);line-height:.98;letter-spacing:-.035em}
+h2{font-size:clamp(34px,4.4vw,62px);line-height:1;letter-spacing:-.03em}
+h3{font-size:22px;line-height:1.1;letter-spacing:-.01em}
 p{margin:0}
-.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
-.lede{font-size:19px;color:var(--muted);max-width:58ch}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-family:var(--body);font-weight:700;font-size:17px;padding:16px 26px;border-radius:999px;text-decoration:none;border:2px solid transparent;cursor:pointer;color:var(--ink);background:transparent}
-.btn-primary{background:var(--amber);color:var(--on-amber)}
-.btn-ghost{border-color:var(--ink)}
+a{color:inherit}
+.it{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.01em;font-size:1.1em;line-height:.9;color:var(--sig)}
+.kicker{display:inline-flex;align-items:center;gap:10px;font:700 12px/1.3 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.kicker::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--sig);box-shadow:0 0 0 4px rgba(217,31,52,.24)}
+.lede{font-size:19px;line-height:1.55;color:var(--dim);max-width:56ch}
+.light{background:var(--cream);color:var(--on-light);color-scheme:light}
+.light .kicker,.light .lede{color:var(--mute)}
+.light .it{color:var(--sig)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;font:800 15px/1.1 var(--body);font-stretch:112%;text-transform:uppercase;letter-spacing:.03em;padding:19px 28px;border-radius:999px;text-decoration:none;border:2px solid transparent;cursor:pointer;color:var(--on-dark);background:transparent;transition:transform .15s ease,background-color .15s ease,border-color .15s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--sig);color:#FFFFFF;box-shadow:0 14px 34px -14px rgba(217,31,52,.8)}
+.btn-primary:hover{background:var(--sig-hi)}
+.btn-ghost{border-color:rgba(243,238,228,.28)}
+.btn-ghost:hover{border-color:var(--on-dark)}
+.btn-ink{background:var(--ink);color:var(--cream)}
+.btn-sm{padding:12px 18px;font-size:13px}
+.pi{width:22px;height:22px;border-radius:50%;background:var(--on-dark);display:inline-flex;align-items:center;justify-content:center}
+.pi::after{content:"";border-left:7px solid var(--ink);border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;margin-left:2px}
+:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .hide{display:none!important}
 [hidden]{display:none!important}
 
-.ribbon{background:var(--amber);color:var(--on-amber);font-size:15px}
+/* partner ribbon */
+.ribbon{background:var(--petal);color:var(--ink);font-size:15px;position:relative;z-index:5}
 .ribbon .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:10px}
-.ribbon a{color:inherit;font-weight:700}
-.ribbon button{background:none;border:0;color:inherit;font-size:20px;cursor:pointer;padding:0 4px}
-header .wrap{display:flex;justify-content:space-between;align-items:center;padding-block:18px;gap:16px}
-.brand{font-family:var(--display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
-.brand i{width:12px;height:12px;border-radius:50%;background:var(--rec);display:inline-block;box-shadow:0 0 0 4px color-mix(in srgb,var(--rec) 25%,transparent)}
-.hnav{display:flex;gap:18px;align-items:center}
-.signin{color:var(--ink);font-weight:700;text-decoration:none;font-size:15px}
-header .btn{padding:11px 20px;font-size:15px}
+.ribbon a{color:inherit;font-weight:800}
+.ribbon button{background:none;border:0;color:inherit;font-size:22px;cursor:pointer;padding:0 4px}
 
-.hero{padding-top:28px}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:56px;align-items:center}
-.hero-copy{display:flex;flex-direction:column;gap:22px;min-width:0}
-.cta-row{display:flex;gap:12px;flex-wrap:wrap}
-.risk{font-size:15px;color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
-.chips li{list-style:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--muted);background:var(--card)}
+/* header */
+.top .wrap{display:flex;justify-content:space-between;align-items:center;padding-block:22px;gap:16px}
+.logo{display:flex;align-items:center;gap:12px;color:var(--on-dark);text-decoration:none;min-width:0}
+.mark{width:36px;height:36px;flex:none}
+.wm{display:flex;flex-direction:column;line-height:1;min-width:0}
+.wm b{font:900 26px/.9 var(--wide);font-stretch:125%;text-transform:uppercase;letter-spacing:-.01em}
+.wm span{font:700 9.5px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--dim);margin-top:6px;white-space:nowrap}
+.hnav{display:flex;gap:26px;align-items:center}
+.hnav a{text-decoration:none;font-weight:600;font-size:15px;color:var(--dim)}
+.hnav a:hover{color:var(--on-dark)}
+.hnav .signin{color:var(--on-dark)}
+.hnav .btn{color:#FFFFFF}
+
+/* hero */
+.hero{padding-block:36px 96px;background:radial-gradient(55% 60% at 80% 46%,rgba(217,31,52,.3),transparent 70%),radial-gradient(40% 40% at 8% 100%,rgba(242,207,200,.08),transparent 70%)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(0,.78fr);gap:48px;align-items:center}
+.hero-copy{display:flex;flex-direction:column;gap:26px;min-width:0}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.risk{font-size:15px;color:var(--dim)}
+.risk b{color:var(--on-dark)}
+.posts{display:flex;flex-wrap:wrap;margin:0;padding:18px 0 0;border-top:1px solid var(--rule-d);font:700 11.5px/1.9 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.posts li{list-style:none}
+.posts li+li::before{content:"\25CF";color:var(--sig);font-size:7px;vertical-align:middle;margin:0 12px}
+.hero-shot{min-width:0}
+.vf{position:relative;max-width:410px;margin-inline:auto;padding:46px 30px 44px}
+.vf .c{position:absolute;width:34px;height:34px;border:0 solid var(--on-dark)}
+.vf .tl{top:0;left:0;border-top-width:3px;border-left-width:3px}
+.vf .tr{top:0;right:0;border-top-width:3px;border-right-width:3px}
+.vf .bl{bottom:0;left:0;border-bottom-width:3px;border-left-width:3px}
+.vf .br{bottom:0;right:0;border-bottom-width:3px;border-right-width:3px}
+.vf-top,.vf-bot{position:absolute;left:46px;right:46px;display:flex;justify-content:space-between;gap:10px;font:700 11.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.vf-top{top:15px}.vf-bot{bottom:14px}
+.rec{color:var(--on-dark);display:inline-flex;align-items:center;gap:8px}
+.rec i{width:9px;height:9px;border-radius:50%;background:var(--sig);animation:blink 1.2s steps(1,end) infinite}
+@keyframes blink{50%{opacity:0}}
+.tc{color:var(--on-dark);font-variant-numeric:tabular-nums}
+.under-phone{text-align:center;font:500 12px/1.5 var(--mono);letter-spacing:.04em;color:var(--dim2);margin-top:16px}
 
 /* the phone that plays a 4-shot story */
-.phone{position:relative;aspect-ratio:9/16;width:100%;max-width:360px;margin-inline:auto;border-radius:34px;overflow:hidden;background:#0b0c0f;border:8px solid #0b0c0f;box-shadow:0 40px 80px -30px rgba(0,0,0,.55)}
+.phone{position:relative;aspect-ratio:9/16;width:100%;max-width:340px;margin-inline:auto;border-radius:30px;overflow:hidden;background:#050505;border:7px solid #050505;box-shadow:0 0 0 1px rgba(243,238,228,.14),0 50px 90px -30px rgba(0,0,0,.8),0 30px 120px -40px rgba(217,31,52,.55)}
 .phone video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease}
 .phone video.on{opacity:1}
 .phone .cap{position:absolute;left:0;right:0;bottom:15%;text-align:center;padding:0 18px;pointer-events:none}
-.phone .cap span{display:inline-block;background:rgba(255,255,255,.95);color:#13161B;font:700 clamp(14px,2.4vw,19px) var(--body);padding:8px 16px;border-radius:999px;transform:translateY(8px);opacity:0;transition:all .4s ease}
-.phone .cap span.on{transform:none;opacity:1}
+.phone .cap span{display:inline-block;background:#FFFFFF;color:#0D0C0A;font:800 clamp(14px,2.3vw,18px)/1.2 var(--body);padding:9px 16px;border-radius:8px;transform:translateY(8px) rotate(-1.5deg);opacity:0;transition:all .4s ease;box-shadow:4px 4px 0 var(--sig)}
+.phone .cap span.on{transform:rotate(-1.5deg);opacity:1}
 .phone .bars{position:absolute;top:12px;left:14px;right:14px;display:flex;gap:5px;z-index:2}
 .phone .bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.35);overflow:hidden;position:relative}
 .phone .bars i b{position:absolute;inset:0;width:0;background:#fff}
-.phone .end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:28px;color:#fff;background:linear-gradient(180deg,rgba(10,10,12,.55),rgba(10,10,12,.88));opacity:0;transition:opacity .5s ease;pointer-events:none}
+.phone .end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:28px;color:#fff;background:linear-gradient(180deg,rgba(13,12,10,.5),rgba(13,12,10,.92));opacity:0;transition:opacity .5s ease;pointer-events:none}
 .phone .end.on{opacity:1}
-.phone .end small{font:500 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--hot)}
-.phone .end b{font:600 clamp(24px,4vw,32px)/1.05 var(--display);text-transform:uppercase}
+.phone .end small{font:700 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#FFFFFF;background:var(--sig);padding:6px 10px;border-radius:4px}
+.phone .end b{font:900 clamp(22px,3.6vw,30px)/1 var(--wide);font-stretch:112%;text-transform:uppercase;letter-spacing:-.01em}
 .phone .end em{font-style:normal;font-size:15px;opacity:.85}
-.phone .end strong{font:500 22px var(--body);letter-spacing:.02em}
-.phone .tag{position:absolute;top:26px;left:14px;z-index:2;background:rgba(19,22,27,.75);color:#F2F0EB;font:500 11px var(--mono);padding:4px 9px;border-radius:999px}
-.phone .sound{position:absolute;bottom:12px;right:12px;z-index:3;background:rgba(19,22,27,.7);color:#fff;border:0;border-radius:999px;font:700 12px var(--body);padding:6px 10px;cursor:pointer;display:none}
-.under-phone{text-align:center;font-size:13px;color:var(--muted);margin-top:12px}
+.phone .end strong{font:700 22px var(--body);letter-spacing:.02em}
+.phone .tag{position:absolute;top:26px;left:14px;z-index:2;background:rgba(13,12,10,.72);color:#F3EEE4;font:700 10.5px var(--mono);letter-spacing:.1em;padding:4px 9px;border-radius:4px}
+.phone .sound{position:absolute;bottom:12px;right:12px;z-index:3;background:rgba(13,12,10,.7);color:#fff;border:0;border-radius:999px;font:700 12px var(--body);padding:6px 10px;cursor:pointer;display:none}
 
-.band{background:var(--band);color:var(--on-band)}
-.band .lede{color:var(--band-muted)}
-.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px}
-.pains div{border-top:2px solid var(--hot);padding-top:14px;min-width:0}
-.pains b{display:block;font-family:var(--display);text-transform:uppercase;font-size:24px;font-weight:600;line-height:1.1;margin-bottom:6px}
-.pains p{color:var(--band-muted);font-size:16px}
+/* industry marquee */
+.marq{background:var(--sig);color:#FFFFFF;overflow:hidden;border-block:2px solid var(--ink);width:106vw;margin-left:-3vw;transform:rotate(-1.4deg);position:relative;z-index:2;margin-top:-6px}
+.marq-track{display:flex;width:max-content;animation:marq 42s linear infinite}
+.marq-track span{display:flex;align-items:center;font:900 clamp(22px,2.8vw,38px)/1 var(--wide);font-stretch:125%;text-transform:uppercase;letter-spacing:-.01em;padding:18px 0;white-space:nowrap}
+.marq-track span::after{content:"";width:.38em;height:.38em;border-radius:50%;background:var(--ink);margin:0 .75em}
+@keyframes marq{to{transform:translateX(-50%)}}
 
-.gal-h{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
-.gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:32px}
-.card{display:flex;flex-direction:column;gap:10px;min-width:0;margin:0}
-.thumb{position:relative;aspect-ratio:9/16;border-radius:18px;overflow:hidden;background:#1a1c21;border:0;padding:0;cursor:pointer;width:100%}
-.thumb video,.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.thumb .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -8px rgba(0,0,0,.5)}
-.thumb .play::after{content:"";border-left:16px solid #13161B;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
-.thumb .lbl{position:absolute;left:10px;right:10px;bottom:10px;color:#fff;font:600 17px/1.1 var(--display);text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.6);text-align:left}
-.card a{font-size:14px;font-weight:700;color:var(--amber);text-decoration:none}
-.card p{font-size:14px;color:var(--muted)}
-.note{font-size:14px;color:var(--muted);margin-top:18px}
+/* why ads get skipped */
+.why{padding-top:120px}
+.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:56px}
+.pains div{min-width:0;border-top:1px solid var(--rule-d);padding-top:26px}
+.pains b{position:relative;display:inline-block;font:900 clamp(28px,2.9vw,40px)/1 var(--wide);font-stretch:118%;text-transform:uppercase;letter-spacing:-.02em;color:var(--dim2);margin-bottom:16px}
+.pains b::after{content:"";position:absolute;left:-5%;right:-5%;top:48%;height:.13em;background:var(--sig);transform:rotate(-5deg);border-radius:3px}
+.pains p{color:var(--dim);font-size:16px}
+.then{margin-top:56px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font:800 clamp(20px,2.2vw,28px)/1.2 var(--wide);letter-spacing:-.02em}
+.then .it{font-size:1.15em}
 
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin:36px 0 0;padding:0;counter-reset:s}
-.steps li{list-style:none;display:flex;flex-direction:column;gap:8px;border-top:2px solid var(--amber);padding-top:14px;min-width:0}
-.steps li::before{counter-increment:s;content:"0" counter(s);font-family:var(--mono);font-size:14px;color:var(--amber)}
-.steps p{color:var(--muted);font-size:16px}
+/* examples, laid out like a strip of film */
+.gal-h{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.gal-h h2{margin-top:14px}
+.strip{margin-top:44px;background:#1A1712;border-radius:6px;padding:40px 18px;position:relative;box-shadow:inset 0 0 0 1px rgba(243,238,228,.06)}
+.strip::before,.strip::after{content:"";position:absolute;left:12px;right:12px;height:11px;background:repeating-linear-gradient(90deg,var(--ink) 0 15px,transparent 15px 30px)}
+.strip::before{top:14px}.strip::after{bottom:14px}
+.gallery{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px 14px}
+.card{display:flex;flex-direction:column;gap:8px;min-width:0;margin:0}
+.fr{display:flex;justify-content:space-between;font:700 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--edge);opacity:.85}
+.fr i{font-style:normal}
+.thumb{position:relative;aspect-ratio:9/16;border-radius:8px;overflow:hidden;background:#0A0908;border:0;padding:0;cursor:pointer;width:100%}
+.thumb video,.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+.thumb:hover video{transform:scale(1.05)}
+.thumb::after{content:"";position:absolute;inset:auto 0 0 0;height:45%;background:linear-gradient(180deg,transparent,rgba(13,12,10,.85));pointer-events:none}
+.thumb .play{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;background:var(--sig);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);z-index:2;transition:transform .2s ease}
+.thumb:hover .play{transform:translate(-50%,-50%) scale(1.1)}
+.thumb .play::after{content:"";border-left:15px solid #FFFFFF;border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:4px}
+.thumb .lbl{position:absolute;left:10px;right:10px;bottom:11px;z-index:2;color:#fff;font:900 15px/1.05 var(--wide);font-stretch:112%;text-transform:uppercase;letter-spacing:-.01em;text-align:left}
+.card p{font-size:13px;line-height:1.45;color:var(--dim)}
+.note{font-size:14px;color:var(--dim2);margin-top:20px}
 
-.gets{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 40px;margin:32px 0 0;padding:0}
-.gets li{list-style:none;padding-left:28px;position:relative}
-.gets li::before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
-.gets em{display:block;color:var(--muted);font-style:normal;font-size:15px}
+/* how it works: three slates */
+.slates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px;margin:56px 0 0;padding:0}
+.slates li{list-style:none;min-width:0}
+.clap{height:24px;border:2px solid var(--ink);border-bottom:0;background:repeating-linear-gradient(-45deg,var(--ink) 0 14px,var(--paper) 14px 28px);border-radius:5px 5px 0 0;transform-origin:3% 100%;transform:rotate(-6deg);transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.slates li:hover .clap{transform:rotate(0)}
+.slate{background:var(--ink);color:var(--on-dark);border:2px solid var(--ink);border-radius:0 0 16px 16px;overflow:hidden}
+.slate::before{content:"";display:block;height:22px;background:repeating-linear-gradient(-45deg,var(--paper) 0 14px,var(--ink) 14px 28px);border-bottom:2px solid var(--ink)}
+.sc{display:flex;border-bottom:1px solid var(--rule-d);font:700 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.sc span{flex:1;padding:12px 18px}
+.sc span+span{border-left:1px solid var(--rule-d)}
+.sc b{color:var(--rose);font-size:12px;margin-left:6px}
+.slate h3{padding:24px 20px 10px;font-size:clamp(24px,2.4vw,30px);font-weight:900;font-stretch:112%;text-transform:uppercase;letter-spacing:-.02em}
+.slate p{padding:0 20px 26px;color:var(--dim);font-size:16px}
 
-.promise{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;padding:36px;border-radius:24px;border:2px solid var(--amber);background:var(--amber-soft)}
-.promise ul{margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.promise li{list-style:none;padding-left:26px;position:relative}
-.promise li::before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
+/* what you get: a call sheet */
+.spec-wrap{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:56px;align-items:start}
+.spec-h{position:sticky;top:32px;display:flex;flex-direction:column;gap:16px}
+.spec{margin:0;border-top:2px solid var(--ink)}
+.spec div{display:grid;grid-template-columns:130px minmax(0,1fr);gap:20px;padding:22px 0;border-bottom:1px solid var(--rule-l)}
+.spec dt{font:700 11.5px/1.6 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--sig-ink);padding-top:3px}
+.spec dd{margin:0;display:flex;flex-direction:column;gap:4px}
+.spec dd b{font:800 20px/1.25 var(--body);letter-spacing:-.01em}
+.spec dd span{color:var(--mute);font-size:16px}
 
-.price-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:32px;border-radius:22px;background:var(--card);border:1px solid var(--line);margin-top:28px}
-.ask-link{display:inline-block;font:700 19px var(--body);color:var(--amber);text-decoration:none;border-bottom:2px solid currentColor;padding-bottom:2px}
+/* promise */
+.promise{display:grid;grid-template-columns:auto minmax(0,1fr);gap:64px;align-items:center}
+.seal{position:relative;width:min(300px,70vw);aspect-ratio:1;margin-inline:auto}
+.seal svg.ring{position:absolute;inset:0;width:100%;height:100%;animation:spin 36s linear infinite}
+.seal svg.ring text{font:700 13.5px var(--mono);letter-spacing:.2em;fill:var(--on-dark)}
+.seal-core{position:absolute;inset:24%;border-radius:50%;background:var(--sig);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 10px rgba(217,31,52,.18)}
+.seal-core svg{width:46%;height:46%}
+@keyframes spin{to{transform:rotate(360deg)}}
+.checks{margin:28px 0 0;padding:0;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--rule-d)}
+.checks li{list-style:none;padding:14px 0 14px 36px;position:relative;border-bottom:1px solid var(--rule-d)}
+.checks li::before{content:"";position:absolute;left:4px;top:19px;width:14px;height:8px;border-left:3px solid var(--sig);border-bottom:3px solid var(--sig);transform:rotate(-45deg)}
 
-.request .wrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:start}
-.pcard{display:flex;flex-direction:column;gap:4px;padding:18px 20px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
-.pcard span{font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
-.pcard b{font-size:20px}
-.pcard a{color:var(--ink)}
-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px}
-.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+/* pricing: the one loud block */
+.sig{background:var(--sig);color:#FFFFFF;color-scheme:dark}
+.sig .kicker{color:#FFFFFF}
+.sig .kicker::before{background:var(--ink);box-shadow:none}
+.sig .it{color:var(--ink)}
+.price{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:48px;align-items:end}
+.price h2{margin-top:16px;font-size:clamp(40px,5.6vw,80px)}
+.price-r{display:flex;flex-direction:column;gap:24px;align-items:flex-start}
+.price-r .lede{color:rgba(255,255,255,.92)}
+.btn-ink:hover{background:#2A2620}
+
+/* request form */
+.request .wrap{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:64px;align-items:start}
+.req-l{display:flex;flex-direction:column;gap:20px;min-width:0}
+.pcard{display:flex;flex-direction:column;gap:6px;padding:20px 22px;border-radius:12px;background:var(--ink);color:var(--on-dark)}
+.pcard span{font:700 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--rose)}
+.pcard b{font-size:21px}
+.pcard a{color:var(--on-dark)}
+form{display:grid;grid-template-columns:1fr 1fr;gap:16px;background:var(--white);color:var(--on-light);border:2px solid var(--ink);border-radius:20px;padding:28px;box-shadow:10px 10px 0 var(--sig)}
+.f{display:flex;flex-direction:column;gap:7px;min-width:0}
 .f.full{grid-column:1/-1}
-label{font-weight:700;font-size:14px}
-input,select,textarea{font:16px var(--body);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px;width:100%}
-textarea{min-height:90px;resize:vertical}
-[aria-invalid="true"]{border-color:var(--rec)}
-form .btn{grid-column:1/-1}
-.under{grid-column:1/-1;font-size:14px;color:var(--muted);text-align:center}
-.under a{color:inherit}
-.err{color:var(--rec);font-size:14px;grid-column:1/-1}
-.refnote{grid-column:1/-1;font-size:14px;color:var(--muted)}
-.done{grid-column:1/-1;text-align:center;padding:24px 8px}
-.done h3{margin-bottom:8px}
+label{font:700 11.5px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--on-light)}
+label span{text-transform:none;letter-spacing:0;font-family:var(--body);font-weight:400;font-size:13px;color:var(--mute)}
+input,select,textarea{font:16px var(--body);color:var(--on-light);background:var(--paper);border:2px solid #EBD9D3;border-radius:10px;padding:13px 14px;width:100%;transition:border-color .15s ease}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink)}
+textarea{min-height:96px;resize:vertical}
+[aria-invalid="true"]{border-color:var(--sig)}
+form .btn{grid-column:1/-1;margin-top:4px}
+.under{grid-column:1/-1;font-size:13.5px;color:var(--mute);text-align:center}
+.err{color:var(--sig-ink);font-size:14px;font-weight:700;grid-column:1/-1}
+.refnote{grid-column:1/-1;font-size:14px;color:var(--mute)}
+.done{grid-column:1/-1;text-align:center;padding:28px 8px}
+.done h3{margin-bottom:10px;font-size:30px;font-weight:900;font-stretch:112%;text-transform:uppercase}
 
-details{border-top:1px solid var(--line)}
-details:last-child{border-bottom:1px solid var(--line)}
-summary{cursor:pointer;list-style:none;padding:20px 40px 20px 0;font-weight:700;font-size:18px;position:relative}
+/* questions */
+.faq{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:56px;align-items:start}
+details{border-top:2px solid var(--ink)}
+details:last-child{border-bottom:2px solid var(--ink)}
+summary{cursor:pointer;list-style:none;padding:22px 48px 22px 0;font:800 19px/1.3 var(--body);letter-spacing:-.01em;position:relative}
 summary::-webkit-details-marker{display:none}
-summary::after{content:"+";position:absolute;right:4px;top:16px;font-size:26px;color:var(--amber);font-weight:400}
-details[open] summary::after{content:"–"}
-details p{padding:0 0 20px;color:var(--muted);max-width:70ch}
+summary::after{content:"+";position:absolute;right:4px;top:12px;font:400 34px var(--body);color:var(--sig);transition:transform .2s ease}
+details[open] summary::after{transform:rotate(45deg)}
+details p{padding:0 0 22px;color:var(--mute);max-width:66ch}
 
-footer{padding-block:40px 120px;font-size:14px;color:var(--muted)}
-footer .wrap{display:flex;flex-direction:column;gap:8px}
-footer a{color:inherit}
+/* footer */
+footer{padding-block:96px 130px;color:var(--dim)}
+.giant{font:900 clamp(52px,10.5vw,158px)/.86 var(--wide);font-stretch:118%;text-transform:uppercase;letter-spacing:-.04em;color:transparent;-webkit-text-stroke:1.5px rgba(247,239,236,.34);text-wrap:balance;overflow-wrap:anywhere}
+.giant .it{-webkit-text-stroke:0;color:var(--sig);text-transform:none;letter-spacing:-.02em;font-size:1.08em}
+.foot-row{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:56px;padding-top:24px;border-top:1px solid var(--rule-d);font-size:14px}
+.foot-row p{max-width:60ch}
 
-dialog.player{border:0;padding:0;background:transparent;max-width:min(400px,92vw);width:100%;overflow:visible}
-dialog.player::backdrop{background:rgba(8,9,11,.82)}
+/* player */
+dialog.player{border:0;padding:0;background:transparent;max-width:min(400px,92vw);width:100%;overflow:visible;color:var(--on-dark)}
+dialog.player::backdrop{background:rgba(8,6,6,.86)}
 .player-in{display:flex;flex-direction:column;gap:14px;align-items:center}
-.player-bar{display:flex;justify-content:space-between;align-items:center;width:100%;color:#fff;gap:12px}
-.player-bar b{font:600 20px var(--display);text-transform:uppercase}
+.player-bar{display:flex;justify-content:space-between;align-items:center;width:100%;gap:12px}
+.player-bar b{font:900 20px var(--wide);font-stretch:118%;text-transform:uppercase;letter-spacing:-.01em}
 .player-bar button{background:rgba(255,255,255,.14);border:0;color:#fff;width:40px;height:40px;border-radius:50%;font-size:22px;cursor:pointer}
 .player-in .btn{width:100%}
-.player-in p{color:#C9CDD3;font-size:13px;text-align:center}
+.player-in p{color:var(--dim);font-size:13px;text-align:center}
 
-.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--paper);border-top:1px solid var(--line);display:none}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(13,12,12,.94);border-top:1px solid var(--rule-d);display:none}
 .sticky .btn{width:100%}
-@media (max-width:1000px){ .gallery{grid-template-columns:repeat(3,1fr)} }
-@media (max-width:900px){
-  .hero .wrap,.request .wrap,.promise{grid-template-columns:1fr;gap:36px}
-  .steps,.pains{grid-template-columns:1fr}
-  .gets{grid-template-columns:1fr}
-  .price-box{grid-template-columns:1fr}
-  .gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding-bottom:8px}
-  .gallery .card{flex:0 0 46%;scroll-snap-align:start}
+
+@media (max-width:1080px){ .hnav a:not(.btn):not(.signin){display:none} }
+@media (max-width:960px){
+  section{padding-block:72px}
+  .hero{padding-block:16px 72px}
+  .hero-grid,.request .wrap,.promise,.spec-wrap,.price,.faq{grid-template-columns:minmax(0,1fr);gap:40px}
+  .spec-h{position:static}
+  .slates,.pains{grid-template-columns:minmax(0,1fr)}
+  .pains{gap:28px}
+  .why{padding-top:88px}
+  .strip{padding:38px 0;border-radius:0;margin-left:-20px;margin-right:-20px}
+  .strip::before,.strip::after{left:0;right:0}
+  .gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:0 20px 6px;scroll-padding-left:20px;scrollbar-width:none}
+  .gallery::-webkit-scrollbar{display:none}
+  .gallery .card{flex:0 0 44%;scroll-snap-align:start}
   .sticky.on{display:block}
-  section{padding-block:56px}
-  .promise{padding:24px}
+  .price-r{align-items:stretch}
 }
-@media (max-width:520px){ form{grid-template-columns:1fr} header .btn{display:none} .gallery .card{flex-basis:64%} }
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+@media (max-width:560px){
+  form{grid-template-columns:minmax(0,1fr);padding:20px;box-shadow:6px 6px 0 var(--sig)}
+  .hnav .btn{display:none}
+  .gallery .card{flex-basis:62%}
+  .spec div{grid-template-columns:minmax(0,1fr);gap:6px}
+  .vf{padding:40px 20px 38px}
+  .vf-top,.vf-bot{left:30px;right:30px;font-size:10.5px}
+  .wm b{font-size:22px}
+  .wm span{font-size:8.5px;letter-spacing:.22em}
+  .btn{padding:17px 22px}
+  .cta-row .btn{flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important;transition:none!important}
+  .marq-track,.seal svg.ring,.rec i{animation:none}
+}
 </style>
 </head>
 <body>
@@ -181,72 +298,91 @@ dialog.player::backdrop{background:rgba(8,9,11,.82)}
   <button type="button" id="ribbonClose" aria-label="Close">×</button>
 </div></div>
 
-<header><div class="wrap">
-  <div class="brand"><i aria-hidden="true"></i>Reel Business Studio</div>
-  <nav class="hnav"><a href="/business/studio" class="signin">Sign in</a><a class="btn btn-primary" href="#request">Get my video ad</a></nav>
+<header class="top"><div class="wrap">
+  <a class="logo" href="/business" aria-label="Reel Business Studio">
+    <svg class="mark" viewBox="0 0 36 36" aria-hidden="true"><path d="M3 12V6a3 3 0 0 1 3-3h6M24 3h6a3 3 0 0 1 3 3v6M33 24v6a3 3 0 0 1-3 3h-6M12 33H6a3 3 0 0 1-3-3v-6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="18" cy="18" r="6.5" fill="#D91F34"/></svg>
+    <span class="wm"><b>Reel</b><span>Business Studio</span></span>
+  </a>
+  <nav class="hnav"><a href="#examples">Examples</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="/business/studio" class="signin">Sign in</a><a class="btn btn-primary btn-sm" href="#request">Get my video ad</a></nav>
 </div></header>
 
-<section class="hero"><div class="wrap">
+<section class="hero"><div class="wrap hero-grid">
   <div class="hero-copy">
-    <p class="eyebrow">For restaurants, salons, shops and local services</p>
-    <h1>Turn 4 photos into a video ad that fills your tables, chairs and calendar.</h1>
+    <p class="kicker">For restaurants, salons, shops and local services</p>
+    <h1>Turn 4 photos into a video ad that fills your <span class="it">tables, chairs and calendar.</span></h1>
     <p class="lede">Your customers scroll right past photos. They stop for video. Send us 4 photos of your food, your work or your space, and get back a reel that looks filmed by a production crew: real camera moves, captions, music and your logo on the end card.</p>
-    <div class="cta-row"><a class="btn btn-primary" href="#request">Get my video ad</a><a class="btn btn-ghost" href="#examples">See your industry</a></div>
-    <p class="risk">No film crew. No shoot day. No editing. Phone photos work.</p>
-    <ul class="chips" aria-label="Where it posts"><li>Instagram Reels</li><li>TikTok</li><li>Facebook ads</li><li>YouTube Shorts</li><li>Google Business Profile</li></ul>
+    <div class="cta-row"><a class="btn btn-primary" href="#request">Get my video ad <span aria-hidden="true">→</span></a><a class="btn btn-ghost" href="#examples"><span class="pi" aria-hidden="true"></span>See your industry</a></div>
+    <p class="risk"><b>No film crew. No shoot day. No editing.</b> Phone photos work.</p>
+    <ul class="posts" aria-label="Where it posts"><li>Instagram Reels</li><li>TikTok</li><li>Facebook ads</li><li>YouTube Shorts</li><li>Google Business Profile</li></ul>
   </div>
-  <div>
-    <div class="phone" id="heroPhone" data-ind="restaurant" aria-label="Example reel: a pizzeria, made from 4 photos"></div>
+  <div class="hero-shot">
+    <div class="vf">
+      <span class="c tl" aria-hidden="true"></span><span class="c tr" aria-hidden="true"></span><span class="c bl" aria-hidden="true"></span><span class="c br" aria-hidden="true"></span>
+      <div class="vf-top" aria-hidden="true"><span class="rec"><i></i>Rec</span><span class="tc" id="tc">00:00:00:00</span></div>
+      <div class="phone" id="heroPhone" data-ind="restaurant" aria-label="Example reel: a pizzeria, made from 4 photos"></div>
+      <div class="vf-bot" aria-hidden="true"><span>Sc 01 · Take 1</span><span>4 photos, 1 reel</span></div>
+    </div>
     <p class="under-phone" id="heroNote">Example made from 4 sample photos of a pizzeria</p>
   </div>
 </div></section>
 
-<section class="band"><div class="wrap">
-  <p class="eyebrow" style="color:var(--hot)">Why most local ads get skipped</p>
-  <h2 style="margin-top:12px">Photos get scrolled past. Video gets watched.</h2>
+<div class="marq" aria-hidden="true"><div class="marq-track">
+  <span>Pizzerias</span><span>Bakeries</span><span>Barbershops</span><span>Hair salons</span><span>Nail studios</span><span>Roofers</span><span>Auto detailers</span><span>Landscapers</span><span>Gyms</span><span>Med spas</span>
+  <span>Pizzerias</span><span>Bakeries</span><span>Barbershops</span><span>Hair salons</span><span>Nail studios</span><span>Roofers</span><span>Auto detailers</span><span>Landscapers</span><span>Gyms</span><span>Med spas</span>
+</div></div>
+
+<section class="why"><div class="wrap">
+  <p class="kicker">Why most local ads get skipped</p>
+  <h2 style="margin-top:16px">Photos get scrolled past. <span class="it">Video gets watched.</span></h2>
   <div class="pains">
-    <div><b>A film crew costs a fortune</b><p>A day of shooting and editing is out of reach for most local businesses, so the ad never gets made.</p></div>
-    <div><b>Slideshows look cheap</b><p>Photos with a zoom and a stock song look like every other ad. People can tell, and they keep scrolling.</p></div>
-    <div><b>You don't have time to edit</b><p>You run a business. You shouldn't need to learn video apps to get customers through the door.</p></div>
+    <div><b>Film crews</b><p>A day of shooting and editing is out of reach for most local businesses, so the ad never gets made.</p></div>
+    <div><b>Slideshows</b><p>Photos with a zoom and a stock song look like every other ad. People can tell, and they keep scrolling.</p></div>
+    <div><b>Editing</b><p>You run a business. You shouldn't need to learn video apps to get customers through the door.</p></div>
   </div>
+  <p class="then">We film your photos <span class="it">instead.</span></p>
 </div></section>
 
-<section id="examples"><div class="wrap">
+<section id="examples" style="padding-top:24px"><div class="wrap">
   <div class="gal-h">
-    <div><p class="eyebrow">Pick your industry</p><h2 style="margin-top:10px">See what 4 photos become.</h2></div>
-    <p class="lede" style="max-width:44ch">Tap any example to watch the story play: the hook, the work, the detail, the payoff, then your name and number.</p>
+    <div><p class="kicker">Pick your industry</p><h2>See what <span class="it">4 photos</span> become.</h2></div>
+    <p class="lede" style="max-width:42ch">Tap any example to watch the story play: the hook, the work, the detail, the payoff, then your name and number.</p>
   </div>
-  <div class="gallery" id="gallery"></div>
+  <div class="strip"><div class="gallery" id="gallery"></div></div>
   <p class="note">These examples use sample photos and made-up businesses. Yours is made from your real photos, with your name, offer, phone and logo.</p>
 </div></section>
 
-<section style="padding-top:0"><div class="wrap">
-  <p class="eyebrow">How it works</p>
-  <h2 style="margin-top:10px">Three steps. You only do the first one.</h2>
-  <ol class="steps">
-    <li><h3>Send 4 photos</h3><p>Your best dish, a finished job, your space, your team. Phone photos are fine. Tell us your offer and how customers reach you.</p></li>
-    <li><h3>We film them</h3><p>Each photo becomes a moving shot: steam rises, cheese stretches, paint shines, the camera glides in. We add captions, music and cuts on the beat.</p></li>
-    <li><h3>You post and get calls</h3><p>You get a vertical reel for social and a widescreen version for YouTube and your website, ending on your logo, phone and offer.</p></li>
+<section class="light" id="how"><div class="wrap">
+  <p class="kicker">How it works</p>
+  <h2 style="margin-top:16px">Three steps. <span class="it">You only do the first one.</span></h2>
+  <ol class="slates">
+    <li><div class="clap" aria-hidden="true"></div><div class="slate"><p class="sc"><span>Scene<b>01</b></span><span>Take<b>1</b></span></p><h3>Send 4 photos</h3><p>Your best dish, a finished job, your space, your team. Phone photos are fine. Tell us your offer and how customers reach you.</p></div></li>
+    <li><div class="clap" aria-hidden="true"></div><div class="slate"><p class="sc"><span>Scene<b>02</b></span><span>Take<b>1</b></span></p><h3>We film them</h3><p>Each photo becomes a moving shot: steam rises, cheese stretches, paint shines, the camera glides in. We add captions, music and cuts on the beat.</p></div></li>
+    <li><div class="clap" aria-hidden="true"></div><div class="slate"><p class="sc"><span>Scene<b>03</b></span><span>Take<b>1</b></span></p><h3>You post and get calls</h3><p>You get a vertical reel for social and a widescreen version for YouTube and your website, ending on your logo, phone and offer.</p></div></li>
   </ol>
 </div></section>
 
-<section style="padding-top:0"><div class="wrap">
-  <p class="eyebrow">What you get</p>
-  <h2 style="margin-top:10px">An ad that looks like you paid for a shoot.</h2>
-  <ul class="gets">
-    <li>Real camera moves on every shot<em>Push-ins, slides and reveals made from your photos, not a slideshow zoom.</em></li>
-    <li>A story, not a pile of photos<em>Hook, process, detail, payoff. The order that keeps people watching.</em></li>
-    <li>Captions on every shot<em>Most people watch with the sound off. Your message still lands.</em></li>
-    <li>Your end card<em>Business name, offer, phone, hours and logo, so viewers know what to do next.</em></li>
-    <li>Vertical and widescreen<em>9:16 for Reels, TikTok and Stories. 16:9 for YouTube, Facebook and your site.</em></li>
-    <li>Original music that fits the cut<em>An original score timed to the edits, so there's nothing to license.</em></li>
-  </ul>
+<section class="light" style="padding-top:0"><div class="wrap spec-wrap">
+  <div class="spec-h"><p class="kicker">What you get</p><h2>An ad that looks like <span class="it">you paid for a shoot.</span></h2></div>
+  <dl class="spec">
+    <div><dt>Camera</dt><dd><b>Real camera moves on every shot</b><span>Push-ins, slides and reveals made from your photos, not a slideshow zoom.</span></dd></div>
+    <div><dt>Story</dt><dd><b>A story, not a pile of photos</b><span>Hook, process, detail, payoff. The order that keeps people watching.</span></dd></div>
+    <div><dt>Captions</dt><dd><b>Captions on every shot</b><span>Most people watch with the sound off. Your message still lands.</span></dd></div>
+    <div><dt>End card</dt><dd><b>Your name, offer and number</b><span>Business name, offer, phone, hours and logo, so viewers know what to do next.</span></dd></div>
+    <div><dt>Formats</dt><dd><b>Vertical and widescreen</b><span>9:16 for Reels, TikTok and Stories. 16:9 for YouTube, Facebook and your site.</span></dd></div>
+    <div><dt>Music</dt><dd><b>Original music that fits the cut</b><span>An original score timed to the edits, so there's nothing to license.</span></dd></div>
+  </dl>
 </div></section>
 
-<section style="padding-top:0"><div class="wrap">
-  <div class="promise">
-    <div><p class="eyebrow">Our promise</p><h2 style="margin-top:10px">Your work stays your work.</h2><p class="lede" style="margin-top:14px">AI video tools love to add things that aren't there. Ours is built to do the opposite.</p></div>
-    <ul>
+<section><div class="wrap promise">
+  <div class="seal" aria-hidden="true">
+    <svg class="ring" viewBox="0 0 200 200"><defs><path id="sealPath" d="M100,100 m-82,0 a82,82 0 1,1 164,0 a82,82 0 1,1 -164,0"/></defs><text><textPath href="#sealPath">YOUR WORK STAYS YOUR WORK ● NOTHING ADDED ● </textPath></text></svg>
+    <div class="seal-core"><svg viewBox="0 0 48 48"><path d="M11 25l9 9 17-19" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  </div>
+  <div>
+    <p class="kicker">Our promise</p>
+    <h2 style="margin-top:16px">Your work stays <span class="it">your work.</span></h2>
+    <p class="lede" style="margin-top:18px">AI video tools love to add things that aren't there. Ours is built to do the opposite.</p>
+    <ul class="checks">
       <li>Your food, products and finished jobs look exactly like they do in your photos.</li>
       <li>No extra people, hands or objects appear.</li>
       <li>Your signs, menus and logo stay sharp and readable.</li>
@@ -256,19 +392,18 @@ dialog.player::backdrop{background:rgba(8,9,11,.82)}
   </div>
 </div></section>
 
-<section style="padding-top:0" id="pricing"><div class="wrap">
-  <p class="eyebrow">Pricing</p>
-  <h2 style="margin-top:10px">One ad or one every month.</h2>
-  <div class="price-box">
-    <div><p class="lede" id="priceNote">Every business is different, so your rep quotes you personally: a single ad, a launch pack, or a fresh reel every month. Send the form and you'll have your quote within one business day.</p></div>
-    <a class="ask-link" href="#request" data-ask>Contact your rep for pricing</a>
+<section class="sig" id="pricing"><div class="wrap price">
+  <div><p class="kicker">Pricing</p><h2>One ad, or <span class="it">one every month.</span></h2></div>
+  <div class="price-r">
+    <p class="lede" id="priceNote">Every business is different, so your rep quotes you personally: a single ad, a launch pack, or a fresh reel every month. Send the form and you'll have your quote within one business day.</p>
+    <a class="btn btn-ink" href="#request" data-ask>Contact your rep for pricing</a>
   </div>
 </div></section>
 
-<section class="request" id="request"><div class="wrap">
-  <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
-    <p class="eyebrow">Start here</p>
-    <h2>Get your first video ad.</h2>
+<section class="request light" id="request"><div class="wrap">
+  <div class="req-l">
+    <p class="kicker">Start here</p>
+    <h2>Get your first <span class="it">video ad.</span></h2>
     <p class="lede">Takes about a minute. Nothing is charged until you approve your quote.</p>
     <div class="pcard" id="pcard" hidden><span>Your local contact</span><b id="pcName"></b><a id="pcPhone" hidden></a><a id="pcEmail" hidden></a></div>
   </div>
@@ -278,9 +413,9 @@ dialog.player::backdrop{background:rgba(8,9,11,.82)}
     <div class="f"><label for="fPhone">Mobile number</label><input id="fPhone" type="tel" autocomplete="tel" placeholder="For a quick text when it's ready" required></div>
     <div class="f"><label for="fEmail">Email</label><input id="fEmail" type="email" autocomplete="email" required></div>
     <div class="f"><label for="fInd">Your industry</label><select id="fInd"></select></div>
-    <div class="f"><label for="fWeb">Website or Instagram <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input id="fWeb" placeholder="yourbusiness.com or @handle"></div>
-    <div class="f full" id="codeRow"><label for="fCode">Coupon code <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input id="fCode" maxlength="20" autocomplete="off" style="text-transform:uppercase"></div>
-    <div class="f full"><label for="fNotes">What do you want more of? <span style="font-weight:400;color:var(--muted)">(optional)</span></label><textarea id="fNotes" placeholder="More bookings on weekdays, catering orders, new members, a grand opening, a holiday special"></textarea></div>
+    <div class="f"><label for="fWeb">Website or Instagram <span>(optional)</span></label><input id="fWeb" placeholder="yourbusiness.com or @handle"></div>
+    <div class="f full" id="codeRow"><label for="fCode">Coupon code <span>(optional)</span></label><input id="fCode" maxlength="20" autocomplete="off" style="text-transform:uppercase"></div>
+    <div class="f full"><label for="fNotes">What do you want more of? <span>(optional)</span></label><textarea id="fNotes" placeholder="More bookings on weekdays, catering orders, new members, a grand opening, a holiday special"></textarea></div>
     <input type="hidden" id="fRef">
     <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
     <p class="refnote" id="refNote"><b>Referred by someone?</b> Type their name in the notes so they get credit.</p>
@@ -292,19 +427,23 @@ dialog.player::backdrop{background:rgba(8,9,11,.82)}
   </form>
 </div></section>
 
-<section style="padding-top:0"><div class="wrap">
-  <p class="eyebrow">Questions</p>
-  <h2 style="margin:10px 0 24px">Before you ask</h2>
-  <details><summary>Do I need a photographer?</summary><p>No. Clear phone photos work. Shoot in good light, hold the phone steady and fill the frame with the thing you sell. We pick the best and touch them up.</p></details>
-  <details><summary>Will it change my food or my work?</summary><p>No. Only what's already in the photo moves. Nothing is added, nothing disappears, and your signs and logo stay readable. If a shot isn't right, we re-make it.</p></details>
-  <details><summary>Can I run it as a paid ad?</summary><p>Yes. You get the sizes Facebook, Instagram, TikTok and YouTube ask for, and the music is an original score made for each video, so there's nothing to license.</p></details>
-  <details><summary>What do I send?</summary><p>4 to 6 photos, your offer (like "Free first class" or "Order tonight"), your phone or booking link, and your logo if you have one.</p></details>
-  <details><summary>Can I make them myself?</summary><p>Yes. Members get the studio: add your photos, type your name and offer, and it builds the reel for you. Ask your rep about a monthly plan.</p></details>
+<section class="light" style="padding-top:0"><div class="wrap faq">
+  <div><p class="kicker">Questions</p><h2 style="margin-top:16px">Before <span class="it">you ask.</span></h2></div>
+  <div>
+    <details><summary>Do I need a photographer?</summary><p>No. Clear phone photos work. Shoot in good light, hold the phone steady and fill the frame with the thing you sell. We pick the best and touch them up.</p></details>
+    <details><summary>Will it change my food or my work?</summary><p>No. Only what's already in the photo moves. Nothing is added, nothing disappears, and your signs and logo stay readable. If a shot isn't right, we re-make it.</p></details>
+    <details><summary>Can I run it as a paid ad?</summary><p>Yes. You get the sizes Facebook, Instagram, TikTok and YouTube ask for, and the music is an original score made for each video, so there's nothing to license.</p></details>
+    <details><summary>What do I send?</summary><p>4 to 6 photos, your offer (like "Free first class" or "Order tonight"), your phone or booking link, and your logo if you have one.</p></details>
+    <details><summary>Can I make them myself?</summary><p>Yes. Members get the studio: add your photos, type your name and offer, and it builds the reel for you. Ask your rep about a monthly plan.</p></details>
+  </div>
 </div></section>
 
 <footer><div class="wrap">
-  <p>Motion is created from your photos. Nothing is added to or removed from your products, food or work.</p>
-  <p>Reel Business Studio, by Reel Listing Studio · <a href="/privacy">Privacy</a> · <a href="/">For real estate agents</a></p>
+  <p class="giant" aria-hidden="true">Reel Business <span class="it">Studio</span></p>
+  <div class="foot-row">
+    <p>Motion is created from your photos. Nothing is added to or removed from your products, food or work.</p>
+    <p>Reel Business Studio, by Reel Listing Studio · <a href="/privacy">Privacy</a> · <a href="/">For real estate agents</a></p>
+  </div>
 </div></footer>
 
 <div class="sticky" id="sticky"><a class="btn btn-primary" href="#request" id="stickyBtn">Get my video ad</a></div>
@@ -375,13 +514,15 @@ const BIZ=/*__BIZ__*/null;   // industries, captions and the sample businesses (
 
   /* gallery: one card per industry; the first shot loops while the card is on screen */
   var gal=$("gallery");
-  keys.forEach(function(k){
+  keys.forEach(function(k,gi){
     var c=document.createElement("figure"); c.className="card";
     var t=document.createElement("button"); t.type="button"; t.className="thumb"; t.setAttribute("aria-label","Play the "+(IND[k]||k)+" example");
     var v=document.createElement("video"); v.muted=true; v.loop=true; v.playsInline=true; v.setAttribute("playsinline",""); v.preload="none"; t.appendChild(v);
     var pl=document.createElement("span"); pl.className="play"; t.appendChild(pl);
     var lb=document.createElement("span"); lb.className="lbl"; lb.textContent=IND[k]||k; t.appendChild(lb);
-    c.appendChild(t);
+    var nn=(gi<9?"0":"")+(gi+1), fr=document.createElement("span"); fr.className="fr"; fr.setAttribute("aria-hidden","true");
+    var f1=document.createElement("b"); f1.textContent="RBS "+nn; var f2=document.createElement("i"); f2.textContent="\u25B8 "+nn+"A"; fr.appendChild(f1); fr.appendChild(f2);
+    c.appendChild(fr); c.appendChild(t);
     var p=document.createElement("p"); p.textContent=EX[k].captions.join(" · "); c.appendChild(p);
     t.addEventListener("click",function(){ openPlayer(k); });
     gal.appendChild(c);
@@ -449,6 +590,15 @@ const BIZ=/*__BIZ__*/null;   // industries, captions and the sample businesses (
   var sticky=$("sticky"), heroS=document.querySelector(".hero"), req=$("request");
   function onScroll(){ var past=heroS.getBoundingClientRect().bottom<0, r=req.getBoundingClientRect(), at=r.top<innerHeight&&r.bottom>0; sticky.classList.toggle("on",past&&!at); }
   addEventListener("scroll",onScroll,{passive:true}); onScroll();
+})();
+</script>
+<script>
+/* the viewfinder's running timecode, 24 frames a second */
+(function(){
+  var tc=document.getElementById("tc"); if(!tc) return;
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var t0=Date.now(), two=function(n){ return (n<10?"0":"")+n; };
+  setInterval(function(){ var ms=Date.now()-t0, s=Math.floor(ms/1000); tc.textContent="00:"+two(Math.floor(s/60)%60)+":"+two(s%60)+":"+two(Math.floor((ms%1000)/1000*24)); },84);
 })();
 </script>
 </body>
