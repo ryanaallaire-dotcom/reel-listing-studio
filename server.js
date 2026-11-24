@@ -10,7 +10,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { importListing } from "./lib/import.js";
 import { providerInfo } from "./lib/providers.js";
-import { assertPublicUrl, plainFetch } from "./lib/safe-fetch.js";
+import { assertPublicUrl, plainFetch, fetchToFile } from "./lib/safe-fetch.js";
+import os from "node:os";
+import { INDUSTRIES } from "./lib/biz.js";
+import { bizExampleUrl, bizExamplesPublic } from "./lib/biz-examples.js";
 import { runAI, aiEnabled } from "./lib/ai.js";
 import { chatReply } from "./lib/chat.js";
 import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel, clipSource, premiumEnabled } from "./lib/clips.js";
@@ -46,6 +49,49 @@ function refCookie(req, res, code) {
   return p;
 }
 const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, prices: partner.prices, offer: partner.offer } : null).replace(/</g, "\\u003c"));
+// Reel Business Studio: its own sales page, and the same studio in business mode (window.RBS switches it)
+const BUSINESS = path.join(DIR, "public", "business.html");
+const bizPublic = () => ({ industries: Object.fromEntries(Object.entries(INDUSTRIES).map(([k, v]) => [k, v.name])), examples: bizExamplesPublic() });
+const safeJson = v => JSON.stringify(v).replace(/</g, "\\u003c");
+const businessPage = partner => fs.readFileSync(BUSINESS, "utf8")
+  .replace("/*__REF__*/null", safeJson(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, offer: partner.offer } : null))
+  .replace("/*__BIZ__*/null", safeJson(bizPublic()));
+const bizStudioPage = () => page().replace("<title>Reel Listing Studio</title>", "<title>Reel Business Studio</title>").replace("<body>", `<body><script>window.RBS=${safeJson(bizPublic())};</script>`);
+// example clips: fetched once from the AI service's storage, then served from this site so the studio can draw them
+const BIZ_EX_DIR = path.join(process.env.CLIP_DIR || path.join(os.tmpdir(), "rls-clips"), "biz-examples");
+const bizInflight = new Map();
+function bizExampleFile(industry, n, ext) {
+  const url = bizExampleUrl(industry, n, ext); if (!url) return null;
+  const file = path.join(BIZ_EX_DIR, `${industry}-${n}.${ext}`);
+  if (fs.existsSync(file)) return Promise.resolve(file);
+  if (!bizInflight.has(file)) bizInflight.set(file, (async () => {
+    fs.mkdirSync(BIZ_EX_DIR, { recursive: true });
+    const tmp = `${file}.${crypto.randomBytes(4).toString("hex")}.part`;
+    const r = await fetchToFile(url, tmp, { timeout: 90000, maxBytes: 60e6 });
+    if (r.status >= 400 || !r.size) { fs.rmSync(tmp, { force: true }); throw Object.assign(new Error("That example isn't available right now."), { status: 502 }); }
+    fs.renameSync(tmp, file); return file;
+  })().finally(() => bizInflight.delete(file)));
+  return bizInflight.get(file);
+}
+let bizWarm = null;   // first visit to the business page fetches the rest in the background, a few at a time
+function warmBizExamples() {
+  if (bizWarm) return; const list = [];
+  for (const k of Object.keys(INDUSTRIES)) for (let n = 0; n < 4; n++) list.push([k, n, "jpg"], [k, n, "mp4"]);
+  list.sort((a, b) => a[1] - b[1]);   // every industry's first shot before anyone's second
+  bizWarm = (async () => { const work = async () => { for (let it; (it = list.shift());) { try { await bizExampleFile(...it); } catch (e) { console.error("biz example", it.join("/"), e.message); } } }; await Promise.all([work(), work(), work()]); })();
+}
+function sendFileRange(req, res, file, type, cache) {
+  const st = fs.statSync(file);
+  const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || "");
+  if (m && (m[1] || m[2])) {
+    let a = m[1] ? +m[1] : Math.max(0, st.size - +m[2]), b = m[1] && m[2] ? Math.min(+m[2], st.size - 1) : st.size - 1;
+    if (a >= st.size || a > b) { res.writeHead(416, { "content-range": `bytes */${st.size}` }); return res.end(); }
+    res.writeHead(206, { "content-type": type, "content-length": b - a + 1, "content-range": `bytes ${a}-${b}/${st.size}`, "accept-ranges": "bytes", "cache-control": cache });
+    return fs.createReadStream(file, { start: a, end: b }).pipe(res);
+  }
+  res.writeHead(200, { "content-type": type, "content-length": st.size, "accept-ranges": "bytes", "cache-control": cache });
+  return fs.createReadStream(file).pipe(res);
+}
 const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!doctype/i.test(body) ? body : SKELETON_HEAD + body + "</body></html>"; };
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
@@ -97,6 +143,24 @@ export const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && (u.pathname === "/privacy" || u.pathname === "/privacy/")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" }); return res.end(fs.readFileSync(path.join(DIR, "public", "privacy.html")));
+    }
+    // Reel Business Studio: sales page (/business, /business/r/<partner>), studio (/business/studio), example clips
+    if (req.method === "GET" && (u.pathname === "/business" || u.pathname === "/business/" || u.pathname.startsWith("/business/r/"))) {
+      const code = u.pathname.startsWith("/business/r/") ? u.pathname.slice(12).replace(/\/$/, "") : u.searchParams.get("ref");
+      const partner = (code && refCookie(req, res, code)) || acct.partnerByRef(cookieVal(req, "rls_ref"));
+      warmBizExamples();
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(businessPage(partner));
+    }
+    if (req.method === "GET" && (u.pathname === "/business/studio" || u.pathname === "/business/studio/")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(bizStudioPage());
+    }
+    const bex = (req.method === "GET" || req.method === "HEAD") && /^\/api\/biz\/example\/([a-z]{2,20})\/([0-3])\.(mp4|jpg)$/.exec(u.pathname);
+    if (bex) {
+      if (!allow(clientIp(req), leadHits, 2000)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes." });
+      const got = bizExampleFile(bex[1], +bex[2], bex[3]);
+      if (!got) return json(res, 404, { error: "Not found." });
+      let file; try { file = await got; } catch (e) { console.error("biz example", bex[1], bex[2], e.message); return json(res, 502, { error: "That example isn't available right now. Try again in a minute." }); }
+      return sendFileRange(req, res, file, bex[3] === "mp4" ? "video/mp4" : "image/jpeg", "public, max-age=86400");
     }
     // agent sales page, with partner referral links: /r/ken-george or /agents?ref=ken-george
     // short partner links at the top level too: /aimptr works the same as /r/aimptr

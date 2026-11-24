@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="/media/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="apple-touch-icon" href="/media/apple-touch-icon.png">
+<title>Reel Business Studio: your photos, turned into video ads</title>
+<meta name="description" content="Send 4 photos of your business. Get back a video ad with real camera moves, captions, music and your logo, sized for Reels, TikTok, Facebook and Google.">
+<meta property="og:title" content="Turn 4 photos into a video ad that fills your tables, chairs and calendar.">
+<meta property="og:description" content="Real camera moves, captions, music and your logo. Ready for Reels, TikTok, Facebook and Google. No film crew, no shoot day.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --paper:#F6F5F2; --card:#FFFFFF; --ink:#13161B; --muted:#5B616B; --line:#DEDBD4;
+  --amber:#C97A0E; --amber-soft:#F7E6CB; --on-amber:#13161B; --rec:#D8432E; --band:#13161B; --on-band:#F2F0EB; --band-muted:#A3A8B0; --hot:#F2A541;
+  --display:'Oswald','Arial Narrow',Arial,sans-serif; --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0F1114; --card:#171A1F; --ink:#EDEBE6; --muted:#9AA0A8; --line:#2A2E35;
+  --amber:#F2A541; --amber-soft:#3A2A12; --rec:#F06A55; --band:#1B1F25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0F1114; --card:#171A1F; --ink:#EDEBE6; --muted:#9AA0A8; --line:#2A2E35;
+  --amber:#F2A541; --amber-soft:#3A2A12; --rec:#F06A55; --band:#1B1F25; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{padding-block:72px}
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;line-height:1.02;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(46px,7vw,88px);font-weight:700}
+h2{font-size:clamp(32px,4.6vw,52px);font-weight:600}
+h3{font-size:22px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.lede{font-size:19px;color:var(--muted);max-width:58ch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-family:var(--body);font-weight:700;font-size:17px;padding:16px 26px;border-radius:999px;text-decoration:none;border:2px solid transparent;cursor:pointer;color:var(--ink);background:transparent}
+.btn-primary{background:var(--amber);color:var(--on-amber)}
+.btn-ghost{border-color:var(--ink)}
+.hide{display:none!important}
+[hidden]{display:none!important}
+
+.ribbon{background:var(--amber);color:var(--on-amber);font-size:15px}
+.ribbon .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:10px}
+.ribbon a{color:inherit;font-weight:700}
+.ribbon button{background:none;border:0;color:inherit;font-size:20px;cursor:pointer;padding:0 4px}
+header .wrap{display:flex;justify-content:space-between;align-items:center;padding-block:18px;gap:16px}
+.brand{font-family:var(--display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
+.brand i{width:12px;height:12px;border-radius:50%;background:var(--rec);display:inline-block;box-shadow:0 0 0 4px color-mix(in srgb,var(--rec) 25%,transparent)}
+.hnav{display:flex;gap:18px;align-items:center}
+.signin{color:var(--ink);font-weight:700;text-decoration:none;font-size:15px}
+header .btn{padding:11px 20px;font-size:15px}
+
+.hero{padding-top:28px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:56px;align-items:center}
+.hero-copy{display:flex;flex-direction:column;gap:22px;min-width:0}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap}
+.risk{font-size:15px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
+.chips li{list-style:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--muted);background:var(--card)}
+
+/* the phone that plays a 4-shot story */
+.phone{position:relative;aspect-ratio:9/16;width:100%;max-width:360px;margin-inline:auto;border-radius:34px;overflow:hidden;background:#0b0c0f;border:8px solid #0b0c0f;box-shadow:0 40px 80px -30px rgba(0,0,0,.55)}
+.phone video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease}
+.phone video.on{opacity:1}
+.phone .cap{position:absolute;left:0;right:0;bottom:15%;text-align:center;padding:0 18px;pointer-events:none}
+.phone .cap span{display:inline-block;background:rgba(255,255,255,.95);color:#13161B;font:700 clamp(14px,2.4vw,19px) var(--body);padding:8px 16px;border-radius:999px;transform:translateY(8px);opacity:0;transition:all .4s ease}
+.phone .cap span.on{transform:none;opacity:1}
+.phone .bars{position:absolute;top:12px;left:14px;right:14px;display:flex;gap:5px;z-index:2}
+.phone .bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.35);overflow:hidden;position:relative}
+.phone .bars i b{position:absolute;inset:0;width:0;background:#fff}
+.phone .end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:28px;color:#fff;background:linear-gradient(180deg,rgba(10,10,12,.55),rgba(10,10,12,.88));opacity:0;transition:opacity .5s ease;pointer-events:none}
+.phone .end.on{opacity:1}
+.phone .end small{font:500 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--hot)}
+.phone .end b{font:600 clamp(24px,4vw,32px)/1.05 var(--display);text-transform:uppercase}
+.phone .end em{font-style:normal;font-size:15px;opacity:.85}
+.phone .end strong{font:500 22px var(--body);letter-spacing:.02em}
+.phone .tag{position:absolute;top:26px;left:14px;z-index:2;background:rgba(19,22,27,.75);color:#F2F0EB;font:500 11px var(--mono);padding:4px 9px;border-radius:999px}
+.phone .sound{position:absolute;bottom:12px;right:12px;z-index:3;background:rgba(19,22,27,.7);color:#fff;border:0;border-radius:999px;font:700 12px var(--body);padding:6px 10px;cursor:pointer;display:none}
+.under-phone{text-align:center;font-size:13px;color:var(--muted);margin-top:12px}
+
+.band{background:var(--band);color:var(--on-band)}
+.band .lede{color:var(--band-muted)}
+.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px}
+.pains div{border-top:2px solid var(--hot);padding-top:14px;min-width:0}
+.pains b{display:block;font-family:var(--display);text-transform:uppercase;font-size:24px;font-weight:600;line-height:1.1;margin-bottom:6px}
+.pains p{color:var(--band-muted);font-size:16px}
+
+.gal-h{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:32px}
+.card{display:flex;flex-direction:column;gap:10px;min-width:0;margin:0}
+.thumb{position:relative;aspect-ratio:9/16;border-radius:18px;overflow:hidden;background:#1a1c21;border:0;padding:0;cursor:pointer;width:100%}
+.thumb video,.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -8px rgba(0,0,0,.5)}
+.thumb .play::after{content:"";border-left:16px solid #13161B;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+.thumb .lbl{position:absolute;left:10px;right:10px;bottom:10px;color:#fff;font:600 17px/1.1 var(--display);text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.6);text-align:left}
+.card a{font-size:14px;font-weight:700;color:var(--amber);text-decoration:none}
+.card p{font-size:14px;color:var(--muted)}
+.note{font-size:14px;color:var(--muted);margin-top:18px}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin:36px 0 0;padding:0;counter-reset:s}
+.steps li{list-style:none;display:flex;flex-direction:column;gap:8px;border-top:2px solid var(--amber);padding-top:14px;min-width:0}
+.steps li::before{counter-increment:s;content:"0" counter(s);font-family:var(--mono);font-size:14px;color:var(--amber)}
+.steps p{color:var(--muted);font-size:16px}
+
+.gets{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 40px;margin:32px 0 0;padding:0}
+.gets li{list-style:none;padding-left:28px;position:relative}
+.gets li::before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
+.gets em{display:block;color:var(--muted);font-style:normal;font-size:15px}
+
+.promise{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;padding:36px;border-radius:24px;border:2px solid var(--amber);background:var(--amber-soft)}
+.promise ul{margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.promise li{list-style:none;padding-left:26px;position:relative}
+.promise li::before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
+
+.price-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:32px;border-radius:22px;background:var(--card);border:1px solid var(--line);margin-top:28px}
+.ask-link{display:inline-block;font:700 19px var(--body);color:var(--amber);text-decoration:none;border-bottom:2px solid currentColor;padding-bottom:2px}
+
+.request .wrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:start}
+.pcard{display:flex;flex-direction:column;gap:4px;padding:18px 20px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.pcard span{font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.pcard b{font-size:20px}
+.pcard a{color:var(--ink)}
+form{display:grid;grid-template-columns:1fr 1fr;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f.full{grid-column:1/-1}
+label{font-weight:700;font-size:14px}
+input,select,textarea{font:16px var(--body);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px;width:100%}
+textarea{min-height:90px;resize:vertical}
+[aria-invalid="true"]{border-color:var(--rec)}
+form .btn{grid-column:1/-1}
+.under{grid-column:1/-1;font-size:14px;color:var(--muted);text-align:center}
+.under a{color:inherit}
+.err{color:var(--rec);font-size:14px;grid-column:1/-1}
+.refnote{grid-column:1/-1;font-size:14px;color:var(--muted)}
+.done{grid-column:1/-1;text-align:center;padding:24px 8px}
+.done h3{margin-bottom:8px}
+
+details{border-top:1px solid var(--line)}
+details:last-child{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;padding:20px 40px 20px 0;font-weight:700;font-size:18px;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:4px;top:16px;font-size:26px;color:var(--amber);font-weight:400}
+details[open] summary::after{content:"–"}
+details p{padding:0 0 20px;color:var(--muted);max-width:70ch}
+
+footer{padding-block:40px 120px;font-size:14px;color:var(--muted)}
+footer .wrap{display:flex;flex-direction:column;gap:8px}
+footer a{color:inherit}
+
+dialog.player{border:0;padding:0;background:transparent;max-width:min(400px,92vw);width:100%;overflow:visible}
+dialog.player::backdrop{background:rgba(8,9,11,.82)}
+.player-in{display:flex;flex-direction:column;gap:14px;align-items:center}
+.player-bar{display:flex;justify-content:space-between;align-items:center;width:100%;color:#fff;gap:12px}
+.player-bar b{font:600 20px var(--display);text-transform:uppercase}
+.player-bar button{background:rgba(255,255,255,.14);border:0;color:#fff;width:40px;height:40px;border-radius:50%;font-size:22px;cursor:pointer}
+.player-in .btn{width:100%}
+.player-in p{color:#C9CDD3;font-size:13px;text-align:center}
+
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--paper);border-top:1px solid var(--line);display:none}
+.sticky .btn{width:100%}
+@media (max-width:1000px){ .gallery{grid-template-columns:repeat(3,1fr)} }
+@media (max-width:900px){
+  .hero .wrap,.request .wrap,.promise{grid-template-columns:1fr;gap:36px}
+  .steps,.pains{grid-template-columns:1fr}
+  .gets{grid-template-columns:1fr}
+  .price-box{grid-template-columns:1fr}
+  .gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding-bottom:8px}
+  .gallery .card{flex:0 0 46%;scroll-snap-align:start}
+  .sticky.on{display:block}
+  section{padding-block:56px}
+  .promise{padding:24px}
+}
+@media (max-width:520px){ form{grid-template-columns:1fr} header .btn{display:none} .gallery .card{flex-basis:64%} }
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="ribbon" id="ribbon" hidden><div class="wrap">
+  <p><b id="ribbonWho">Referred by a partner.</b> <span id="ribbonPerk"></span> <a id="ribbonCall" hidden></a></p>
+  <button type="button" id="ribbonClose" aria-label="Close">×</button>
+</div></div>
+
+<header><div class="wrap">
+  <div class="brand"><i aria-hidden="true"></i>Reel Business Studio</div>
+  <nav class="hnav"><a href="/business/studio" class="signin">Sign in</a><a class="btn btn-primary" href="#request">Get my video ad</a></nav>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div class="hero-copy">
+    <p class="eyebrow">For restaurants, salons, shops and local services</p>
+    <h1>Turn 4 photos into a video ad that fills your tables, chairs and calendar.</h1>
+    <p class="lede">Your customers scroll right past photos. They stop for video. Send us 4 photos of your food, your work or your space, and get back a reel that looks filmed by a production crew: real camera moves, captions, music and your logo on the end card.</p>
+    <div class="cta-row"><a class="btn btn-primary" href="#request">Get my video ad</a><a class="btn btn-ghost" href="#examples">See your industry</a></div>
+    <p class="risk">No film crew. No shoot day. No editing. Phone photos work.</p>
+    <ul class="chips" aria-label="Where it posts"><li>Instagram Reels</li><li>TikTok</li><li>Facebook ads</li><li>YouTube Shorts</li><li>Google Business Profile</li></ul>
+  </div>
+  <div>
+    <div class="phone" id="heroPhone" data-ind="restaurant" aria-label="Example reel: a pizzeria, made from 4 photos"></div>
+    <p class="under-phone" id="heroNote">Example made from 4 sample photos of a pizzeria</p>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <p class="eyebrow" style="color:var(--hot)">Why most local ads get skipped</p>
+  <h2 style="margin-top:12px">Photos get scrolled past. Video gets watched.</h2>
+  <div class="pains">
+    <div><b>A film crew costs a fortune</b><p>A day of shooting and editing is out of reach for most local businesses, so the ad never gets made.</p></div>
+    <div><b>Slideshows look cheap</b><p>Photos with a zoom and a stock song look like every other ad. People can tell, and they keep scrolling.</p></div>
+    <div><b>You don't have time to edit</b><p>You run a business. You shouldn't need to learn video apps to get customers through the door.</p></div>
+  </div>
+</div></section>
+
+<section id="examples"><div class="wrap">
+  <div class="gal-h">
+    <div><p class="eyebrow">Pick your industry</p><h2 style="margin-top:10px">See what 4 photos become.</h2></div>
+    <p class="lede" style="max-width:44ch">Tap any example to watch the story play: the hook, the work, the detail, the payoff, then your name and number.</p>
+  </div>
+  <div class="gallery" id="gallery"></div>
+  <p class="note">These examples use sample photos and made-up businesses. Yours is made from your real photos, with your name, offer, phone and logo.</p>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">How it works</p>
+  <h2 style="margin-top:10px">Three steps. You only do the first one.</h2>
+  <ol class="steps">
+    <li><h3>Send 4 photos</h3><p>Your best dish, a finished job, your space, your team. Phone photos are fine. Tell us your offer and how customers reach you.</p></li>
+    <li><h3>We film them</h3><p>Each photo becomes a moving shot: steam rises, cheese stretches, paint shines, the camera glides in. We add captions, music and cuts on the beat.</p></li>
+    <li><h3>You post and get calls</h3><p>You get a vertical reel for social and a widescreen version for YouTube and your website, ending on your logo, phone and offer.</p></li>
+  </ol>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">What you get</p>
+  <h2 style="margin-top:10px">An ad that looks like you paid for a shoot.</h2>
+  <ul class="gets">
+    <li>Real camera moves on every shot<em>Push-ins, slides and reveals made from your photos, not a slideshow zoom.</em></li>
+    <li>A story, not a pile of photos<em>Hook, process, detail, payoff. The order that keeps people watching.</em></li>
+    <li>Captions on every shot<em>Most people watch with the sound off. Your message still lands.</em></li>
+    <li>Your end card<em>Business name, offer, phone, hours and logo, so viewers know what to do next.</em></li>
+    <li>Vertical and widescreen<em>9:16 for Reels, TikTok and Stories. 16:9 for YouTube, Facebook and your site.</em></li>
+    <li>Original music that fits the cut<em>An original score timed to the edits, so there's nothing to license.</em></li>
+  </ul>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="promise">
+    <div><p class="eyebrow">Our promise</p><h2 style="margin-top:10px">Your work stays your work.</h2><p class="lede" style="margin-top:14px">AI video tools love to add things that aren't there. Ours is built to do the opposite.</p></div>
+    <ul>
+      <li>Your food, products and finished jobs look exactly like they do in your photos.</li>
+      <li>No extra people, hands or objects appear.</li>
+      <li>Your signs, menus and logo stay sharp and readable.</li>
+      <li>Only what's already in the photo moves: steam, flames, hair, water, light.</li>
+      <li>Not right? Tell us what to fix and we re-make that shot.</li>
+    </ul>
+  </div>
+</div></section>
+
+<section style="padding-top:0" id="pricing"><div class="wrap">
+  <p class="eyebrow">Pricing</p>
+  <h2 style="margin-top:10px">One ad or one every month.</h2>
+  <div class="price-box">
+    <div><p class="lede" id="priceNote">Every business is different, so your rep quotes you personally: a single ad, a launch pack, or a fresh reel every month. Send the form and you'll have your quote within one business day.</p></div>
+    <a class="ask-link" href="#request" data-ask>Contact your rep for pricing</a>
+  </div>
+</div></section>
+
+<section class="request" id="request"><div class="wrap">
+  <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+    <p class="eyebrow">Start here</p>
+    <h2>Get your first video ad.</h2>
+    <p class="lede">Takes about a minute. Nothing is charged until you approve your quote.</p>
+    <div class="pcard" id="pcard" hidden><span>Your local contact</span><b id="pcName"></b><a id="pcPhone" hidden></a><a id="pcEmail" hidden></a></div>
+  </div>
+  <form id="reqForm" novalidate>
+    <div class="f"><label for="fName">Your name</label><input id="fName" autocomplete="name" required></div>
+    <div class="f"><label for="fBiz">Business name</label><input id="fBiz" autocomplete="organization" required></div>
+    <div class="f"><label for="fPhone">Mobile number</label><input id="fPhone" type="tel" autocomplete="tel" placeholder="For a quick text when it's ready" required></div>
+    <div class="f"><label for="fEmail">Email</label><input id="fEmail" type="email" autocomplete="email" required></div>
+    <div class="f"><label for="fInd">Your industry</label><select id="fInd"></select></div>
+    <div class="f"><label for="fWeb">Website or Instagram <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input id="fWeb" placeholder="yourbusiness.com or @handle"></div>
+    <div class="f full" id="codeRow"><label for="fCode">Coupon code <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input id="fCode" maxlength="20" autocomplete="off" style="text-transform:uppercase"></div>
+    <div class="f full"><label for="fNotes">What do you want more of? <span style="font-weight:400;color:var(--muted)">(optional)</span></label><textarea id="fNotes" placeholder="More bookings on weekdays, catering orders, new members, a grand opening, a holiday special"></textarea></div>
+    <input type="hidden" id="fRef">
+    <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+    <p class="refnote" id="refNote"><b>Referred by someone?</b> Type their name in the notes so they get credit.</p>
+    <p class="err" id="fErr" hidden></p>
+    <button class="btn btn-primary" type="submit">Send my request</button>
+    <p class="under">We'll reach out within one business day with your quote. Nothing is charged until you approve it.</p>
+    <p class="under">By sending, you agree we can contact you by call, text or email about your video. Reply STOP to opt out. <a href="/privacy">Privacy Policy</a></p>
+    <div class="done" id="fDone" hidden><h3>Got it. You're in.</h3><p id="doneText">We'll look at your business and send your quote within one business day.</p></div>
+  </form>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <p class="eyebrow">Questions</p>
+  <h2 style="margin:10px 0 24px">Before you ask</h2>
+  <details><summary>Do I need a photographer?</summary><p>No. Clear phone photos work. Shoot in good light, hold the phone steady and fill the frame with the thing you sell. We pick the best and touch them up.</p></details>
+  <details><summary>Will it change my food or my work?</summary><p>No. Only what's already in the photo moves. Nothing is added, nothing disappears, and your signs and logo stay readable. If a shot isn't right, we re-make it.</p></details>
+  <details><summary>Can I run it as a paid ad?</summary><p>Yes. You get the sizes Facebook, Instagram, TikTok and YouTube ask for, and the music is an original score made for each video, so there's nothing to license.</p></details>
+  <details><summary>What do I send?</summary><p>4 to 6 photos, your offer (like "Free first class" or "Order tonight"), your phone or booking link, and your logo if you have one.</p></details>
+  <details><summary>Can I make them myself?</summary><p>Yes. Members get the studio: add your photos, type your name and offer, and it builds the reel for you. Ask your rep about a monthly plan.</p></details>
+</div></section>
+
+<footer><div class="wrap">
+  <p>Motion is created from your photos. Nothing is added to or removed from your products, food or work.</p>
+  <p>Reel Business Studio, by Reel Listing Studio · <a href="/privacy">Privacy</a> · <a href="/">For real estate agents</a></p>
+</div></footer>
+
+<div class="sticky" id="sticky"><a class="btn btn-primary" href="#request" id="stickyBtn">Get my video ad</a></div>
+
+<dialog class="player" id="player" aria-labelledby="plName">
+  <div class="player-in">
+    <div class="player-bar"><b id="plName"></b><button type="button" id="plClose" aria-label="Close">×</button></div>
+    <div class="phone" id="plPhone"></div>
+    <a class="btn btn-primary" id="plGo" href="#request">Get one like this for my business</a>
+    <p>Example made from 4 sample photos. The finished reel adds music, transitions and your logo.</p>
+  </div>
+</dialog>
+
+<script>
+const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the server from their link)
+const BIZ=/*__BIZ__*/null;   // industries, captions and the sample businesses (set by the server)
+(function(){
+  var $=function(id){ return document.getElementById(id); };
+  var fmtPhone=function(p){ var d=String(p||"").replace(/\D/g,""); return d.length===10?"("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6):d.length===11&&d[0]==="1"?"("+d.slice(1,4)+") "+d.slice(4,7)+"-"+d.slice(7):String(p||""); };
+  var SITE_PHONE="(715) 222-6776";
+  var IND=(BIZ&&BIZ.industries)||{}, EX=(BIZ&&BIZ.examples)||{}, keys=Object.keys(EX);
+  var src=function(k,n,ext){ return "/api/biz/example/"+k+"/"+n+"."+ext; };
+
+  /* ---- a phone that plays an industry's 4 shots as a story, then its end card ---- */
+  function Story(el,k,opts){
+    opts=opts||{}; var ex=EX[k]; if(!ex){ return null; }
+    el.innerHTML=""; var vids=[0,1].map(function(){ var v=document.createElement("video"); v.muted=true; v.playsInline=true; v.setAttribute("playsinline",""); v.preload="auto"; el.appendChild(v); return v; });
+    var bars=document.createElement("div"); bars.className="bars"; for(var i=0;i<5;i++){ var bi=document.createElement("i"); bi.appendChild(document.createElement("b")); bars.appendChild(bi); } el.appendChild(bars);
+    var cap=document.createElement("div"); cap.className="cap"; var cs=document.createElement("span"); cap.appendChild(cs); el.appendChild(cap);
+    var end=document.createElement("div"); end.className="end";
+    var b=ex.biz; [["small",b.cta],["b",b.agent],["em",b.headline],["strong",b.phone],["em",b.brokerage]].forEach(function(x){ if(!x[1]) return; var n=document.createElement(x[0]); n.textContent=x[1]; end.appendChild(n); });
+    el.appendChild(end);
+    var tag=document.createElement("span"); tag.className="tag"; tag.textContent="SAMPLE"; el.appendChild(tag);
+    var idx=-1, cur=0, timer=0, stopped=false, endT=0;
+    var barB=function(i){ return bars.children[i].firstChild; };
+    function prep(v,n){ v.src=src(k,n,"mp4"); v.poster=src(k,n,"jpg"); try{ v.load(); }catch(e){} }
+    function show(n){
+      idx=n; var v=vids[cur], o=vids[1-cur];
+      for(var i=0;i<5;i++) barB(i).style.width=i<n?"100%":"0";
+      end.classList.remove("on");
+      v.currentTime=0; var p=v.play(); if(p&&p.catch) p.catch(function(){});
+      v.classList.add("on"); o.classList.remove("on");
+      cs.classList.remove("on"); cs.textContent=ex.captions[n]||""; setTimeout(function(){ if(!stopped) cs.classList.add("on"); },350);
+      if(n<3) setTimeout(function(){ prep(o,n+1); },400);
+    }
+    function next(){
+      if(stopped) return;
+      if(idx<3){ cur=1-cur; show(idx+1); }
+      else { cs.classList.remove("on"); end.classList.add("on"); barB(3).style.width="100%";
+        var t0=performance.now(); clearInterval(endT); endT=setInterval(function(){ var f=Math.min(1,(performance.now()-t0)/3000); barB(4).style.width=(f*100)+"%"; if(f>=1){ clearInterval(endT); if(!stopped){ prep(vids[1-cur],0); cur=1-cur; setTimeout(function(){ show(0); },60); } } },60); }
+    }
+    vids.forEach(function(v){
+      v.addEventListener("timeupdate",function(){ if(!v.classList.contains("on")||!v.duration) return; var hold=Math.min(v.duration,4.2); barB(idx).style.width=Math.min(100,v.currentTime/hold*100)+"%"; if(v.currentTime>=hold-.05) { v.pause(); next(); } });
+      v.addEventListener("ended",function(){ if(v.classList.contains("on")) next(); });
+    });
+    prep(vids[0],0);
+    return { start:function(){ stopped=false; cur=0; show(0); }, stop:function(){ stopped=true; clearInterval(endT); vids.forEach(function(v){ v.pause(); }); } };
+  }
+
+  /* hero: the pizzeria story plays when it's on screen */
+  var hero=Story($("heroPhone"),"restaurant");
+  if(hero){
+    var heroOn=false;
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting&&!heroOn){ heroOn=true; hero.start(); } else if(!e.isIntersecting&&heroOn){ heroOn=false; hero.stop(); } }); },{threshold:.35});
+    if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)) io.observe($("heroPhone"));
+  }
+
+  /* gallery: one card per industry; the first shot loops while the card is on screen */
+  var gal=$("gallery");
+  keys.forEach(function(k){
+    var c=document.createElement("figure"); c.className="card";
+    var t=document.createElement("button"); t.type="button"; t.className="thumb"; t.setAttribute("aria-label","Play the "+(IND[k]||k)+" example");
+    var v=document.createElement("video"); v.muted=true; v.loop=true; v.playsInline=true; v.setAttribute("playsinline",""); v.preload="none"; t.appendChild(v);
+    var pl=document.createElement("span"); pl.className="play"; t.appendChild(pl);
+    var lb=document.createElement("span"); lb.className="lbl"; lb.textContent=IND[k]||k; t.appendChild(lb);
+    c.appendChild(t);
+    var p=document.createElement("p"); p.textContent=EX[k].captions.join(" · "); c.appendChild(p);
+    t.addEventListener("click",function(){ openPlayer(k); });
+    gal.appendChild(c);
+    var near=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ if(!v.src){ v.poster=src(k,0,"jpg"); v.src=src(k,0,"mp4"); } var pp=v.play(); if(pp&&pp.catch) pp.catch(function(){}); } else v.pause(); }); },{rootMargin:"200px"});
+    near.observe(t);
+  });
+
+  var dlg=$("player"), story=null;
+  function openPlayer(k){
+    if(hero) hero.stop();
+    $("plName").textContent=IND[k]||k;
+    $("plGo").onclick=function(){ dlg.close(); var s=$("fInd"); if(s) s.value=k; };
+    story=Story($("plPhone"),k); if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open",""); story&&story.start();
+  }
+  dlg.addEventListener("close",function(){ story&&story.stop(); });
+  $("plClose").addEventListener("click",function(){ dlg.close(); });
+  dlg.addEventListener("click",function(e){ if(e.target===dlg) dlg.close(); });
+
+  /* industry list on the form */
+  var sel=$("fInd"); keys.forEach(function(k){ var o=document.createElement("option"); o.value=k; o.textContent=IND[k]||k; sel.appendChild(o); });
+  var oo=document.createElement("option"); oo.value="other"; oo.textContent="Something else"; sel.appendChild(oo);
+
+  /* the partner who referred this visitor (the server keeps the 90-day credit) */
+  var ref=REF&&REF.code?REF:null, name=ref&&ref.name, first=name?name.split(" ")[0]:"";
+  var who=first||"your rep";
+  document.querySelectorAll("[data-ask]").forEach(function(a){ a.textContent="Contact "+who+" for pricing";
+    if(ref&&ref.phone){ var d=String(ref.phone).replace(/\D/g,""); if(d.length>=10){ a.href="sms:+1"+d.slice(-10); a.title="Call or text "+fmtPhone(ref.phone); } } });
+  if(name) $("priceNote").textContent=name+" quotes every business personally: a single ad, a launch pack, or a fresh reel every month. Send the form or call or text, and you'll have your quote within one business day.";
+  var offer=ref&&ref.offer;
+  if(offer&&offer.type==="code"&&offer.code){ $("fCode").value=offer.code; $("ribbonPerk").textContent=" Use code "+offer.code+" for "+(offer.pct?offer.pct+"% off":"$"+offer.amt+" off")+"."; }
+  if(ref){
+    $("fRef").value=ref.code; $("ribbon").hidden=false;
+    if(name){
+      $("ribbonWho").textContent="Referred by "+name+".";
+      if(ref.phone){ var rc=$("ribbonCall"); rc.hidden=false; rc.href="tel:"+ref.phone.replace(/[^\d+]/g,""); rc.textContent="Call or text "+first+": "+fmtPhone(ref.phone); }
+      $("refNote").innerHTML=""; var bb=document.createElement("b"); bb.textContent="Referred by "+name+"."; $("refNote").appendChild(bb); $("refNote").appendChild(document.createTextNode(" They'll be credited automatically."));
+      $("stickyBtn").textContent="Get my video ad. Referred by "+first+".";
+      $("pcard").hidden=false; $("pcName").textContent=name;
+      if(ref.phone){ var pp=$("pcPhone"); pp.hidden=false; pp.href="tel:"+ref.phone.replace(/[^\d+]/g,""); pp.textContent=fmtPhone(ref.phone); }
+      if(ref.email){ var pe=$("pcEmail"); pe.hidden=false; pe.href="mailto:"+ref.email; pe.textContent=ref.email; }
+    } else { $("refNote").innerHTML="<b>Referred by a partner.</b> They'll be credited automatically."; }
+  }
+  var contact=(ref&&ref.phone)||SITE_PHONE;
+  $("doneText").textContent=(ref&&name?first+" will":"We'll")+" look at your business and send your quote within one business day."+(contact?" Need it faster? Text "+fmtPhone(contact)+".":"");
+  $("ribbonClose").addEventListener("click",function(){ $("ribbon").hidden=true; });
+
+  /* the request form goes to the same lead inbox as the agent page, marked as a business request */
+  var form=$("reqForm");
+  form.addEventListener("submit",function(e){
+    e.preventDefault();
+    var need=["fName","fBiz","fPhone","fEmail"], ok=true;
+    need.forEach(function(id){ var el=$(id); if(!el.value.trim()){ ok=false; el.setAttribute("aria-invalid","true"); } else el.removeAttribute("aria-invalid"); });
+    var err=$("fErr"); err.textContent="Add your name, business, mobile number and email so we can send your quote."; err.hidden=ok; if(!ok) return;
+    var btn=form.querySelector("button[type=submit]"); btn.disabled=true; btn.textContent="Sending…";
+    var indName=sel.value==="other"?"Other":(IND[sel.value]||sel.value), q={}; try{ q=Object.fromEntries(new URLSearchParams(location.search)); }catch(x){}
+    var data={ name:$("fName").value, phone:$("fPhone").value, email:$("fEmail").value,
+      listing:[$("fBiz").value.trim(),$("fWeb").value.trim()].filter(Boolean).join(" | "), package:"Business video · "+indName,
+      coupon:$("fCode").value.trim().toUpperCase(), notes:$("fNotes").value, ref:$("fRef").value, utm_source:q.utm_source||"", utm_campaign:q.utm_campaign||"", website:(form.website&&form.website.value)||"" };
+    fetch("/api/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok) throw new Error(j.error||"That didn't go through. Try again in a moment."); return j; }); })
+      .then(function(){ Array.prototype.forEach.call(form.querySelectorAll(".f, .refnote, .btn, .under, .err"),function(el){ el.hidden=true; }); $("fDone").hidden=false; })
+      .catch(function(x){ err.textContent=x.message; err.hidden=false; btn.disabled=false; btn.textContent="Send my request"; });
+  });
+
+  /* sticky mobile button after the hero, hidden at the form */
+  var sticky=$("sticky"), heroS=document.querySelector(".hero"), req=$("request");
+  function onScroll(){ var past=heroS.getBoundingClientRect().bottom<0, r=req.getBoundingClientRect(), at=r.top<innerHeight&&r.bottom>0; sticky.classList.toggle("on",past&&!at); }
+  addEventListener("scroll",onScroll,{passive:true}); onScroll();
+})();
+</script>
+</body>
+</html>

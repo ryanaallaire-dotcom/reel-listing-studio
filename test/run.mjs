@@ -292,6 +292,14 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   check("Referrals: /r/<code> shows the sales page with the partner's details and sets a 90-day cookie", land.status === 200 && /Your listing photos, filmed/.test(landHtml) && /"name":"Gary Test"/.test(landHtml) && rc === `rls_ref=${gid}` && /Max-Age=7776000/.test(land.headers.get("set-cookie")), rc);
   const unk = await fetch(`http://127.0.0.1:${Gp}/r/nobody-here`); const oh = await unk.text();
   check("Referrals: an unknown code still shows the page, without a partner", unk.status === 200 && /const REF=null/.test(oh) && !unk.headers.get("set-cookie"));
+  // Reel Business Studio: its own sales page with the same partner credit
+  const bl = await fetch(`http://127.0.0.1:${Gp}/business/r/${gid}`); const blh = await bl.text();
+  check("Business: /business/r/<code> shows the business page with the partner and the 90-day cookie", bl.status === 200 && /Reel Business Studio/.test(blh) && /"name":"Gary Test"/.test(blh) && (bl.headers.get("set-cookie") || "").startsWith(`rls_ref=${gid}`), bl.headers.get("set-cookie"));
+  check("Business: the page lists all 10 industries with captions and never the storage addresses", /const BIZ=\{"industries":\{"restaurant"/.test(blh) && (blh.match(/"captions":/g) || []).length === 10 && !/fal\.media/.test(blh));
+  const bst = await (await fetch(`http://127.0.0.1:${Gp}/business/studio`)).text(), rst = await (await fetch(`http://127.0.0.1:${Gp}/studio`)).text();
+  check("Business: /business/studio opens the studio in business mode; the listing studio is unchanged", /<script>window\.RBS=\{"industries"/.test(bst) && /<title>Reel Business Studio<\/title>/.test(bst) && !/window\.RBS=/.test(rst) && /<title>Reel Listing Studio<\/title>/.test(rst));
+  const bx1 = await fetch(`http://127.0.0.1:${Gp}/api/biz/example/restaurant/7.mp4`), bx2 = await fetch(`http://127.0.0.1:${Gp}/api/biz/example/nothing/0.mp4`), bx3 = await fetch(`http://127.0.0.1:${Gp}/api/biz/example/..%2f..%2fetc/0.jpg`);
+  check("Business: example clips are served only by industry and shot number", bx1.status === 404 && bx2.status === 404 && bx3.status === 404, `${bx1.status} ${bx2.status} ${bx3.status}`);
   const lead = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json", cookie: rc }, body: JSON.stringify({ name: "Agent Amy", email: "amy@realty.test", phone: "555-201-3344", listing: "https://zillow.test/1", package: "Signature ($399)" }) });
   const lj = await lead.json();
   check("Leads: a request from a referred agent is credited to the partner", lead.status === 200 && lj.partner?.name === "Gary Test", JSON.stringify(lj));
@@ -377,6 +385,7 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   const mp = falCalls[0]?.body.prompt || "";
   check("Clips: the photo's own 'what moves' sentence leads the prompt (cleaned), camera stays gentle", mp.startsWith("The two white ceiling fans on the ceiling spin steadily") && !/script|[<>]/.test(mp) && /moves only a little/.test(mp), mp.slice(0, 120));
   check("Clips: only the owner can switch models", /v2\.6\/pro/.test(falCalls[0]?.path || "") && falCalls[0]?.body.generate_audio === false && /v2\.5-turbo/.test(falCalls[1]?.path || ""), `${falCalls[0]?.path} | ${falCalls[1]?.path}`);
+  check("Clips: Kling 2.6 gets the photo as start_image_url and no cfg_scale; 2.5 keeps image_url", !!falCalls[0]?.body.start_image_url && !("image_url" in (falCalls[0]?.body || {})) && !("cfg_scale" in (falCalls[0]?.body || {})) && !!falCalls[1]?.body.image_url && "cfg_scale" in (falCalls[1]?.body || {}), JSON.stringify(Object.keys(falCalls[0]?.body || {})));
   falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan", retry: true }, { headers: {} });
   await new Promise(r => setTimeout(r, 200));
   check("Clips: a re-make asks for clearly visible movement", /camera keeps moving steadily from the first second/.test(falCalls[0]?.body.prompt || "") && !/fan blades|flames/.test(falCalls[0]?.body.prompt || ""));
@@ -394,6 +403,13 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   const inP = falCalls[0]?.body || {}, exP = falCalls[1]?.body || {};
   check("Clips: trees and sky move outdoors, never in rooms", !/trees|Clouds/.test(inP.prompt || "") && /fan blades/.test(inP.prompt || "") && /hanging into view/.test(inP.negative_prompt || "")
     && /trees already in the scene sway/.test(exP.prompt || "") && /Clouds drift/.test(exP.prompt || "") && !/foliage/.test(exP.negative_prompt || ""), (inP.prompt || "").slice(0, 80));
+  falCalls.length = 0;
+  await api(Gp, "/api/clips", { image: jpg, kind: "biz:restaurant", move: "slide", movers: "Steam rises from the pizza." }, { headers: {} });
+  await api(Gp, "/api/clips", { image: jpg, kind: "biz:nothing", move: "slide" }, { headers: {} });
+  await new Promise(r => setTimeout(r, 250));
+  const bz = falCalls[0]?.body || {}, bz2 = falCalls[1]?.body || {};
+  check("Business: a business shot leads with what moves, uses its own camera move and keeps text and logos still", (bz.prompt || "").startsWith("Steam rises from the pizza.") && /slides slowly sideways past the food/.test(bz.prompt) && /premium food commercial/.test(bz.prompt) && /logos stay perfectly still/.test(bz.prompt) && /garbled text/.test(bz.negative_prompt || "") && !/bedroom|listing|ceiling fan/i.test(bz.prompt), (bz.prompt || "").slice(0, 160));
+  check("Business: an unknown industry falls back to the listing wording", !!bz2.prompt && !/commercial/.test(bz2.prompt), (bz2.prompt || "").slice(0, 80));
   falCalls.length = 0; await api(Gp, "/api/clips", { image: jpg, kind: "int", move: "rpan" }, { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "reel.example.com" } });
   await new Promise(r => setTimeout(r, 200));
   const iu = falCalls[0]?.body.image_url || ""; const srcPath = iu.replace("https://reel.example.com", "");
