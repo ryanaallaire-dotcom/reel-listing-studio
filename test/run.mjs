@@ -555,6 +555,29 @@ const Hp = 18918; const sh = await startServer(Hp, {});
   check("Clips: off without a fal.ai key, and says so", h.clips === false && r.status === 404); }
 sh.kill();
 
+// ===== server K: Meta pixel on every page, Lead event on both forms, leads forwarded to the CRM webhook =====
+{
+  const CRMM = 18908; const crm = [];
+  const crmmock = http.createServer(async (req, res) => { let b = ""; for await (const c of req) b += c; crm.push({ path: req.url, body: JSON.parse(b || "{}") }); res.writeHead(200, { "content-type": "application/json" }); res.end('{"status":"Success"}'); });
+  await new Promise(r => crmmock.listen(CRMM, "127.0.0.1", r));
+  const Kp = 18920; const sk = await startServer(Kp, { ALLOW_LOCAL_FETCH: "1", GHL_WEBHOOK_URL: `http://127.0.0.1:${CRMM}/hook` });
+  const pages = await Promise.all(["/", "/business", "/studio", "/business/studio"].map(async p => (await fetch(`http://127.0.0.1:${Kp}${p}`)).text()));
+  check("Pixel: the sales pages and both studios load the Meta pixel once, in the head", pages.every(h => (h.match(/fbq\('init','368338623373140'\)/g) || []).length === 1 && h.indexOf("fbevents.js") < h.indexOf("</head>")));
+  check("Pixel: both request forms send a Lead event with the brand", /fbq\("track","Lead",\{content_category:"Reel Business Studio"/.test(pages[1]) && /fbq\("track", "Lead", \{ content_category: "Reel Listing Studio"/.test(pages[0]));
+  const bl = await fetch(`http://127.0.0.1:${Kp}/api/leads`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Rosa Diaz Lopez", email: "rosa@pizza.test", phone: "555-010-2233", listing: "Rosa's Pizza | rosaspizza.test", package: "Business video · Restaurant", utm_source: "meta", utm_campaign: "blackfriday" }) });
+  const al = await fetch(`http://127.0.0.1:${Kp}/api/leads`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Agent Al", email: "al@realty.test", listing: "https://zillow.test/9", package: "Signature ($399)" }) });
+  await new Promise(r => setTimeout(r, 400));
+  const rb = crm.find(c => c.body.email === "rosa@pizza.test")?.body, ra = crm.find(c => c.body.email === "al@realty.test")?.body;
+  check("CRM: a business lead reaches the webhook with brand, industry, business, website and tags", bl.status === 200 && rb?.brand === "Reel Business Studio" && rb.industry === "Restaurant" && rb.business_name === "Rosa's Pizza" && rb.website === "rosaspizza.test"
+    && rb.first_name === "Rosa" && rb.last_name === "Diaz Lopez" && rb.tags === "rbs-lead,industry-restaurant,campaign-blackfriday" && crm[0].path === "/hook", JSON.stringify(rb));
+  check("CRM: an agent lead reaches the webhook as Reel Listing Studio", al.status === 200 && ra?.brand === "Reel Listing Studio" && ra.industry === "Real estate" && ra.listing === "https://zillow.test/9" && ra.tags === "rls-lead", JSON.stringify(ra));
+  sk.kill(); crmmock.close();
+  const Lp = 18921; const sl = await startServer(Lp, { META_PIXEL_ID: "off" });
+  const off = await (await fetch(`http://127.0.0.1:${Lp}/`)).text();
+  check("Pixel: META_PIXEL_ID=off leaves it out", !/fbevents\.js/.test(off) && /Your listing photos/.test(off));
+  sl.kill();
+}
+
 // ===== server P: PayPal billing against a fake PayPal =====
 const PPM = 18905; const pp = { plans: {}, subs: {}, orders: {}, cancelled: [], products: 0, webhooks: 0, captures: 0 };
 const ppmock = http.createServer(async (req, res) => {

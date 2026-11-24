@@ -3,6 +3,7 @@
 //   GET  /api/health     lets the Studio know link import is available
 //   POST /api/import     { url } → ZIP of photos + listing.json (same format as the Chrome Grabber)
 import { leadAlert, emailEnabled, sendPasswordLink, welcomeEmail, sendWelcome, vipAlert, orderAlert, videoReadyEmail } from "./lib/notify.js";
+import { forwardLead } from "./lib/crm.js";
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -51,18 +52,23 @@ function refCookie(req, res, code) {
   res.setHeader("set-cookie", `rls_ref=${p.code}; Max-Age=${REF_DAYS * 86400}; Path=/; SameSite=Lax${SECURE ? "; Secure" : ""}`);
   return p;
 }
-const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, prices: partner.prices, offer: partner.offer } : null).replace(/</g, "\\u003c"));
+// Meta pixel on every page: one pixel for both brands, so audiences can be split by page and reused by any Page in the ad account.
+// META_PIXEL_ID overrides the default; META_PIXEL_ID=off removes it.
+const PIXEL_ID = process.env.META_PIXEL_ID === "off" ? "" : /^\d{6,20}$/.test(process.env.META_PIXEL_ID || "") ? process.env.META_PIXEL_ID : "368338623373140";
+const PIXEL_TAG = PIXEL_ID ? `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${PIXEL_ID}');fbq('track','PageView');</script>` : "";
+const withPixel = html => PIXEL_TAG ? html.replace("</head>", PIXEL_TAG + "</head>") : html;
+const agentsPage = partner => withPixel(fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, prices: partner.prices, offer: partner.offer } : null).replace(/</g, "\\u003c")));
 // Reel Business Studio: its own sales page, and the same studio in business mode (window.RBS switches it)
 const BUSINESS = path.join(DIR, "public", "business.html");
 const BIZ_LOCK = path.join(DIR, "public", "business-lock.html");
 const bizPublic = () => ({ industries: Object.fromEntries(Object.entries(INDUSTRIES).map(([k, v]) => [k, v.name])), examples: bizExamplesPublic() });
 const safeJson = v => JSON.stringify(v).replace(/</g, "\\u003c");
-const businessPage = partner => fs.readFileSync(BUSINESS, "utf8")
+const businessPage = partner => withPixel(fs.readFileSync(BUSINESS, "utf8")
   .replace("/*__REF__*/null", safeJson(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, offer: partner.offer } : null))
-  .replace("/*__BIZ__*/null", safeJson(bizPublic()));
+  .replace("/*__BIZ__*/null", safeJson(bizPublic())));
 // the sign-in screen people see at /business/studio until their account has Reel Business Studio access
-const bizLockPage = me => fs.readFileSync(BIZ_LOCK, "utf8").replace("/*__ME__*/null", safeJson(me ? { email: me.email } : null));
-const bizStudioPage = () => page().replace("<title>Reel Listing Studio</title>", "<title>Reel Business Studio</title>").replace("<body>", `<body><script>window.RBS=${safeJson(bizPublic())};</script>`);
+const bizLockPage = me => withPixel(fs.readFileSync(BIZ_LOCK, "utf8").replace("/*__ME__*/null", safeJson(me ? { email: me.email } : null)));
+const bizStudioPage = () => withPixel(page()).replace("<title>Reel Listing Studio</title>", "<title>Reel Business Studio</title>").replace("<body>", `<body><script>window.RBS=${safeJson(bizPublic())};</script>`);
 // example clips: fetched once from the AI service's storage, then served from this site so the studio can draw them
 const BIZ_EX_DIR = path.join(process.env.CLIP_DIR || path.join(os.tmpdir(), "rls-clips"), "biz-examples");
 const bizInflight = new Map();
@@ -223,6 +229,7 @@ export const server = http.createServer(async (req, res) => {
       if (body.website) return json(res, 200, { ok: true });   // bots fill the hidden field
       const saved = acct.addLead(body, cookieVal(req, "rls_ref") || body.ref);
       leadAlert(saved.lead, saved.partner);
+      forwardLead(saved.lead, saved.partner);
       return json(res, 200, { ok: true, partner: saved.partner });
     }
     if (req.method === "GET" && (u.pathname === "/" || u.pathname === "/index.html") && u.searchParams.has("setup")) {
@@ -233,7 +240,7 @@ export const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(agentsPage(partner));
     }
     if (req.method === "GET" && (u.pathname === "/studio" || u.pathname === "/studio/")) {
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(page());
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(withPixel(page()));
     }
     if (req.method === "GET") {
       const pre = Object.keys(STATIC).find(p => u.pathname.startsWith(p));

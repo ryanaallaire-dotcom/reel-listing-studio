@@ -916,7 +916,7 @@ const REF=/*__REF__*/null;   // the partner who sent this visitor (set by the se
       notes:$("fNotes").value, ref:$("fRef").value, utm_source:$("fUtmS").value, utm_campaign:$("fUtmC").value, website:(form.website&&form.website.value)||"" };
     fetch("/api/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)})
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok) throw new Error(j.error||"That didn’t go through. Try again in a moment."); return j; }); })
-      .then(function(){ Array.prototype.forEach.call(form.querySelectorAll(".f, .refnote, .btn, .under, .err"), function(el){ el.hidden = true; }); document.getElementById("fDone").hidden = false; })
+      .then(function(){ try { if (window.fbq) fbq("track", "Lead", { content_category: "Reel Listing Studio", content_name: data.package || "" }); } catch (e) {} Array.prototype.forEach.call(form.querySelectorAll(".f, .refnote, .btn, .under, .err"), function(el){ el.hidden = true; }); document.getElementById("fDone").hidden = false; })
       .catch(function(x){ err.textContent = x.message; err.hidden = false; btn.disabled = false; btn.textContent = "Send my listing"; });
   });
 
