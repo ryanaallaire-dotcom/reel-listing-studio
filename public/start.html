@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Your video order</title>
+<link rel="icon" href="/media/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+/* Reel Listing Studio: bone, ink and brass. Reel Business Studio: ink, lipstick red and blush. */
+:root{--bg:#F3F0E9;--card:#FBF9F4;--ink:#121211;--muted:#5d584d;--line:#d8d2c4;--accent:#7D5F2C;--accent-ink:#F3F0E9;--ok:#2f6b3a;--bad:#a3261b;--warn:#8a5a00;--radius:3px;
+  --head:"Instrument Serif",Georgia,"Times New Roman",serif;--body:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+body[data-brand="rbs"]{--bg:#F6E8E3;--card:#fff;--ink:#0D0C0C;--muted:#5e4f4b;--line:#e8cfc7;--accent:#D91F34;--accent-ink:#fff;--radius:10px;--head:"Archivo",system-ui,sans-serif}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);padding-bottom:env(safe-area-inset-bottom)}
+[hidden]{display:none!important}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.wm{font:600 15px/1 var(--body);letter-spacing:.14em;text-transform:uppercase}
+body[data-brand="rbs"] .wm{font:800 17px/1 var(--head);font-stretch:118%;letter-spacing:.02em;text-transform:none}
+body[data-brand="rbs"] .wm b{color:var(--accent)}
+main{max-width:680px;margin:0 auto;padding:26px 18px 60px}
+h1{font:400 40px/1.08 var(--head);margin:6px 0 10px}
+body[data-brand="rbs"] h1{font-weight:800;font-stretch:112%;font-size:36px;letter-spacing:-.01em}
+h1 em{font-style:italic;color:var(--accent)}
+.kicker{font:600 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0}
+.lede{color:var(--muted);margin:0 0 18px;font-size:17px}
+.prog{display:flex;gap:6px;list-style:none;padding:0;margin:0 0 22px;counter-reset:s}
+.prog li{flex:1;font-size:12.5px;color:var(--muted);border-top:3px solid var(--line);padding-top:7px;counter-increment:s}
+.prog li::before{content:counter(s) ". "}
+.prog li.on{color:var(--ink);border-color:var(--accent);font-weight:600}.prog li.done{color:var(--ink);border-color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px;margin:0 0 16px}
+.card h2{font:600 19px/1.3 var(--body);margin:0 0 6px;display:flex;gap:10px;align-items:center}
+.card h2 span{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:13px;flex:none}
+.small{font-size:13.5px;color:var(--muted)}
+.agr{max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:var(--radius);padding:4px 14px;margin:12px 0 6px;background:var(--bg);font-size:14.5px;line-height:1.55}
+.agr h1{font:600 18px/1.3 var(--body);margin:14px 0 4px}.agr h2{font:700 12.5px/1.3 var(--body);letter-spacing:.07em;text-transform:uppercase;margin:18px 0 6px}
+.agr ul{padding-left:18px}.agr li,.agr p{margin:0 0 9px}
+.agr h2:first-of-type+p+ul,.agr h2:first-of-type+p{font-weight:500}
+label{display:block;font-weight:600;font-size:14.5px;margin:14px 0 0}
+input[type=text],input[type=url],input[type=tel],textarea{display:block;width:100%;margin-top:6px;padding:12px;font:16px var(--body);color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:var(--radius)}
+textarea{min-height:84px;resize:vertical}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chk{display:flex;gap:12px;align-items:flex-start;font-weight:500;line-height:1.45;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);cursor:pointer}
+.chk input{width:22px;height:22px;flex:none;margin:1px 0 0;accent-color:var(--accent)}
+.chk.must{border:2px solid var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:12px 22px;font:600 16px var(--body);border-radius:var(--radius);border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer;text-decoration:none}
+body[data-brand="rbs"] .btn{background:var(--accent);border-color:var(--accent);color:#fff;border-radius:999px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+body[data-brand="rbs"] .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.wide{width:100%;margin-top:16px}
+.status{font-size:14.5px;margin:10px 0 0;min-height:1em}.status.bad{color:var(--bad)}.status.ok{color:var(--ok)}.status.warn{color:var(--warn)}
+.drop{border:2px dashed var(--line);border-radius:var(--radius);padding:18px;text-align:center;margin-top:14px;background:var(--bg)}
+.drop.over{border-color:var(--accent)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:12px}
+.thumb{position:relative;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;background:var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:17px;line-height:1;cursor:pointer}
+.thumb.logo img{object-fit:contain;background:#fff}
+.thumb .tag{position:absolute;left:4px;bottom:4px;font-size:11px;background:rgba(0,0,0,.65);color:#fff;padding:2px 6px;border-radius:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+.donebox{display:flex;gap:10px;align-items:flex-start}
+.donebox .ic{flex:none;width:26px;height:26px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:15px}
+.note{border-left:3px solid var(--accent);padding:8px 12px;background:var(--bg);font-size:14.5px;margin:12px 0 0}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:16px 0 0}.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+footer{max-width:680px;margin:0 auto;padding:0 18px 40px;font-size:14px;color:var(--muted)}
+footer a{color:inherit}
+.rowb{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.rowb .btn{flex:1 1 200px}
+</style>
+</head>
+<body data-brand="rls">
+<header><div class="wm" id="wm">Reel Listing Studio</div><span class="small" id="hdrPkg"></span></header>
+<main>
+  <p id="loading" class="small">Loading your order…</p>
+  <section class="card" id="err" hidden><h2>This link isn't working</h2><p id="errText" class="small"></p></section>
+
+  <div id="hero" hidden>
+    <p class="kicker" id="kicker">Your video order</p>
+    <h1 id="hi"></h1>
+    <p class="lede" id="lede"></p>
+    <ol class="prog" id="prog"><li>Agreement</li><li id="p2">Photos</li><li>We make it</li><li>Your review</li></ol>
+  </div>
+
+  <!-- step 1: the agreement -->
+  <section class="card" id="s1" hidden>
+    <h2><span>1</span>Read and accept your agreement</h2>
+    <p class="small">It starts with the short version. The one rule that matters most: only send photos you own or have permission to use.</p>
+    <div class="agr" id="agr" tabindex="0" aria-label="Client Video Agreement"></div>
+    <p class="small"><a href="/terms" target="_blank" rel="noopener">Open the agreement full screen</a></p>
+    <label for="sigName">Type your full name to sign</label>
+    <input type="text" id="sigName" autocomplete="name" maxlength="100" placeholder="First and last name">
+    <label class="chk must" style="margin-top:14px"><input type="checkbox" id="agree"><span>I've read and agree to the Client Video Agreement, and I'm authorized to accept it for my business.</span></label>
+    <button class="btn wide" id="acceptBtn" type="button">Accept and continue</button>
+    <p class="status" id="s1st" role="status" aria-live="polite"></p>
+  </section>
+  <section class="card" id="s1done" hidden>
+    <div class="donebox"><span class="ic" aria-hidden="true">✓</span><div><b>Agreement accepted</b><div class="small" id="s1doneText"></div></div></div>
+  </section>
+
+  <!-- step 2: photos or the listing link -->
+  <section class="card" id="s2" hidden>
+    <h2><span>2</span><b id="s2title">Send your listing</b></h2>
+    <p class="small" id="s2lede"></p>
+    <div id="rlsFields">
+      <label for="listing">MLS or listing link</label>
+      <input type="url" id="listing" inputmode="url" maxlength="500" placeholder="Paste the MLS, Zillow, Realtor.com or brokerage link">
+      <div class="or">and / or</div>
+    </div>
+    <div id="rbsFields" hidden>
+      <div class="grid2">
+        <label>Business name<input type="text" data-d="business" maxlength="200"></label>
+        <label>Phone for the video<input type="tel" data-d="phone" maxlength="200"></label>
+        <label>What to promote<input type="text" data-d="offer" maxlength="200" placeholder="e.g. Breakfast served all day"></label>
+        <label>Call to action<input type="text" data-d="cta" maxlength="200" placeholder="e.g. Call to book"></label>
+        <label>Hours<input type="text" data-d="hours" maxlength="200"></label>
+        <label>Website or booking link<input type="text" data-d="website" maxlength="200"></label>
+      </div>
+      <label for="logoPick" style="margin-top:16px">Your logo <span class="small">(optional, PNG with a clear background is best)</span></label>
+      <div class="rowb" style="margin-top:6px"><button class="btn ghost" type="button" id="logoPick">Choose your logo</button></div>
+      <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" hidden>
+    </div>
+    <div class="drop" id="drop">
+      <b id="dropTitle">Upload the listing photos</b>
+      <p class="small" style="margin:4px 0 12px" id="dropSub">JPG, PNG or WebP, straight from your phone or computer. Up to 40.</p>
+      <button class="btn" type="button" id="pick">Choose photos</button>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+    </div>
+    <p class="status" id="upSt" role="status" aria-live="polite"></p>
+    <div class="thumbs" id="thumbs"></div>
+    <label for="notes">Anything we should know? <span class="small">(optional)</span></label>
+    <textarea id="notes" maxlength="2000" placeholder="Favorite photos, things to highlight, open house date, anything to leave out"></textarea>
+    <label class="chk must" style="margin-top:18px"><input type="checkbox" id="rights"><span id="rightsText"></span></label>
+    <p class="small" style="margin:8px 0 0">Not sure about a photo? Leave it out and ask your rep. Stock and "royalty-free" photos aren't allowed (section 4 of your agreement).</p>
+    <label class="chk" style="margin-top:12px"><input type="checkbox" id="portfolio"><span>Optional: you may show my finished video as an example of your work.</span></label>
+    <button class="btn wide" id="sendBtn" type="button">Send my photos</button>
+    <p class="status" id="s2st" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- step 3 and 4: making it, delivery and review -->
+  <section class="card" id="s3" hidden>
+    <div id="s3wait"><div class="donebox"><span class="ic" aria-hidden="true">✓</span><div><b id="s3title">Got it. We're making your video.</b><div class="small" id="s3text"></div></div></div></div>
+    <div id="s3ready" hidden>
+      <h2><span>4</span>Your video is ready</h2>
+      <p class="small" id="readyText"></p>
+      <div class="rowb"><a class="btn" id="watch" target="_blank" rel="noopener noreferrer">Watch your video</a></div>
+      <p class="note">Please watch it all the way through before you post it. AI motion can add or change small details. If anything is off, tell us below and we'll fix it.</p>
+      <div id="reviewBox">
+        <div class="rowb"><button class="btn" type="button" id="approveBtn">Looks great, approve it</button></div>
+        <label for="changes">Or tell us what to change</label>
+        <textarea id="changes" maxlength="2000" placeholder="e.g. Swap the second shot, fix the phone number, remove the sign in shot 4"></textarea>
+        <div class="rowb"><button class="btn ghost" type="button" id="changesBtn">Send my changes</button></div>
+      </div>
+      <p class="status" id="s3st" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+<footer id="foot" hidden><p id="repLine"></p><p><a href="/terms" target="_blank" rel="noopener">Client Video Agreement</a></p></footer>
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const token=(location.pathname.split("/")[2]||"").replace(/\/$/,"");
+const api=p=>`/api/order/${token}${p}`;
+let V=null, uploading=false;
+const fmtDate=t=>t?new Date(t).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"}):"";
+const fmtTime=t=>t?new Date(t).toLocaleString(undefined,{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}):"";
+const telHref=p=>"tel:"+String(p||"").replace(/[^\d+]/g,"");
+const draftKey="rls-order-"+token;
+function st(el,cls,msg){ el.className="status "+(cls||""); el.textContent=msg||""; }
+async function call(path,body){
+  const r=await fetch(api(path),body===undefined?{}:{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  let j={}; try{ j=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error(j.error||(r.status>=500?"Something went wrong on our side. Try again in a minute.":"That didn't work. Try again."));
+  return j;
+}
+function saveDraft(){ try{ const d={listing:$("#listing").value,notes:$("#notes").value,details:{}}; $$("[data-d]").forEach(i=>d.details[i.dataset.d]=i.value); localStorage.setItem(draftKey,JSON.stringify(d)); }catch(e){} }
+function loadDraft(v){ let d={}; try{ d=JSON.parse(localStorage.getItem(draftKey)||"{}"); }catch(e){}
+  $("#listing").value=v.listing||d.listing||""; $("#notes").value=v.notes||d.notes||"";
+  $$("[data-d]").forEach(i=>i.value=(v.details&&v.details[i.dataset.d])||(d.details&&d.details[i.dataset.d])||(i.dataset.d==="business"?v.business:"")||""); }
+
+function render(v){
+  V=v; const rbs=v.brand==="rbs";
+  document.body.dataset.brand=v.brand; document.title=`Your ${v.brandName} order`;
+  $("#wm").innerHTML=rbs?"Reel <b>Business</b> Studio":"Reel Listing Studio";
+  $("#hdrPkg").textContent=v.package||"";
+  $("#loading").hidden=true; $("#hero").hidden=false; $("#foot").hidden=false;
+  const stage=v.status==="cancelled"?3:!v.agreement.accepted?1:v.status==="agreed"?2:["delivered","approved"].includes(v.status)?4:3;
+  $("#hi").innerHTML=stage===4?`Your video is <em>ready</em>, ${esc(v.first)}.`:stage===3?`We're on it, ${esc(v.first)}.`:`Hi ${esc(v.first)}, let's make your <em>video</em>.`;
+  $("#lede").textContent=stage===1?"Two quick steps: accept your agreement, then send your "+(rbs?"photos":"photos or listing link")+". About 3 minutes.":stage===2?"Last step: send your "+(rbs?"photos":"photos or listing link")+".":stage===3?"Nothing else needed from you right now.":"Watch it, then approve it or tell us what to change.";
+  $("#p2").textContent=rbs?"Photos":"Photos or link";
+  $$("#prog li").forEach((li,i)=>{ li.className=i+1<stage?"done":i+1===stage?"on":""; });
+  // step 1
+  $("#s1").hidden=v.agreement.accepted||v.status==="cancelled"; $("#s1done").hidden=!v.agreement.accepted;
+  if(!v.agreement.accepted){ if(!$("#agr").dataset.v){ $("#agr").innerHTML=v.agreement.html; $("#agr").dataset.v=v.agreement.version; } if(!$("#sigName").value) $("#sigName").value=v.name||""; }
+  else $("#s1doneText").textContent=`Signed by ${v.agreement.acceptedName} on ${fmtTime(v.agreement.acceptedAt)}.`;
+  // step 2
+  $("#s2").hidden=stage!==2;
+  if(stage===2){
+    $("#s2title").textContent=rbs?"Send your photos":"Send your listing";
+    $("#s2lede").textContent=rbs?"Your best 4 to 10 photos of your food, work, space or team. Photos you took or paid for only.":"Paste the MLS or listing link, upload the photos, or both. We use only the photos you have the rights to.";
+    $("#rlsFields").hidden=rbs; $("#rbsFields").hidden=!rbs;
+    $("#dropTitle").textContent=rbs?"Upload your photos":"Upload the listing photos";
+    $("#rightsText").textContent=v.rights.text;
+    if(!$("#s2").dataset.loaded){ loadDraft(v); $("#portfolio").checked=!!v.portfolio; $("#s2").dataset.loaded="1"; }
+    renderThumbs(v);
+  }
+  // step 3 / 4
+  $("#s3").hidden=stage<3;
+  if(stage>=3){
+    const ready=["delivered","approved"].includes(v.status);
+    $("#s3wait").hidden=ready; $("#s3ready").hidden=!ready;
+    const repName=v.rep.name?v.rep.name.split(/\s+/)[0]:"your rep";
+    if(!ready){
+      $("#s3title").textContent=v.status==="changes"?"Got your changes. We're on it.":v.status==="cancelled"?"This order was cancelled.":"Got it. We're making your video.";
+      const what=[v.files.filter(f=>f.kind==="photo").length?`${v.files.filter(f=>f.kind==="photo").length} photos`:"",v.listing?"your listing link":""].filter(Boolean).join(" and ");
+      $("#s3text").textContent=v.status==="cancelled"?`Questions? Contact ${repName}.`:`Sent ${fmtTime(v.submittedAt)}${what?": "+what:""}. We'll let you know as soon as it's ready. Need to add or change something? Contact ${repName}.`;
+    } else {
+      $("#watch").href=v.delivery;
+      $("#reviewBox").hidden=v.status!=="delivered";
+      $("#readyText").textContent=v.status==="approved"?`Approved on ${fmtDate(v.approvedAt)}. It's yours to post. Thank you!`:`Delivered ${fmtDate(v.deliveredAt)}. Ask for changes by ${fmtDate(v.reviewBy)}, or approve it now.`;
+    }
+  }
+  // footer: the rep who closed the sale
+  const r=v.rep, bits=[];
+  if(r.phone) bits.push(`<a href="${telHref(r.phone)}">${esc(r.phone)}</a>`); if(r.email) bits.push(`<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`);
+  $("#repLine").innerHTML=`Questions? ${r.name?`Your rep is <b>${esc(r.name)}</b>`:"Contact us"}${bits.length?": "+bits.join(" · "):"."}`;
+}
+function esc(x){ return String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function renderThumbs(v){
+  const box=$("#thumbs"); box.innerHTML="";
+  v.files.forEach(f=>{ const d=document.createElement("div"); d.className="thumb"+(f.kind==="logo"?" logo":"");
+    d.innerHTML=`<img alt="" loading="lazy"><button type="button" aria-label="Remove">×</button>${f.kind==="logo"?'<span class="tag">Logo</span>':""}`;
+    d.querySelector("img").src=api(`/file/${f.id}`); d.querySelector("img").alt=f.name||"";
+    d.querySelector("button").onclick=async()=>{ try{ render(await call("/remove",{id:f.id})); }catch(e){ st($("#upSt"),"bad",e.message); } };
+    box.appendChild(d); });
+  const n=v.files.filter(f=>f.kind==="photo").length;
+  if(!uploading) st($("#upSt"),n?"ok":"",n?`${n} photo${n===1?"":"s"} added.`:"");
+}
+// shrink big phone photos before they upload (faster, and well above what a video needs); keeps a logo's clear background
+async function shrink(file,kind){
+  const max=kind==="logo"?1200:2400, png=kind==="logo"&&/png|webp/.test(file.type);
+  let src=null; try{ src=await createImageBitmap(file,{imageOrientation:"from-image"}); }catch(e){
+    try{ src=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=URL.createObjectURL(file); }); }catch(e2){ src=null; } }
+  if(!src){ if(/^image\/(jpeg|png|webp)$/.test(file.type)&&file.size<12e6) return file; throw new Error(`${file.name}: that photo format isn't supported. Send it as a JPG or PNG.`); }
+  const w=src.width||src.naturalWidth, h=src.height||src.naturalHeight, k=Math.min(1,max/Math.max(w,h));
+  if(k===1&&/^image\/(jpeg|png|webp)$/.test(file.type)&&file.size<4e6) return file;
+  const c=document.createElement("canvas"); c.width=Math.round(w*k); c.height=Math.round(h*k);
+  const g=c.getContext("2d"); if(!png){ g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height); } g.drawImage(src,0,0,c.width,c.height);
+  return await new Promise(res=>c.toBlob(b=>res(b||file),png?"image/png":"image/jpeg",.9));
+}
+const toData=b=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(b); });
+async function upload(list,kind="photo"){
+  list=[...list].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|hei[cf])$/i.test(f.name)); if(!list.length) return;
+  const room=V.maxPhotos-V.files.filter(f=>f.kind==="photo").length;
+  if(kind==="photo"&&list.length>room){ list=list.slice(0,Math.max(0,room)); if(!list.length){ st($("#upSt"),"warn",`That's the most photos one order takes (${V.maxPhotos}).`); return; } }
+  uploading=true; $("#sendBtn").disabled=true; let i=0, fails=[];
+  for(const f of list){
+    i++; st($("#upSt"),"",list.length>1?`Uploading ${i} of ${list.length}…`:"Uploading…");
+    try{ const b=await shrink(f,kind); render(await call("/file",{kind,name:f.name,data:await toData(b)})); }
+    catch(e){ fails.push(e.message); }
+  }
+  uploading=false; $("#sendBtn").disabled=false; renderThumbs(V);
+  if(fails.length) st($("#upSt"),"bad",fails[0]+(fails.length>1?` (and ${fails.length-1} more didn't upload)`:""));
+}
+$("#pick").onclick=()=>$("#file").click();
+$("#file").onchange=e=>{ const f=[...e.target.files]; e.target.value=""; upload(f); };
+$("#logoPick").onclick=()=>$("#logoFile").click();
+$("#logoFile").onchange=e=>{ const f=[...e.target.files]; e.target.value=""; upload(f.slice(0,1),"logo"); };
+const drop=$("#drop");
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop",e=>upload(e.dataTransfer.files));
+["#listing","#notes"].forEach(s=>$(s).addEventListener("input",saveDraft)); $$("[data-d]").forEach(i=>i.addEventListener("input",saveDraft));
+
+$("#acceptBtn").onclick=async()=>{
+  const s=$("#s1st"), name=$("#sigName").value.trim();
+  if(!/\S+\s+\S+/.test(name)){ st(s,"warn","Type your full name (first and last) to sign."); $("#sigName").focus(); return; }
+  if(!$("#agree").checked){ st(s,"warn","Check the box to accept the agreement."); return; }
+  const b=$("#acceptBtn"); b.disabled=true; st(s,"","Saving…");
+  try{ render(await call("/accept",{name,agree:true,version:V.agreement.version,hash:V.agreement.hash})); st(s,"",""); window.scrollTo({top:0,behavior:"smooth"}); }
+  catch(e){ st(s,"bad",e.message); } finally{ b.disabled=false; }
+};
+$("#sendBtn").onclick=async()=>{
+  const s=$("#s2st"), rbs=V.brand==="rbs", listing=$("#listing").value.trim(), photos=V.files.filter(f=>f.kind==="photo").length;
+  if(uploading){ st(s,"warn","Wait for the photos to finish uploading."); return; }
+  if(!photos&&!(listing&&!rbs)){ st(s,"warn",rbs?"Add at least one photo.":"Add the listing photos or paste the MLS or listing link."); return; }
+  if(!$("#rights").checked){ st(s,"warn","Check the photo rights box. We can only use photos you have the rights to."); $("#rights").focus(); return; }
+  const details={}; $$("[data-d]").forEach(i=>{ if(i.value.trim()) details[i.dataset.d]=i.value.trim(); });
+  const b=$("#sendBtn"); b.disabled=true; st(s,"","Sending…");
+  try{ render(await call("/submit",{listing:rbs?"":listing,details,notes:$("#notes").value.trim(),rights:true,rightsVersion:V.rights.version,portfolio:$("#portfolio").checked}));
+    try{ localStorage.removeItem(draftKey); }catch(e){} window.scrollTo({top:0,behavior:"smooth"}); }
+  catch(e){ st(s,"bad",e.message); } finally{ b.disabled=false; }
+};
+$("#approveBtn").onclick=async()=>{ const s=$("#s3st"); try{ render(await call("/review",{approve:true})); st(s,"ok","Approved. Thank you!"); }catch(e){ st(s,"bad",e.message); } };
+$("#changesBtn").onclick=async()=>{ const s=$("#s3st"), t=$("#changes").value.trim(); if(t.length<3){ st(s,"warn","Tell us what you'd like changed."); $("#changes").focus(); return; }
+  try{ render(await call("/review",{changes:t})); st(s,"ok","Sent. We'll get your changes made."); }catch(e){ st(s,"bad",e.message); } };
+
+call("").then(render).catch(e=>{ $("#loading").hidden=true; $("#err").hidden=false; $("#errText").textContent=e.message; });
+})();
+</script>
+</body>
+</html>

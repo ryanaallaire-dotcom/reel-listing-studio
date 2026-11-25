@@ -2,7 +2,7 @@
 //   GET  /               the Studio
 //   GET  /api/health     lets the Studio know link import is available
 //   POST /api/import     { url } → ZIP of photos + listing.json (same format as the Chrome Grabber)
-import { leadAlert, emailEnabled, sendPasswordLink, welcomeEmail, sendWelcome, vipAlert } from "./lib/notify.js";
+import { leadAlert, emailEnabled, sendPasswordLink, welcomeEmail, sendWelcome, vipAlert, orderAlert, videoReadyEmail } from "./lib/notify.js";
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -18,6 +18,8 @@ import { runAI, aiEnabled } from "./lib/ai.js";
 import { chatReply } from "./lib/chat.js";
 import { startClip, clipStatus, clipVideo, clipsEnabled, clipModel, clipSource, premiumEnabled } from "./lib/clips.js";
 import * as acct from "./lib/accounts.js";
+import * as orders from "./lib/orders.js";
+import { termsPage } from "./lib/agreement.js";
 import { paypalEnabled, ensureSetup, clientConfig, confirmSubscription, cancelSubscription, createTopup, captureTopup, handleWebhook } from "./lib/paypal.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -38,6 +40,7 @@ const STUDIO = path.join(DIR, "public", "index.html");
 const SKELETON_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>`;
 const AGENTS = path.join(DIR, "public", "agents.html");
 const GUIDE = path.join(DIR, "private", "partner-launch-plan.pdf");
+const START = path.join(DIR, "public", "start.html");   // the client's private order page: agreement, photos, review
 const REF_DAYS = 90;
 const cookieVal = (req, k) => { const m = new RegExp(`(?:^|;\\s*)${k}=([^;]+)`).exec(req.headers.cookie || ""); return m ? decodeURIComponent(m[1]) : ""; };
 // first partner to refer someone keeps the credit for 90 days
@@ -96,7 +99,7 @@ const page = () => { const body = fs.readFileSync(STUDIO, "utf8"); return /^<!do
 
 // --- small in-memory helpers (fine for one server; use Redis if you run several) ---
 const hits = new Map(), aiHits = new Map(), clipHits = new Map(), authHits = new Map(); const shortHits = new Map(); const chatHits = new Map(), chatDay = { d: "", n: 0 };
-const reloadHits = new Map(), emailHits = new Map(), leadHits = new Map();
+const reloadHits = new Map(), emailHits = new Map(), leadHits = new Map(), orderHits = new Map();
 const AUTH_PER_IP = +process.env.AUTH_PER_IP || 300;   // a workshop room shares one Wi-Fi address
 // check a limit without counting this request (used where only failures should count)
 function under(key, map, limit) { const now = Date.now(), list = (map.get(key) || []).filter(t => now - t < 3600e3); map.set(key, list); return list.length < limit; }
@@ -116,6 +119,8 @@ let running = 0;
 const needUser = req => { const u = acct.userFrom(req); if (!u) throw Object.assign(new Error("Sign in (or create a free account) to use this."), { status: 401 }); return u; };
 const meJson = u => acct.publicUser(u);
 const json = (res, status, obj) => { res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(obj)); };
+const reqMeta = req => ({ ip: clientIp(req), ua: String(req.headers["user-agent"] || "") });
+const siteBase = req => (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
 const clientIp = req => (process.env.TRUST_PROXY === "1" && String(req.headers["x-forwarded-for"] || "").split(",")[0].trim()) || req.socket.remoteAddress || "?";
 const cacheKey = u => { try { const x = new URL(u); x.hash = ""; ["utm_source", "utm_medium", "utm_campaign", "fbclid", "gclid"].forEach(p => x.searchParams.delete(p)); return x.href; } catch { return u; } };
 
@@ -143,6 +148,23 @@ export const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && (u.pathname === "/privacy" || u.pathname === "/privacy/")) {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" }); return res.end(fs.readFileSync(path.join(DIR, "public", "privacy.html")));
+    }
+    if (req.method === "GET" && (u.pathname === "/terms" || u.pathname === "/terms/")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(termsPage());
+    }
+    // a client's private order page: the link their sales agent sent them. No search engines, and the address never leaks to other sites.
+    if (req.method === "GET" && /^\/start\/[A-Za-z0-9_-]{24,64}\/?$/.test(u.pathname)) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex, nofollow", "referrer-policy": "no-referrer" });
+      return res.end(fs.readFileSync(START));
+    }
+    const ofile = req.method === "GET" && /^\/api\/order\/([A-Za-z0-9_-]{24,64})\/file\/(\d+)$/.exec(u.pathname);
+    if (ofile) {
+      const f = orders.clientFile(ofile[1], ofile[2]); if (!fs.existsSync(f.path)) return json(res, 404, { error: "Not found." });
+      return sendFileRange(req, res, f.path, f.type, "private, max-age=3600");
+    }
+    if (req.method === "GET" && /^\/api\/order\/[A-Za-z0-9_-]{24,64}$/.test(u.pathname)) {
+      if (!allow(clientIp(req), orderHits, 1200)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes." });
+      return json(res, 200, orders.clientView(u.pathname.slice(11), reqMeta(req)));
     }
     // Reel Business Studio: sales page (/business, /business/r/<partner>), studio (/business/studio), example clips
     if (req.method === "GET" && (u.pathname === "/business" || u.pathname === "/business/" || u.pathname.startsWith("/business/r/"))) {
@@ -230,6 +252,19 @@ export const server = http.createServer(async (req, res) => {
     // browsers can't send JSON to another site without permission, so requiring it blocks cross-site form tricks
     if (req.method === "POST" && u.pathname.startsWith("/api/") && u.pathname !== "/api/paypal/webhook" && !/^application\/json/i.test(req.headers["content-type"] || ""))
       return json(res, 415, { error: "Send JSON." });
+    const oact = req.method === "POST" && /^\/api\/order\/([A-Za-z0-9_-]{24,64})\/(accept|file|remove|submit|review)$/.exec(u.pathname);
+    if (oact) {
+      if (!allow(clientIp(req), orderHits, 1200)) return json(res, 429, { error: "Too many requests from here. Try again in a few minutes." });
+      const [, token, act] = oact, m = reqMeta(req);
+      const body = await readJson(req, act === "file" ? 17e6 : 40000);
+      if (act === "accept") return json(res, 200, orders.acceptAgreement(token, body, m));
+      if (act === "file") return json(res, 200, orders.addFile(token, body, m));
+      if (act === "remove") return json(res, 200, orders.removeFile(token, body.id, m));
+      const view = act === "submit" ? orders.submit(token, body, m) : orders.review(token, body, m);
+      if (act === "submit") orderAlert("submitted", orders.alertInfo(token));
+      else orderAlert(body.approve === true ? "approved" : "changes", orders.alertInfo(token));
+      return json(res, 200, view);
+    }
     if (u.pathname.startsWith("/api/account/") || u.pathname.startsWith("/api/partner/") || u.pathname === "/api/me") {
       if (req.method === "GET" && u.pathname === "/api/me") {
         let paypal = null; try { paypal = await clientConfig(); } catch (e) { console.error("paypal setup", e.message); }
@@ -245,11 +280,12 @@ export const server = http.createServer(async (req, res) => {
         const ek = "e:" + String(body.email || "").trim().toLowerCase(), ipk = clientIp(req);
         if (!under(ipk, authHits, AUTH_PER_IP) || !under(ek, emailHits, 10))
           return json(res, 429, { error: "Too many wrong passwords. Wait a few minutes, or use Forgot password." });
+        if (u.pathname.endsWith("signup") && body.terms !== true) return json(res, 400, { error: "Check the box to agree to the Terms, including only using photos you have the rights to." });
         let token;
         try { token = u.pathname.endsWith("signup") ? acct.signup(body) : acct.login(body); }
         catch (e) { allow(ipk, authHits, AUTH_PER_IP); allow(ek, emailHits, 10); throw e; }     // only failures count
         emailHits.delete(ek);
-        if (u.pathname.endsWith("signup")) { const nu = acct.userFrom({ headers: { cookie: acct.sessionCookie(token, false).split(";")[0] } }); if (nu) acct.setReferredBy(nu.id, cookieVal(req, "rls_ref")); }
+        if (u.pathname.endsWith("signup")) { const nu = acct.userFrom({ headers: { cookie: acct.sessionCookie(token, false).split(";")[0] } }); if (nu) { acct.setReferredBy(nu.id, cookieVal(req, "rls_ref")); orders.recordTerms(nu.id, reqMeta(req)); } }
         res.setHeader("set-cookie", acct.sessionCookie(token, SECURE));
         return json(res, 200, { user: meJson(acct.userFrom({ headers: { cookie: `${acct.cookieName}=${token}` } })) });
       }
@@ -311,6 +347,28 @@ export const server = http.createServer(async (req, res) => {
       if (u.pathname === "/api/partner/leads" && req.method === "GET") {
         const user = needUser(req); if (!user.partner && !acct.isAdmin(user)) return json(res, 403, { error: "Partner accounts only." });
         return json(res, 200, acct.partnerLeads(user.id));
+      }
+      // Agency tools > Clients: client orders from closed sale to delivery
+      if (u.pathname === "/api/partner/orders") {
+        const user = needUser(req);
+        if (req.method === "GET") return json(res, 200, orders.listOrders(user));
+        if (req.method === "POST") return json(res, 200, orders.createOrder(user, await readJson(req), reqMeta(req)));
+      }
+      const pord = /^\/api\/partner\/orders\/(\d+)(?:\/(photos\.zip|record|file\/(\d+)))?$/.exec(u.pathname);
+      if (pord) {
+        const user = needUser(req), [, id, sub, fid] = pord;
+        if (req.method === "POST" && !sub) {
+          const body = await readJson(req), o = orders.updateOrder(user, id, body, reqMeta(req));
+          if (body.action === "delivered") videoReadyEmail(orders.alertInfo(o.token), `${siteBase(req)}/start/${o.token}`);
+          return json(res, 200, o);
+        }
+        if (req.method === "GET" && sub === "photos.zip") { const z = orders.orderZip(user, id);
+          res.writeHead(200, { "content-type": "application/zip", "content-length": z.zip.length, "cache-control": "no-store", "content-disposition": `attachment; filename="${z.name}"` }); return res.end(z.zip); }
+        if (req.method === "GET" && sub === "record") { const page = orders.recordPage(user, id);
+          res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" }); return res.end(page); }
+        if (req.method === "GET" && fid) { const f = orders.staffFile(user, id, fid); if (!fs.existsSync(f.path)) return json(res, 404, { error: "Not found." });
+          if (u.searchParams.has("download")) res.setHeader("content-disposition", `attachment; filename="${f.name.replace(/[^\w.-]+/g, "_")}"`);
+          return sendFileRange(req, res, f.path, f.type, "private, max-age=3600"); }
       }
       if (u.pathname === "/api/account/admin/partner-link" && req.method === "POST") {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
@@ -398,8 +456,9 @@ export const server = http.createServer(async (req, res) => {
     }
     if (req.method === "POST" && u.pathname === "/api/import") {
       const user = needUser(req);
-      const { url } = await readJson(req);
+      const { url, rights } = await readJson(req);
       if (!url || typeof url !== "string") return json(res, 400, { error: "Paste a listing link first." });
+      if (rights !== true) return json(res, 400, { error: "Check the photo rights box first: only import listings you have the right to market." });
       assertPublicUrl(url);
       const key = cacheKey(url), hit = cacheGet(key);
       if (!hit) {
@@ -411,6 +470,7 @@ export const server = http.createServer(async (req, res) => {
         }
       }
       acct.countImport(user);
+      orders.recordRights(user.id, "import", url, reqMeta(req));
       let out = hit;
       if (!out) { running++; try { out = await importListing(url); cacheSet(key, out); } catch (e) { acct.uncountImport(user); throw e; } finally { running--; } }
       res.writeHead(200, { "content-type": "application/zip", "content-length": out.zip.length, "x-photo-count": out.count, "x-import-via": out.via, "cache-control": "no-store",

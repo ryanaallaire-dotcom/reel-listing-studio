@@ -330,6 +330,15 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .lead a{color:inherit}
 .tools-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .tools-form input,.tools-form select{width:100%}
+.ord-pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--panel-3);color:var(--fg);margin-left:6px;vertical-align:1px}
+.ord-pill.go{background:var(--gold,#f2c14e);color:#13161B}.ord-pill.ok{background:#3c8d58;color:#fff}.ord-pill.bad{background:#a3261b;color:#fff}
+.ord-steps{font-size:13px;color:var(--muted);margin:4px 0}.ord-steps b{font-size:13px;color:var(--fg)}
+.ord-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ord-new{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px;background:var(--panel-2)}
+.ord-new pre{white-space:pre-wrap;font:inherit;font-size:14px;margin:8px 0;background:var(--panel,#1a1a24);border-radius:8px;padding:10px;user-select:text}
+.chkline{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45}
+.chkline input{width:18px;height:18px;flex:none;margin-top:2px}
+.rights-row{margin:10px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
 .pthint{flex-basis:100%;font-size:13px;color:var(--muted)}
 .pthumbs span{font-size:13px;color:var(--muted);padding:0 6px}
 /* always-visible progress, pinned to the bottom of the screen */
@@ -364,6 +373,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
       <label>Email<input type="email" id="authEmail" autocomplete="email" required maxlength="200"></label>
       <label>Password<input type="password" id="authPass" autocomplete="new-password" required minlength="8" maxlength="200" placeholder="At least 8 characters"></label>
       <label id="inviteRow" hidden>Invite code<input type="text" id="authInvite" autocomplete="off" maxlength="200" placeholder="The code you were given"></label>
+      <label class="chkline" id="termsRow"><input type="checkbox" id="authTerms"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a>, including that I'll only use photos I own or have permission to use.</span></label>
       <p class="status" id="authStatus" role="status" aria-live="polite"></p>
       <button class="btn primary" id="authGo" type="submit">Create account</button>
       <button class="btn sm" id="authForgot" type="button" style="justify-self:start;background:none;border:0;padding:4px 0;text-decoration:underline">Forgot password?</button>
@@ -376,7 +386,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
   <div class="dlg-in">
     <div class="dlg-h"><h2 id="toolsTitle">Agency tools</h2><button class="dlg-x" data-close aria-label="Close">×</button></div>
     <p class="small" style="margin:0 0 12px">Everything you need to win agents: videos to share and ready-to-send messages, already signed with your details.</p>
-    <div class="seg" role="group" aria-label="Agency tools section" id="toolsSeg"><button data-v="link">My link &amp; leads</button><button data-v="videos" aria-pressed="true">Demo &amp; ad videos</button><button data-v="scripts">Text, email &amp; Messenger scripts</button><button data-v="plan">Launch Plan</button><button data-v="me">Your details</button></div>
+    <div class="seg" role="group" aria-label="Agency tools section" id="toolsSeg"><button data-v="link">My link &amp; leads</button><button data-v="clients">Clients</button><button data-v="videos" aria-pressed="true">Demo &amp; ad videos</button><button data-v="scripts">Text, email &amp; Messenger scripts</button><button data-v="plan">Launch Plan</button><button data-v="me">Your details</button></div>
     <div id="toolsLink" class="tools-pane" hidden>
       <p class="small" style="margin:0 0 6px">Send agents to <b>your own sales page</b>. Anyone who opens your link is tagged as your referral for 90 days, so every request and sign-up from them is credited to you.</p>
       <div class="linkbox"><input id="myLink" readonly aria-label="Your link"><button class="btn sm primary" id="copyMyLink" type="button">Copy link</button><a class="btn sm" id="openMyLink" target="_blank" rel="noopener">Open page</a></div>
@@ -387,6 +397,29 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
       <div class="linkbox"><input id="myBizLink" readonly aria-label="Your business link"><button class="btn sm primary" id="copyBizLink" type="button">Copy link</button><a class="btn sm" id="openBizLink" target="_blank" rel="noopener">Open page</a></div>
       <div class="tools-group">Requests from agents</div><div id="myLeads" class="small">Loading…</div>
       <div class="tools-group">Agents who signed up through you</div><div id="mySignups" class="small"></div>
+    </div>
+    <div id="toolsClients" class="tools-pane" hidden>
+      <p class="small" style="margin:0 0 10px">Closed a sale? Create the client's private link and text it to them. On that link they accept the Client Video Agreement, check the photo rights box and send their photos or MLS link. You'll see every step here, and you get an email when their photos are in.</p>
+      <form id="ordForm" class="tools-form" novalidate>
+        <label>Product<select id="ordBrand"><option value="rls">Reel Listing Studio (agent)</option><option value="rbs">Reel Business Studio (business)</option></select></label>
+        <label>Client's name<input id="ordName" maxlength="80" autocomplete="off"></label>
+        <label>Client's mobile<input id="ordPhone" inputmode="tel" maxlength="30" autocomplete="off"></label>
+        <label>Client's email<input id="ordEmail" type="email" maxlength="200" autocomplete="off"></label>
+        <label>Business or brokerage<input id="ordBiz" maxlength="120" autocomplete="off"></label>
+        <label>Package<input id="ordPkg" list="ordPkgs" maxlength="60" placeholder="e.g. Listing Reel"></label>
+        <datalist id="ordPkgs"><option>Listing Reel</option><option>Social Pack</option><option>Full Launch</option><option>Business Reel</option><option>Monthly done-for-you</option></datalist>
+        <label>Price<input id="ordPrice" maxlength="40" placeholder="e.g. $497"></label>
+        <label id="ordMakerRow">Who makes the video<select id="ordMaker"><option value="team">Our team makes it</option><option value="partner">I'll make it myself</option></select></label>
+        <label class="chkline" style="grid-column:1/-1"><input type="checkbox" id="ordPaid"><span>The client has paid. (Production starts only after payment.)</span></label>
+        <div style="grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn primary" type="submit">Create client link</button><span class="status" id="ordStatus" aria-live="polite"></span></div>
+      </form>
+      <div class="ord-new" id="ordNew" hidden>
+        <b>Send this to <span id="ordNewName"></span></b>
+        <div class="linkbox" style="margin-top:8px"><input id="ordNewLink" readonly aria-label="Client link"><button class="btn sm primary" id="ordCopyLink" type="button">Copy link</button></div>
+        <pre id="ordNewText"></pre>
+        <div class="ord-acts"><button class="btn sm" id="ordCopyText" type="button">Copy message</button><a class="btn sm" id="ordSms">Text it</a><a class="btn sm" id="ordMail">Email it</a></div>
+      </div>
+      <div class="tools-group">Clients</div><div id="ordList" class="small">Loading…</div>
     </div>
     <div id="toolsVideos" class="tools-pane"></div>
     <div id="toolsScripts" class="tools-pane" hidden></div>
@@ -484,6 +517,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
           <div class="key-row" id="keyRow" hidden><label class="lbl" for="accessKey">Access key</label><input type="password" id="accessKey" maxlength="200" placeholder="The private key you were given (not the listing link)" autocomplete="off"></div>
         </div>
         <p class="small" id="urlNote"></p>
+        <label class="chkline rights-row lockable" id="rightsRow"><input type="checkbox" id="rightsOk"><span id="rightsOkText">I own these photos, or I have written permission to use them in this video (for a listing: I'm the listing agent, or I have the listing agent's and the photographer's permission). None are stock, royalty-free or someone else's photos without a license.</span></label>
         <div class="drop big lockable" id="autoDrop">
           <div><strong>Drop the Grabber ZIP, photos or video clips here</strong><p>A ZIP, a folder, photos, plus any phone, drone or AI-made clips (MP4, MOV, WebM). It keeps the best.</p></div>
           <div class="row">
@@ -2102,6 +2136,7 @@ function renderLeft(){
     box.appendChild(f); });
 }
 async function addFiles(list){
+  if(!rightsOk("add")) return;
   const st=$("#aiLabelStatus"); st.className="status"; st.textContent="Reading…";
   const {items,zipFail,listing,capped,total}=await expand(list); if(listing) applyListing(listing);
   if(!items.length){ st.className="status warn"; st.textContent=zipMsg(zipFail); return; }
@@ -2111,7 +2146,7 @@ async function addFiles(list){
   build(); renderPhotos(); refresh(); queueDepth();
   st.className=bad||capped?"status warn":"status"; st.textContent=(bad?`${bad} file${bad>1?"s":""} couldn't be read. iPhone HEIC photos need exporting as JPEG first. `:"")+(capped?`Only the first ${MAX_PHOTOS} of ${total} photos were added.`:"");
 }
-$("#pick").onclick=()=>$("#file").click();
+$("#pick").onclick=()=>{ if(rightsOk("add")) $("#file").click(); };
 $("#file").onchange=e=>{ const f=[...e.target.files]; e.target.value=""; addFiles(f); };
 function dropZone(el,handler){
   ["dragenter","dragover"].forEach(ev=>el.addEventListener(ev,e=>{ if(e.dataTransfer.types.includes("Files")){ e.preventDefault(); el.classList.add("over"); }}));
@@ -2137,7 +2172,7 @@ async function unzipToPending(zip){
 }
 function showPending(){ const b=$("#pendingNote"); if(b&&!b.hidden) setTimeout(()=>b.scrollIntoView({behavior:"smooth",block:"center"}),100); }
 async function queueZips(zips){ for(const z of zips) await unzipToPending(z); showPending(); }
-function queueFiles(files){ if(!files||!files.length) return; if(building||busy){ return; }
+function queueFiles(files){ if(!files||!files.length) return; if(building||busy){ return; } if(!rightsOk("add")) return;
   const isZip=f=>/\.zip$/i.test(f.name||"")||f.type==="application/zip"||f.type==="application/x-zip-compressed";
   const zips=[...files].filter(isZip); files=[...files].filter(f=>!isZip(f));
   if(zips.length&&window.JSZip) queueZips(zips); else files.push(...zips);
@@ -2193,8 +2228,8 @@ function updatePending(){
 dropZone($("#autoDrop"),files=>queueFiles(files));
 document.addEventListener("dragover",e=>{ if(e.dataTransfer.types.includes("Files")) e.preventDefault(); });
 document.addEventListener("drop",async e=>{ if(e.dataTransfer.types.includes("Files")){ e.preventDefault(); queueFiles(await fromDataTransfer(e.dataTransfer)); }});
-$("#autoPick").onclick=()=>$("#autoFile").click();
-$("#autoPickDir").onclick=()=>$("#autoDir").click();
+$("#autoPick").onclick=()=>{ if(rightsOk("add")) $("#autoFile").click(); };
+$("#autoPickDir").onclick=()=>{ if(rightsOk("add")) $("#autoDir").click(); };
 ["autoFile","autoDir"].forEach(id=>$("#"+id).onchange=e=>{ const f=[...e.target.files]; e.target.value=""; queueFiles(f); });
 
 $("#pickHead").onclick=()=>$("#headFile").click();
@@ -2296,6 +2331,7 @@ function syncAuthMode(){
   const fg=$("#authForgot"); if(fg) fg.hidden=up;
   $("#authPass").autocomplete=up?"new-password":"current-password";
   $("#inviteRow").hidden=!(up&&ACCT&&ACCT.inviteRequired);
+  $("#termsRow").hidden=!up;
   $("#authWhy").textContent=up?"Free accounts make 3D videos and import 2 listing links a month.":"Sign in to use link import, AI writing and AI motion.";
   $("#authSwap").innerHTML=up?'Already have an account? <button class="linkish" type="button" id="swapBtn">Sign in</button>':'New here? <button class="linkish" type="button" id="swapBtn">Create a free account</button><br><span class="small">Forgot your password? Ask the studio owner to reset it.</span>';
   $("#swapBtn").onclick=()=>{ authMode=up?"login":"signup"; syncAuthMode(); };
@@ -2305,9 +2341,10 @@ $("#authForm").addEventListener("submit",async e=>{
   const email=$("#authEmail").value.trim(), password=$("#authPass").value;
   if(!/^\S+@\S+\.\S+$/.test(email)){ st.className="status warn"; st.textContent="Enter your email address."; $("#authEmail").focus(); return; }
   if(password.length<8){ st.className="status warn"; st.textContent="Use a password with at least 8 characters."; $("#authPass").focus(); return; }
+  if(authMode==="signup"&&!$("#authTerms").checked){ st.className="status warn"; st.textContent="Check the box to agree to the Terms."; return; }
   go.disabled=true; st.className="status"; st.textContent=authMode==="signup"?"Creating your account…":"Signing in…";
   try{
-    const r=await fetch(authMode==="signup"?"/api/account/signup":"/api/account/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password,invite:$("#authInvite").value.trim()})});
+    const r=await fetch(authMode==="signup"?"/api/account/signup":"/api/account/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password,invite:$("#authInvite").value.trim(),terms:authMode==="signup"&&$("#authTerms").checked})});
     const j=await r.json().catch(()=>({}));
     if(!r.ok){ st.className="status bad"; st.textContent=j.error||"That didn't work. Try again."; return; }
     $("#authPass").value=""; setUser(j.user); $("#authDlg").close();
@@ -2694,7 +2731,7 @@ function openTools(){
   if(ACCT&&ACCT.user&&ACCT.user.refCode) $('#toolsSeg button[data-v="link"]').click();
 }
 $("#toolsPill").onclick=openTools;
-$$("#toolsSeg button").forEach(b=>b.onclick=()=>{ segSync("toolsSeg",b.dataset.v); $("#toolsLink").hidden=b.dataset.v!=="link"; if(b.dataset.v==="link") renderMyLeads(); $("#toolsVideos").hidden=b.dataset.v!=="videos"; $("#toolsPlan").hidden=b.dataset.v!=="plan"; $("#toolsScripts").hidden=b.dataset.v!=="scripts"; $("#toolsMe").hidden=b.dataset.v!=="me"; });
+$$("#toolsSeg button").forEach(b=>b.onclick=()=>{ segSync("toolsSeg",b.dataset.v); $("#toolsLink").hidden=b.dataset.v!=="link"; if(b.dataset.v==="link") renderMyLeads(); $("#toolsClients").hidden=b.dataset.v!=="clients"; if(b.dataset.v==="clients") renderOrders(); $("#toolsVideos").hidden=b.dataset.v!=="videos"; $("#toolsPlan").hidden=b.dataset.v!=="plan"; $("#toolsScripts").hidden=b.dataset.v!=="scripts"; $("#toolsMe").hidden=b.dataset.v!=="me"; });
 ["tmName","tmPhone","tmEmail","tmP1","tmP2","tmP3","tmDemo","tmLinkMode"].forEach(id=>$("#"+id).addEventListener("input",saveToolsMe));
 $("#tmDemo").addEventListener("change",saveToolsMe); $("#tmLinkMode").addEventListener("change",saveToolsMe);
 function renderMyLink(){
@@ -2728,9 +2765,98 @@ async function renderMyLeads(){
   const r=await fetch("/api/partner/leads"); const j=await r.json().catch(()=>({}));
   if(!r.ok){ box.textContent=j.error||"Couldn't load your leads."; return; }
   box.innerHTML=""; if(!j.leads.length) box.textContent="No requests yet. Send your link with one of the scripts to get started.";
-  j.leads.forEach(l=>box.appendChild(leadRow(l)));
+  j.leads.forEach(l=>{ const d=leadRow(l); const b=document.createElement("button"); b.type="button"; b.className="btn sm"; b.style.marginTop="8px"; b.textContent="Closed? Start their order";
+    b.onclick=()=>startOrderFrom(l); d.appendChild(b); box.appendChild(d); });
   sb.innerHTML=""; if(!j.signups.length) sb.textContent="None yet.";
   j.signups.forEach(u=>{ const d=document.createElement("div"); d.className="lead"; d.textContent=`${u.email} \u2013 joined ${when(u.created)} (${u.tier} plan)`; sb.appendChild(d); });
+}
+
+/* ---------- Clients: from a closed sale to a delivered video (Agency tools > Clients) ---------- */
+const ORD_PILL={sent:["Link sent",""],agreed:["Agreed: waiting for photos",""],submitted:["Photos in: ready to make","go"],production:["In production","go"],delivered:["Delivered: client reviewing",""],changes:["Changes asked for","bad"],approved:["Approved","ok"],cancelled:["Cancelled",""]};
+const firstName=n=>String(n||"").trim().split(/\s+/)[0]||"";
+function orderText(o){
+  const me=toolsMe(), rbs=o.brand==="rbs", link=siteURL()+o.link;
+  return `Hi ${firstName(o.client.name)||"there"}, thanks for choosing ${o.brandName}! Here's your private link to accept your agreement and send your ${rbs?"photos":"photos or MLS link"}. It takes about 3 minutes: ${link}${me.name?`\n- ${firstName(me.name)}`:""}`;
+}
+const smsHref=(phone,text)=>`sms:${String(phone||"").replace(/[^\d+]/g,"")}?&body=${encodeURIComponent(text)}`;
+const mailHref=(email,o,text)=>`mailto:${encodeURIComponent(email||"")}?subject=${encodeURIComponent(`Your ${o.brandName} order: next steps`)}&body=${encodeURIComponent(text)}`;
+async function copyText(btn,text,label){ try{ await navigator.clipboard.writeText(text); btn.textContent="Copied ✓"; setTimeout(()=>btn.textContent=label,1600); }catch(e){ prompt("Copy this:",text); } }
+function showNewOrder(o){
+  const box=$("#ordNew"), text=orderText(o); box.hidden=false;
+  $("#ordNewName").textContent=o.client.name; $("#ordNewLink").value=siteURL()+o.link; $("#ordNewText").textContent=text;
+  $("#ordCopyLink").onclick=()=>copyText($("#ordCopyLink"),siteURL()+o.link,"Copy link");
+  $("#ordCopyText").onclick=()=>copyText($("#ordCopyText"),text,"Copy message");
+  const sms=$("#ordSms"), mail=$("#ordMail");
+  sms.hidden=!o.client.phone; sms.href=smsHref(o.client.phone,text); mail.hidden=!o.client.email; mail.href=mailHref(o.client.email,o,text);
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function startOrderFrom(l){
+  $('#toolsSeg button[data-v="clients"]').click();
+  $("#ordName").value=l.name||""; $("#ordPhone").value=l.phone||""; $("#ordEmail").value=l.email||""; $("#ordPkg").value=l.package||""; $("#ordForm").dataset.lead=l.id||"";
+  if(/business|restaurant|salon|barber|shop/i.test(l.package||"")) $("#ordBrand").value="rbs";
+  $("#ordName").focus();
+}
+$("#ordForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const st=$("#ordStatus");
+  const body={brand:$("#ordBrand").value,name:$("#ordName").value.trim(),phone:$("#ordPhone").value.trim(),email:$("#ordEmail").value.trim(),business:$("#ordBiz").value.trim(),
+    package:$("#ordPkg").value.trim(),price:$("#ordPrice").value.trim(),maker:$("#ordMaker").value,paid:$("#ordPaid").checked,leadId:+$("#ordForm").dataset.lead||undefined};
+  if(!body.name){ st.className="status warn"; st.textContent="Add the client's name."; $("#ordName").focus(); return; }
+  if(!body.phone&&!body.email){ st.className="status warn"; st.textContent="Add their mobile or email so you can send the link."; return; }
+  st.className="status"; st.textContent="Creating…";
+  const r=await fetch("/api/partner/orders",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ st.className="status bad"; st.textContent=j.error||"Couldn't create the client link."; return; }
+  st.className="status ok"; st.textContent="Client link ready. Send it below.";
+  ["#ordName","#ordPhone","#ordEmail","#ordBiz","#ordPkg","#ordPrice"].forEach(x=>$(x).value=""); $("#ordPaid").checked=false; delete $("#ordForm").dataset.lead;
+  showNewOrder(j); renderOrders();
+});
+async function orderAct(o,body,st){
+  st.className="status"; st.textContent="Saving…";
+  const r=await fetch(`/api/partner/orders/${o.id}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ st.className="status bad"; st.textContent=j.error||"That didn't save."; return; }
+  renderOrders();
+}
+function orderRow(o){
+  const admin=!!(ACCT&&ACCT.user&&ACCT.user.admin), d=document.createElement("div"); d.className="lead";
+  const [pl,cls]=ORD_PILL[o.status]||[o.statusLabel,""];
+  d.innerHTML=`<b></b><span class="ord-pill ${cls}"></span><div class="meta"></div><div class="ord-steps"></div><div class="x small"></div><div class="ord-acts"></div><p class="status" style="margin:6px 0 0"></p>`;
+  d.querySelector("b").textContent=o.client.name+(o.client.business?` (${o.client.business})`:""); d.querySelector(".ord-pill").textContent=pl;
+  d.querySelector(".meta").textContent=[o.brand==="rbs"?"Reel Business Studio":"Reel Listing Studio",o.package,o.price,o.paid?"paid":"not paid yet",o.maker==="partner"?"you make it":"our team makes it",admin?`via ${o.partner||"direct"}`:"",`created ${when(o.created)}`].filter(Boolean).join(" – ");
+  const steps=[o.agreedAt?`<b>✓ Agreement</b> ${escapeHtml(when(o.agreedAt))} (signed "${escapeHtml(o.agreedName)}")`:"Agreement not accepted yet",
+    o.rightsAt?`<b>✓ Photo rights</b> ${escapeHtml(when(o.rightsAt))}`:"",o.photos?`${o.photos} photo${o.photos===1?"":"s"}`:"",o.listing?"listing link":"",o.logo?"logo":"",o.submittedAt?(o.portfolio?"OK to show as an example":"not OK to show as an example"):""].filter(Boolean);
+  d.querySelector(".ord-steps").innerHTML=steps.join(" · ");
+  const x=d.querySelector(".x"); x.textContent=[o.reviewNote&&o.status==="changes"?`Changes asked for: ${o.reviewNote}`:"",o.notes?`Client notes: ${o.notes}`:"",Object.entries(o.details||{}).map(([k,v])=>`${k}: ${v}`).join(", ")].filter(Boolean).join(" | ");
+  const acts=d.querySelector(".ord-acts"), st=d.querySelector(".status");
+  const btn=(label,fn,primary)=>{ const b=document.createElement("button"); b.type="button"; b.className="btn sm"+(primary?" primary":""); b.textContent=label; b.onclick=fn; acts.appendChild(b); return b; };
+  const link=(label,href,dl)=>{ const a=document.createElement("a"); a.className="btn sm"; a.textContent=label; a.href=href; if(dl) a.setAttribute("download",""); else { a.target="_blank"; a.rel="noopener"; } acts.appendChild(a); return a; };
+  if(!["approved","cancelled"].includes(o.status)){ const b=btn("Copy client link",()=>copyText(b,siteURL()+o.link,"Copy client link")); }
+  if(["sent","agreed"].includes(o.status)) btn("Resend message",()=>showNewOrder(o));
+  if(o.photos) link(`Photos (ZIP for the Studio)`,`/api/partner/orders/${o.id}/photos.zip`,true);
+  if(o.logo) link("Logo",`/api/partner/orders/${o.id}/file/${o.logo}?download=1`,true);
+  if(o.listing) link("Listing link",o.listing);
+  if(!o.paid&&o.status!=="cancelled") btn("Mark paid",()=>orderAct(o,{action:"paid",paid:true},st));
+  if(["submitted","changes"].includes(o.status)) btn(o.status==="changes"?"Start the changes":"Start production",()=>orderAct(o,{action:"production"},st),true);
+  if(["submitted","production","changes"].includes(o.status)) btn("Delivered…",()=>{ const u=prompt(`Paste the link to ${firstName(o.client.name)}'s finished video (Google Drive, Dropbox, YouTube or similar). They'll get it on their page${o.client.email?" and by email":""}.`,o.delivery||""); if(u) orderAct(o,{action:"delivered",url:u.trim()},st); },o.status==="production");
+  if(o.status==="submitted") btn("Let them add photos",()=>orderAct(o,{action:"reopen"},st));
+  if(o.delivery) link("Their video",o.delivery);
+  link("Record",`/api/partner/orders/${o.id}/record`);
+  if(!["approved","cancelled","delivered"].includes(o.status)) btn("Cancel",()=>{ if(confirm(`Cancel ${o.client.name}'s order? Their link will stop taking photos.`)) orderAct(o,{action:"cancel"},st); });
+  return d;
+}
+async function renderOrders(){
+  const box=$("#ordList"); box.textContent="Loading…";
+  const u=ACCT&&ACCT.user; $("#ordMakerRow").hidden=!(u&&u.partner);
+  const r=await fetch("/api/partner/orders"); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ box.textContent=j.error||"Couldn't load your clients."; return; }
+  box.innerHTML=""; if(!j.orders.length){ box.textContent="No clients yet. Closed a sale? Create their link above."; return; }
+  const need=j.orders.filter(o=>["submitted","changes"].includes(o.status)).length;
+  if(need){ const h=document.createElement("p"); h.className="small"; h.innerHTML=`<b>${need}</b> ready to make.`; box.appendChild(h); }
+  j.orders.forEach(o=>box.appendChild(orderRow(o)));
+}
+// the Studio's own photo rights box: checked once per video, before any import or upload
+function rightsOk(where){
+  const c=$("#rightsOk"); if(!c||c.checked) return true;
+  const n=$("#urlNote"); n.className="status warn"; n.textContent=`Check the photo rights box first. Only ${where||"use"} photos you own or have permission to use.`;
+  $("#rightsRow").scrollIntoView({behavior:"smooth",block:"center"}); c.focus(); return false;
 }
 $("#toolsDlg").addEventListener("close",()=>$$("#toolsVideos video").forEach(v=>v.pause()));
 function escapeHtml(x){ return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -2764,12 +2890,13 @@ async function importFromLink(){
   if(!url){ n.className="status warn"; n.textContent="Paste a listing link in the box above first, then press Import listing."; $("#url").focus(); return; }
   if(!/^https?:\/\//i.test(url)){ if(/^[\w-]+(\.[\w-]+)+(:\d+)?(\/|$)/.test(url)) url=(/^(\d+\.){3}\d+/.test(url)?"http://":"https://")+url; else { n.className="status warn"; n.textContent="That doesn't look like a link. Copy the listing's address from your browser's address bar and paste it here."; return; } }
   $("#url").value=url; S.d.url=url; persist();
+  if(!rightsOk("import listings and")) return;
   if(IMPORT.accounts&&!signedIn()){ openAuth("Create a free account (or sign in) to import listing links. It takes 10 seconds.","signup",()=>importFromLink()); return; }
   if(IMPORT.keyRequired&&!$("#accessKey").value.trim()){ n.className="status warn"; n.textContent="Enter your access key in the Access key box first. It's the private key from your Render settings."; $("#accessKey").focus(); return; }
   const btn=$("#importBtn"); busyBtn(btn,true,"Importing…"); n.className="status"; n.textContent="Loading the listing… this usually takes 10–40 seconds.";
   const headers={"content-type":"application/json"}; if(IMPORT.keyRequired){ const k=$("#accessKey").value.trim(); headers["x-access-key"]=k; try{ localStorage.setItem("lr-access",k); }catch(e){} }
   try{
-    const r=await fetch("/api/import",{method:"POST",headers,body:JSON.stringify({url})});
+    const r=await fetch("/api/import",{method:"POST",headers,body:JSON.stringify({url,rights:$("#rightsOk").checked})});
     if(!r.ok){ let msg="The import didn't work. Try again, or use the Chrome Grabber."; try{ const j=await r.json(); if(j&&j.error) msg=j.error; }catch(e){} n.className="status bad"; n.textContent=msg;
       if(r.status===401){ setUser(null); openAuth("Your session ended. Sign in again to import.","login",()=>importFromLink()); }
       if(r.status===402) openPlans(msg);
@@ -3613,6 +3740,7 @@ function rbsInit(){
   const hint=$("#h-auto")&&$("#h-auto").closest("section").querySelector(".hint"); if(hint) hint.innerHTML="Add 4 to 6 photos of your business, type your name and offer, press <b>Make my video</b>. Shot order, touch-ups, camera moves, AI motion and rendering all happen for you.";
   txt($("#rbsStep1"),"Add your photos"); txt($("#rbsStep1s"),"4 to 6 photos or clips of your work");
   $("#rbsBox").hidden=false; $("#rbsFields").hidden=false;
+  txt($("#rightsOkText"),"These photos, clips and logo belong to me or my business, or I have written permission to use them in this video. None are stock, royalty-free or copied from the internet, and everyone shown agreed to be in them.");
   hide($("#url").closest(".f")); hide($("#urlNote")); hide($("#getGrabber")&&$("#getGrabber").closest("details")); hide($("#paste")&&$("#paste").closest("details"));
   const dz=$("#autoDrop strong"); txt(dz,"Drop photos or clips of your business here"); txt($("#autoDrop p"),"Your best dish, a finished job, your space, your team. Phone photos are fine. Put them in story order: the hook first, the payoff last.");
   ["mls","all"].forEach(v=>hide($(`#targetSeg [data-v="${v}"]`)));

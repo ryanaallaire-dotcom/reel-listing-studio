@@ -110,8 +110,8 @@ async function api(port, p, body, { method = body === undefined ? "GET" : "POST"
   const sc = r.headers.get("set-cookie"); if (sc) jar[`${port}:${as}`] = sc.split(";")[0];
   return r;
 }
-const signIn = (port, email = ADMIN, as = "default", extra = {}) => api(port, "/api/account/signup", { email, password: "correct-horse-1", ...extra }, { as });
-const post = (port, body, headers = {}) => api(port, "/api/import", body, { headers });
+const signIn = (port, email = ADMIN, as = "default", extra = {}) => api(port, "/api/account/signup", { email, password: "correct-horse-1", terms: true, ...extra }, { as });
+const post = (port, body, headers = {}) => api(port, "/api/import", { rights: true, ...body }, { headers });
 const postAs = (port, as, p, body) => api(port, p, body, { as });
 
 await new Promise(r => fixture.listen(FX, "127.0.0.1", r));
@@ -127,7 +127,13 @@ const A = 18911; const sa = await startServer(A, { ALLOW_LOCAL_FETCH: "1", IMPOR
 {
   const anon = await post(A, { url: `http://127.0.0.1:${FX}/listing/889123` });
   check("Accounts: import needs a sign-in", anon.status === 401 && /Sign in/.test((await anon.json()).error));
+  const nt = await api(A, "/api/account/signup", { email: "noterms@test.com", password: "correct-horse-1" }, { as: "nt" });
+  check("Terms: signing up needs the terms box ticked", nt.status === 400 && /Terms/.test((await nt.json()).error));
   await signIn(A);
+  const nr = await api(A, "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123` });
+  check("Rights: importing a listing needs the photo rights box ticked", nr.status === 400 && /rights box/.test((await nr.json()).error));
+  const tp = await fetch(`http://127.0.0.1:${A}/terms`); const tph = await tp.text();
+  check("Terms: /terms shows the agreement with its version and fingerprint", tp.status === 200 && /Client Video Agreement/.test(tph) && /royalty-free/.test(tph) && /Fingerprint [0-9a-f]{16}/.test(tph) && !/\{\{/.test(tph));
   const h = await (await fetch(`http://127.0.0.1:${A}/api/health`)).json();
   check("Health says import is available", h.ok && h.service === "reel-listing" && h.import, JSON.stringify(h));
   const page = await (await fetch(`http://127.0.0.1:${A}/studio`)).text();
@@ -201,11 +207,11 @@ const Dp = 18914; const sd = await startServer(Dp, { ALLOW_LOCAL_FETCH: "1", ACC
   check("Invite code: refused without it, with a clear message", r1.status === 403 && /invite/.test(j1.error), j1.error);
   check("Invite code: works with it", r2.status === 200);
   // free tier: 2 link imports a month, then a clear upgrade message
-  const i1 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123` });
-  const i2 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123` });
-  const i3 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123` }); const j3 = await i3.json();
+  const i1 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123`, rights: true });
+  const i2 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123`, rights: true });
+  const i3 = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/listing/889123`, rights: true }); const j3 = await i3.json();
   check("Free plan: 2 imports a month, then points to done-for-you (no self-serve upsell)", i1.status === 200 && i2.status === 200 && i3.status === 402 && /have us make your video/.test(j3.error) && !/upgrade/i.test(j3.error), j3.error);
-  const failed = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/nophotos` });
+  const failed = await postAs(Dp, "a", "/api/import", { url: `http://127.0.0.1:${FX}/nophotos`, rights: true });
   check("Free plan: blocked import isn't counted twice", failed.status === 402);
   // accounts
   const dup = await signIn(Dp, "agent@test.com", "b", { invite: "beta-123" });
@@ -222,7 +228,7 @@ const Dp = 18914; const sd = await startServer(Dp, { ALLOW_LOCAL_FETCH: "1", ACC
   await api(Dp, "/api/account/logout", {}, { as: "c" });
   const after = await (await api(Dp, "/api/me", undefined, { as: "c" })).json();
   check("Accounts: sign out ends the session", after.user === null);
-  const short = await api(Dp, "/api/account/signup", { email: "x@test.com", password: "short", invite: "beta-123" }, { as: "d" });
+  const short = await api(Dp, "/api/account/signup", { email: "x@test.com", password: "short", invite: "beta-123", terms: true }, { as: "d" });
   check("Accounts: short passwords refused", short.status === 400);
 }
 sd.kill();
@@ -358,7 +364,7 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   const notPartner = await api(Gp, "/api/partner/leads", undefined, { as: "u" });
   const all = await (await api(Gp, "/api/account/admin/leads")).json();
   check("Leads: customers can't see leads; the owner sees all with the partner's name", notPartner.status === 403 && all.leads?.filter(l => !/^VIP Reload/.test(l.name)).length === 2 && all.leads.filter(l => !/^VIP Reload/.test(l.name))[0].partner === "Gary Test");
-  const ref2 = await fetch(`http://127.0.0.1:${Gp}/api/account/signup`, { method: "POST", headers: { "content-type": "application/json", cookie: "rls_ref=gary" }, body: JSON.stringify({ email: "newagent@test.com", password: "correct-horse-1" }) });
+  const ref2 = await fetch(`http://127.0.0.1:${Gp}/api/account/signup`, { method: "POST", headers: { "content-type": "application/json", cookie: "rls_ref=gary" }, body: JSON.stringify({ email: "newagent@test.com", password: "correct-horse-1", terms: true }) });
   const mine2 = await (await api(Gp, "/api/partner/leads", undefined, { as: "gary3" })).json();
   check("Referrals: an agent who signs up through the link is credited to the partner", ref2.status === 200 && mine2.signups?.some(x => x.email === "newagent@test.com"), JSON.stringify(mine2.signups));
   check("Credits: customers can't grant themselves credits", nonAdmin.status === 403);
@@ -439,6 +445,80 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   check("Depth model served with caching", m2.status === 200 && /immutable/.test(m2.headers.get("cache-control")) && +m2.headers.get("content-length") > 20e6); await m2.body?.cancel();
   const w = await fetch(`http://127.0.0.1:${Gp}/vendor/ort-wasm-simd-threaded.wasm`); check("Depth engine served as WebAssembly", w.status === 200 && w.headers.get("content-type") === "application/wasm"); await w.body?.cancel();
   const trav = await fetch(`http://127.0.0.1:${Gp}/vendor/..%2F..%2Fserver.js`); check("Static files can't escape their folder", trav.status === 404);
+  // ===== client orders: closed sale → client link → agreement → photos + rights → production → delivery → review =====
+  {
+    const G = `http://127.0.0.1:${Gp}`;
+    const noOrd = await postAs(Gp, "u", "/api/partner/orders", { name: "Nope Person", phone: "5551112222" });
+    const noWay = await postAs(Gp, "gary3", "/api/partner/orders", { name: "No Contact" });
+    check("Orders: only partners and the owner start client orders, and each needs a way to reach the client", noOrd.status === 403 && noWay.status === 400);
+    const co = await (await postAs(Gp, "gary3", "/api/partner/orders", { brand: "rls", name: "Dana Realtor", email: "dana@realty.test", phone: "(651) 555-0142", package: "Listing Reel", price: "$399", maker: "team" })).json();
+    check("Orders: a partner gets a private client link for the closed sale", /^\/start\/[A-Za-z0-9_-]{24}$/.test(co.link || "") && co.status === "sent" && co.partner === "Gary Test" && co.paid === false, JSON.stringify(co).slice(0, 200));
+    const tk = co.token;
+    const pg = await fetch(G + co.link); await pg.text();
+    check("Orders: the client page is hidden from search engines and never leaks its address", pg.status === 200 && /noindex/.test(pg.headers.get("x-robots-tag") || "") && pg.headers.get("referrer-policy") === "no-referrer");
+    const junk = await fetch(`${G}/api/order/AAAAAAAAAAAAAAAAAAAAAAAA`);
+    check("Orders: a made-up link finds nothing", junk.status === 404);
+    const cv = await (await fetch(`${G}/api/order/${tk}`)).json();
+    check("Orders: the client sees the agreement, its fingerprint and their rep", /Client Video Agreement/.test(cv.agreement?.html || "") && /^[0-9a-f]{64}$/.test(cv.agreement?.hash || "") && cv.rep?.name === "Gary Test" && cv.first === "Dana" && /royalty-free/.test(cv.rights?.text || "") && /listing agent/.test(cv.rights?.text || ""), JSON.stringify(cv.rep));
+    const cpost = (act, body) => fetch(`${G}/api/order/${tk}/${act}`, { method: "POST", headers: { "content-type": "application/json", "user-agent": "TestPhone/1.0" }, body: JSON.stringify(body) });
+    const early = await cpost("file", { data: jpg });
+    check("Orders: no photos before the agreement is accepted", early.status === 409);
+    const ag = { version: cv.agreement.version, hash: cv.agreement.hash };
+    const a1 = await cpost("accept", { name: "Dana", agree: true, ...ag }), a2 = await cpost("accept", { name: "Dana Realtor", agree: false, ...ag }), a3 = await cpost("accept", { name: "Dana Realtor", agree: true, version: "v0", hash: "x" });
+    check("Orders: accepting needs a full typed name, the box ticked and the current version", a1.status === 400 && a2.status === 400 && a3.status === 409, `${a1.status} ${a2.status} ${a3.status}`);
+    const acc = await (await cpost("accept", { name: "Dana Realtor", agree: true, ...ag })).json();
+    check("Orders: the agreement is accepted under the typed name", acc.status === "agreed" && acc.agreement?.accepted && acc.agreement.acceptedName === "Dana Realtor");
+    const notImg = await cpost("file", { data: Buffer.from("<html>not a photo</html>").toString("base64"), name: "fake.jpg" });
+    const up = await (await cpost("file", { data: jpg, name: "kitchen.jpg" })).json();
+    const dup = await (await cpost("file", { data: jpg, name: "kitchen-again.jpg" })).json();
+    check("Orders: only real photos are taken, and the same photo twice is kept once", notImg.status === 415 && up.files?.length === 1 && dup.files?.length === 1, `${notImg.status} ${up.files?.length} ${dup.files?.length}`);
+    const s0 = await cpost("submit", { rights: false, rightsVersion: cv.rights.version }), s1 = await cpost("submit", { rights: true, rightsVersion: "old" });
+    check("Orders: photos can't be sent without ticking the current rights box", s0.status === 400 && s1.status === 409);
+    mails.length = 0;
+    const sub = await (await cpost("submit", { rights: true, rightsVersion: cv.rights.version, listing: "https://www.example-mls.test/listing/889123", notes: "Lead with the lake view", portfolio: true })).json();
+    check("Orders: sent with the photo rights confirmed", sub.status === "submitted" && !!sub.rights?.confirmedAt && sub.listing === "https://www.example-mls.test/listing/889123", JSON.stringify(sub).slice(0, 200));
+    await new Promise(r => setTimeout(r, 300));
+    const toO = mails.find(m => m.body.to?.includes(ADMIN)), toP = mails.find(m => m.body.to?.includes("gary.partner@test.com"));
+    check("Orders: the owner and the sales agent each get an email when the photos come in", !!toO && !!toP && /Dana Realtor sent their photos/.test(toO.body.subject), mails.map(m => m.body.subject).join(" | "));
+    const late = await cpost("file", { data: jpg });
+    check("Orders: no more uploads once sent, unless the rep reopens it", late.status === 409);
+    const mine = await (await api(Gp, "/api/partner/orders", undefined, { as: "gary3" })).json(), every = await (await api(Gp, "/api/partner/orders")).json();
+    check("Orders: the partner sees their clients and the owner sees every order", mine.orders?.length === 1 && mine.orders[0].statusLabel && every.orders?.some(o => o.id === co.id), JSON.stringify(mine).slice(0, 160));
+    const pr2 = await (await postAs(Gp, "default", "/api/account/admin/partners", { tier: "agency", videos: 25, partners: [{ name: "Pat Other", email: "pat.other@test.com" }] })).json();
+    await api(Gp, "/api/account/setup", { token: (pr2.results?.[0]?.link || "").split("setup=")[1], password: "pat-secret-99" }, { as: "pat" });
+    const patList = await (await api(Gp, "/api/partner/orders", undefined, { as: "pat" })).json();
+    const patRec = await api(Gp, `/api/partner/orders/${co.id}/record`, undefined, { as: "pat" }), patAct = await postAs(Gp, "pat", `/api/partner/orders/${co.id}`, { action: "paid" });
+    const custRec = await api(Gp, `/api/partner/orders/${co.id}/record`, undefined, { as: "u" });
+    check("Orders: another partner or a customer can't see or change someone else's client", Array.isArray(patList.orders) && patList.orders.length === 0 && patRec.status === 404 && patAct.status === 404 && custRec.status !== 200, `${patRec.status} ${patAct.status} ${custRec.status}`);
+    const act = body => postAs(Gp, "gary3", `/api/partner/orders/${co.id}`, body);
+    const p0 = await act({ action: "production" });
+    check("Orders: production waits until the order is marked paid", p0.status === 409 && /paid/.test((await p0.json()).error));
+    await act({ action: "paid" });
+    const p1 = await (await act({ action: "production" })).json();
+    check("Orders: paid orders move to production", p1.status === "production" && p1.paid === true);
+    const zr = await api(Gp, `/api/partner/orders/${co.id}/photos.zip`, undefined, { as: "gary3" });
+    const zf = unzipSync(new Uint8Array(await zr.arrayBuffer())), zl = JSON.parse(new TextDecoder().decode(zf["listing.json"] || new Uint8Array()) || "{}");
+    check("Orders: the client's photos download as one ZIP that drops straight into the Studio", zr.status === 200 && !!zf["01.jpg"] && zl.url === "https://www.example-mls.test/listing/889123", Object.keys(zf).join(","));
+    const d0 = await act({ action: "delivered", url: "" });
+    mails.length = 0;
+    const d1 = await (await act({ action: "delivered", url: "https://drive.google.com/file/d/abc123/view" })).json();
+    await new Promise(r => setTimeout(r, 300));
+    const ready = mails.find(m => m.body.to?.includes("dana@realty.test"));
+    check("Orders: delivering needs the video link and emails the client their review link", d0.status === 400 && d1.status === "delivered" && !!ready && (ready.body.text || "").includes(`/start/${tk}`) && /review it before you post/.test(ready.body.text || ""), ready?.body.text?.slice(0, 160));
+    const c0 = await cpost("review", { changes: "" });
+    const c1 = await (await cpost("review", { changes: "Swap the first photo for the lake view" })).json();
+    check("Orders: the client can ask for changes, with a note", c0.status === 400 && c1.status === "changes" && /lake view/.test(c1.reviewNote));
+    await act({ action: "production" }); await act({ action: "delivered", url: "https://drive.google.com/file/d/abc124/view" });
+    const ap = await (await cpost("review", { approve: true })).json();
+    check("Orders: the client approves the finished video", ap.status === "approved" && !!ap.approvedAt);
+    const sha = (await import("node:crypto")).createHash("sha256").update(fs.readFileSync(path.join(FIX, "photo1.jpg"))).digest("hex");
+    const rec = await api(Gp, `/api/partner/orders/${co.id}/record`, undefined, { as: "gary3" }), rh = await rec.text();
+    check("Orders: the record shows the agreement fingerprint, the rights statement, each photo's fingerprint and every step", rec.status === 200 && rh.includes(cv.agreement.hash) && rh.includes(sha) && /royalty-free/.test(rh) && rh.includes("TestPhone/1.0")
+      && /agreement accepted/.test(rh) && /rights confirmed/.test(rh) && /changes requested/.test(rh) && /approved/.test(rh) && /Dana Realtor/.test(rh), rec.status);
+    const rb = await (await postAs(Gp, "default", "/api/partner/orders", { brand: "rbs", name: "Tony Brick", phone: "715-555-0199", business: "Brick & Basil Pizza", maker: "partner" })).json();
+    const rbv = await (await fetch(`${G}/api/order/${rb.token}`)).json();
+    check("Orders: a business order uses the business rights wording, and the owner's orders are made by the team", rbv.brand === "rbs" && /logo/.test(rbv.rights?.text || "") && /everyone shown agreed/.test(rbv.rights?.text || "") && rb.maker === "team", JSON.stringify(rbv.rights));
+  }
 }
 sg.kill();
 const Hp = 18918; const sh = await startServer(Hp, {});
