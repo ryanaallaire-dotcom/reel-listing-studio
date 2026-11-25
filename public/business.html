@@ -104,6 +104,10 @@ a{color:inherit}
 .phone{position:relative;aspect-ratio:9/16;width:100%;max-width:340px;margin-inline:auto;border-radius:30px;overflow:hidden;background:#050505;border:7px solid #050505;box-shadow:0 0 0 1px rgba(243,238,228,.14),0 50px 90px -30px rgba(0,0,0,.8),0 30px 120px -40px rgba(217,31,52,.55)}
 .phone video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease}
 .phone video.on{opacity:1}
+.phone .layer{position:absolute;inset:0;opacity:0;transition:opacity .45s ease}
+.phone .layer.on{opacity:1}
+.phone .tag.real{top:14px;background:var(--sig);color:#FFFFFF}
+.under-phone a{color:var(--on-dark);text-decoration:underline;text-underline-offset:3px}
 .phone .cap{position:absolute;left:0;right:0;bottom:15%;text-align:center;padding:0 18px;pointer-events:none}
 .phone .cap span{display:inline-block;background:#FFFFFF;color:#0D0C0A;font:800 clamp(14px,2.3vw,18px)/1.2 var(--body);padding:9px 16px;border-radius:8px;transform:translateY(8px) rotate(-1.5deg);opacity:0;transition:all .4s ease;box-shadow:4px 4px 0 var(--sig)}
 .phone .cap span.on{transform:rotate(-1.5deg);opacity:1}
@@ -333,10 +337,10 @@ dialog.player::backdrop{background:rgba(8,6,6,.86)}
     <div class="vf">
       <span class="c tl" aria-hidden="true"></span><span class="c tr" aria-hidden="true"></span><span class="c bl" aria-hidden="true"></span><span class="c br" aria-hidden="true"></span>
       <div class="vf-top" aria-hidden="true"><span class="rec"><i></i>Rec</span><span class="tc" id="tc">00:00:00:00</span></div>
-      <div class="phone" id="heroPhone" data-ind="restaurant" aria-label="Example reel: a pizzeria, made from 4 photos"></div>
+      <div class="phone" id="heroPhone" data-ind="restaurant" aria-label="Real client reel: Big Guys BBQ, made from 4 photos"></div>
       <div class="vf-bot" aria-hidden="true"><span>Sc 01 · Take 1</span><span>4 photos, 1 reel</span></div>
     </div>
-    <p class="under-phone" id="heroNote">Example made from 4 sample photos of a pizzeria</p>
+    <p class="under-phone" id="heroNote">Real client: Big Guys BBQ, made from 4 photos. <a href="#client">See the photos</a></p>
   </div>
 </div></section>
 
@@ -344,26 +348,6 @@ dialog.player::backdrop{background:rgba(8,6,6,.86)}
   <span>Pizzerias</span><span>Bakeries</span><span>Barbershops</span><span>Hair salons</span><span>Nail studios</span><span>Roofers</span><span>Auto detailers</span><span>Landscapers</span><span>Gyms</span><span>Med spas</span>
   <span>Pizzerias</span><span>Bakeries</span><span>Barbershops</span><span>Hair salons</span><span>Nail studios</span><span>Roofers</span><span>Auto detailers</span><span>Landscapers</span><span>Gyms</span><span>Med spas</span>
 </div></div>
-
-<section class="why"><div class="wrap">
-  <p class="kicker">Why most local ads get skipped</p>
-  <h2 style="margin-top:16px">Photos get scrolled past. <span class="it">Video gets watched.</span></h2>
-  <div class="pains">
-    <div><b>Film crews</b><p>A day of shooting and editing is out of reach for most local businesses, so the ad never gets made.</p></div>
-    <div><b>Slideshows</b><p>Photos with a zoom and a stock song look like every other ad. People can tell, and they keep scrolling.</p></div>
-    <div><b>Editing</b><p>You run a business. You shouldn't need to learn video apps to get customers through the door.</p></div>
-  </div>
-  <p class="then">We film your photos <span class="it">instead.</span></p>
-</div></section>
-
-<section id="examples" style="padding-top:24px"><div class="wrap">
-  <div class="gal-h">
-    <div><p class="kicker">Pick your industry</p><h2>See what <span class="it">4 photos</span> become.</h2></div>
-    <p class="lede" style="max-width:42ch">Tap any example to watch the story play: the hook, the work, the detail, the payoff, then your name and number.</p>
-  </div>
-  <div class="strip"><div class="gallery" id="gallery"></div></div>
-  <p class="note">These examples use sample photos and made-up businesses. Yours is made from your real photos, with your name, offer, phone and logo.</p>
-</div></section>
 
 <section class="client" id="client"><div class="wrap">
   <div class="cl-h">
@@ -388,6 +372,26 @@ dialog.player::backdrop{background:rgba(8,6,6,.86)}
     </figure>
   </div>
   <p class="cl-cta"><a class="btn btn-primary" href="#request">Get my video ad <span aria-hidden="true">→</span></a></p>
+</div></section>
+
+<section class="why"><div class="wrap">
+  <p class="kicker">Why most local ads get skipped</p>
+  <h2 style="margin-top:16px">Photos get scrolled past. <span class="it">Video gets watched.</span></h2>
+  <div class="pains">
+    <div><b>Film crews</b><p>A day of shooting and editing is out of reach for most local businesses, so the ad never gets made.</p></div>
+    <div><b>Slideshows</b><p>Photos with a zoom and a stock song look like every other ad. People can tell, and they keep scrolling.</p></div>
+    <div><b>Editing</b><p>You run a business. You shouldn't need to learn video apps to get customers through the door.</p></div>
+  </div>
+  <p class="then">We film your photos <span class="it">instead.</span></p>
+</div></section>
+
+<section id="examples" style="padding-top:24px"><div class="wrap">
+  <div class="gal-h">
+    <div><p class="kicker">Pick your industry</p><h2>See what <span class="it">4 photos</span> become.</h2></div>
+    <p class="lede" style="max-width:42ch">Tap any example to watch the story play: the hook, the work, the detail, the payoff, then your name and number.</p>
+  </div>
+  <div class="strip"><div class="gallery" id="gallery"></div></div>
+  <p class="note">These examples use sample photos and made-up businesses. Yours is made from your real photos, with your name, offer, phone and logo.</p>
 </div></section>
 
 <section class="light" id="how"><div class="wrap">
@@ -532,21 +536,34 @@ const BIZ=/*__BIZ__*/null;   // industries, captions and the sample businesses (
       if(stopped) return;
       if(idx<3){ cur=1-cur; show(idx+1); }
       else { cs.classList.remove("on"); end.classList.add("on"); barB(3).style.width="100%";
-        var t0=performance.now(); clearInterval(endT); endT=setInterval(function(){ var f=Math.min(1,(performance.now()-t0)/3000); barB(4).style.width=(f*100)+"%"; if(f>=1){ clearInterval(endT); if(!stopped){ prep(vids[1-cur],0); cur=1-cur; setTimeout(function(){ show(0); },60); } } },60); }
+        var t0=performance.now(); clearInterval(endT); endT=setInterval(function(){ var f=Math.min(1,(performance.now()-t0)/3000); barB(4).style.width=(f*100)+"%"; if(f>=1){ clearInterval(endT); if(!stopped){ if(opts.onDone){ stopped=true; vids.forEach(function(v){ v.pause(); }); prep(vids[0],0); opts.onDone(); return; } prep(vids[1-cur],0); cur=1-cur; setTimeout(function(){ show(0); },60); } } },60); }
     }
     vids.forEach(function(v){
       v.addEventListener("timeupdate",function(){ if(!v.classList.contains("on")||!v.duration) return; var hold=Math.min(v.duration,4.2); barB(idx).style.width=Math.min(100,v.currentTime/hold*100)+"%"; if(v.currentTime>=hold-.05) { v.pause(); next(); } });
       v.addEventListener("ended",function(){ if(v.classList.contains("on")) next(); });
     });
     prep(vids[0],0);
-    return { start:function(){ stopped=false; cur=0; show(0); }, stop:function(){ stopped=true; clearInterval(endT); vids.forEach(function(v){ v.pause(); }); } };
+    return { start:function(){ stopped=false; cur=0; if(vids[0].getAttribute("src")!==src(k,0,"mp4")) prep(vids[0],0); show(0); }, stop:function(){ stopped=true; clearInterval(endT); vids.forEach(function(v){ v.pause(); }); } };
   }
 
-  /* hero: the pizzeria story plays when it's on screen */
-  var hero=Story($("heroPhone"),"restaurant");
+  /* hero: the Big Guys BBQ reel (a real client) plays first, then the pizzeria example, then back */
+  var hp=$("heroPhone"), note=$("heroNote"), phase="client", heroOn=false, heroVis=false;
+  var sl=document.createElement("div"); sl.className="layer";
+  var cl=document.createElement("div"); cl.className="layer on";
+  var cv=document.createElement("video"); cv.muted=true; cv.playsInline=true; cv.setAttribute("playsinline",""); cv.preload="metadata"; cv.poster="/media/client-bbq.jpg"; cv.src="/media/client-bbq.mp4"; cv.className="on"; cl.appendChild(cv);
+  var ct=document.createElement("span"); ct.className="tag real"; ct.textContent="REAL CLIENT"; cl.appendChild(ct);
+  hp.innerHTML=""; hp.appendChild(sl); hp.appendChild(cl);
+  var pizza=Story(sl,"restaurant",{onDone:function(){ if(heroOn) playClient(); }});
+  function label(){
+    if(phase==="client"){ hp.setAttribute("aria-label","Real client reel: Big Guys BBQ, made from 4 photos"); note.innerHTML='Real client: Big Guys BBQ, made from 4 photos. <a href="#client">See the photos</a>'; }
+    else { hp.setAttribute("aria-label","Example reel: a pizzeria, made from 4 photos"); note.textContent="Example made from 4 sample photos of a pizzeria"; }
+  }
+  function playClient(){ phase="client"; if(pizza) pizza.stop(); sl.classList.remove("on"); cl.classList.add("on"); label(); try{ cv.currentTime=0; }catch(e){} var p=cv.play(); if(p&&p.catch) p.catch(function(){}); }
+  function playPizza(){ if(!pizza){ playClient(); return; } phase="pizza"; cv.pause(); cl.classList.remove("on"); sl.classList.add("on"); label(); pizza.start(); }
+  cv.addEventListener("ended",function(){ if(heroOn) playPizza(); });
+  var hero={ start:function(){ if(phase==="client") playClient(); else playPizza(); }, stop:function(){ cv.pause(); if(pizza) pizza.stop(); } };
   var dlg=$("player"), story=null;
   if(hero){
-    var heroOn=false, heroVis=false;
     var io=new IntersectionObserver(function(es){ es.forEach(function(e){ heroVis=e.isIntersecting; if(e.isIntersecting&&!heroOn&&!dlg.open){ heroOn=true; hero.start(); } else if(!e.isIntersecting&&heroOn){ heroOn=false; hero.stop(); } }); },{threshold:.35});
     if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)) io.observe($("heroPhone"));
   }
