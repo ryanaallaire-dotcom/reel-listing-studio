@@ -33,6 +33,14 @@ const check = (name, ok, detail = "") => { results.push(`${ok ? "PASS" : "FAIL"}
   check("Chat: knows the MLS answer and sends pricing to the agent", /unbranded MLS-ready version/.test(FACTS) && /QUOTED PERSONALLY/.test(FACTS));
   check("Chat: has no package prices to quote", !/\$(199|399|497|649|797|1,297|99|149)\b|credits|Studio app|self-serve/i.test(FACTS));
 }
+// the photo rights warning must show in both studios: Reel Business Studio hides the listing-link note
+{
+  const html = fs.readFileSync(path.join(DIR, "..", "public", "index.html"), "utf8");
+  const fn = (html.match(/function rightsOk\(where\)\{[\s\S]*?\n\}/) || [""])[0];
+  const biz = (html.match(/function rbsInit\(\)\{[\s\S]*?\n\}/) || [""])[0];
+  check("Studio: the photo rights warning shows next to the box, in both studios", /id="rightsNote"/.test(html) && /\$\("#rightsNote"\)/.test(fn) && !/urlNote/.test(fn) && biz.length > 0 && !/rightsNote|rightsRow/.test(biz));
+  check("Studio: the example loads one clip at a time, with a retry", /for\(let t=0;t<2;t\+\+\)/.test(html) && !/Promise\.all\(ex\.captions/.test(html));
+}
 // every page's own JavaScript must parse: one stray character stops the whole Studio from working
 {
   const vm = await import("node:vm");

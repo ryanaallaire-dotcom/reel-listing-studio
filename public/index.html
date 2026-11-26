@@ -339,6 +339,8 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
 .chkline{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45}
 .chkline input{width:18px;height:18px;flex:none;margin-top:2px}
 .rights-row{margin:10px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.rights-row.need{border-color:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 30%,transparent)}
+#rightsNote{margin:6px 0 4px}
 .pthint{flex-basis:100%;font-size:13px;color:var(--muted)}
 .pthumbs span{font-size:13px;color:var(--muted);padding:0 6px}
 /* always-visible progress, pinned to the bottom of the screen */
@@ -522,6 +524,7 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
         </div>
         <p class="small" id="urlNote"></p>
         <label class="chkline rights-row lockable" id="rightsRow"><input type="checkbox" id="rightsOk"><span id="rightsOkText">I own these photos, or I have written permission to use them in this video (for a listing: I'm the listing agent, or I have the listing agent's and the photographer's permission). None are stock, royalty-free or someone else's photos without a license.</span></label>
+        <p class="status warn" id="rightsNote" role="alert" hidden></p>
         <div class="drop big lockable" id="autoDrop">
           <div><strong>Drop the Grabber ZIP, photos or video clips here</strong><p>A ZIP, a folder, photos, plus any phone, drone or AI-made clips (MP4, MOV, WebM). It keeps the best.</p></div>
           <div class="row">
@@ -2869,9 +2872,11 @@ async function renderOrders(){
 // the Studio's own photo rights box: checked once per video, before any import or upload
 function rightsOk(where){
   const c=$("#rightsOk"); if(!c||c.checked) return true;
-  const n=$("#urlNote"); n.className="status warn"; n.textContent=`Check the photo rights box first. Only ${where||"use"} photos you own or have permission to use.`;
+  const n=$("#rightsNote"); n.textContent=`Tick the photo rights box first. Only ${where||"use"} photos you own or have permission to use.`; n.hidden=false;
+  $("#rightsRow").classList.add("need");
   $("#rightsRow").scrollIntoView({behavior:"smooth",block:"center"}); c.focus(); return false;
 }
+$("#rightsOk").addEventListener("change",e=>{ if(!e.target.checked) return; $("#rightsNote").hidden=true; $("#rightsRow").classList.remove("need"); });
 $("#toolsDlg").addEventListener("close",()=>$$("#toolsVideos video").forEach(v=>v.pause()));
 function escapeHtml(x){ return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 const watermarkOn=()=>!!(IMPORT&&IMPORT.accounts&&(!ACCT||!ACCT.user||ACCT.user.watermark));
@@ -3779,7 +3784,8 @@ async function rbsExample(ind,auto){
   const ex=RBS.examples&&RBS.examples[ind]; if(!ex||building||busy) return;
   const st=$("#goStatus"), btn=$("#rbsExample"); btn.disabled=true; lock(true); st.className="status"; st.textContent=`Loading the ${RBS.industries[ind]||""} example…`;
   try{
-    const blobs=await Promise.all(ex.captions.map((_,i)=>fetch(`/api/biz/example/${ind}/${i}.mp4`).then(r=>{ if(!r.ok) throw new Error("The example clips couldn't load. Try again in a minute."); return r.blob(); })));
+    const getClip=async i=>{ for(let t=0;t<2;t++){ try{ const r=await fetch(`/api/biz/example/${ind}/${i}.mp4`); if(r.ok) return await r.blob(); }catch(e){ console.warn(e); } if(!t) await new Promise(ok=>setTimeout(ok,1500)); } throw new Error("The example clips couldn't load. Check your connection and press Load the example again."); };
+    const blobs=[]; for(let i=0;i<ex.captions.length;i++){ st.textContent=`Downloading the example: ${i+1} of ${ex.captions.length}…`; blobs.push(await getClip(i)); }
     const out=[]; for(let i=0;i<blobs.length;i++){ st.textContent=`Loading the example: ${i+1} of ${blobs.length}…`;
       out.push(await makeVideoPhoto(new File([blobs[i]],`${ind}-${i+1}.mp4`,{type:"video/mp4"}),{caption:ex.captions[i]||"",kind:"int",aiClip:true,camLocked:false,name:`${ind}-${i+1}`})); }
     S.photos=out; S.raw=[]; S.left=[]; S.o.ind=ind; $("#rbsInd").value=ind;
