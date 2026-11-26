@@ -479,12 +479,16 @@ details.fine-tune .step{margin-top:16px;padding:18px;background:var(--panel-2)}
           <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
             <label style="width:150px">Plan<select id="partnerTier"><option value="agency">Agency (Premium)</option><option value="pro">Pro</option><option value="starter">Starter</option></select></label>
             <label style="width:130px">Videos each<input type="number" id="partnerVideos" value="25" min="1" step="1"></label>
+            <label style="flex-direction:row;align-items:center;gap:8px;width:auto"><input type="checkbox" id="partnerBiz" style="width:auto"> Also give Reel Business Studio</label>
             <button class="btn primary" type="submit">Create partner accounts</button>
           </div>
         </form>
         <p class="status" id="partnerStatus"></p>
         <form id="plinkForm" style="margin-top:14px;flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:8px"><label style="flex:1 1 200px">Partner's email<input type="email" id="plinkEmail" required></label><label style="flex:1 1 160px">Their link<input id="plinkCode" placeholder="e.g. aimptr" required></label><button class="btn" type="submit">Set partner link</button></form>
         <p class="status" id="plinkStatus"></p>
+        <form id="bizForm" style="margin-top:14px;flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:8px"><label style="flex:1 1 220px">Reel Business Studio access: account email<input type="email" id="bizEmail" required></label><button class="btn primary" type="submit">Give access</button><button class="btn" type="button" id="bizOff">Remove access</button></form>
+        <p class="small" style="margin:4px 0 0">Partners who had accounts when the business studio was locked already have access. Everyone else sees a sign-in screen at /business/studio until you give them access here.</p>
+        <p class="status" id="bizStatus"></p>
         <div style="margin-top:14px"><button class="btn sm" type="button" id="allLeadsBtn">Show all agent requests</button> <button class="btn sm" type="button" id="partnersBtn">Show partners</button> <a class="btn sm" href="/agents" target="_blank" rel="noopener">Open the agent sales page</a> <a class="btn sm" href="/business" target="_blank" rel="noopener">Open the business sales page</a></div>
         <div id="allLeads" style="margin-top:10px"></div>
         <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)"><b>Compare AI motion (blind test)</b><p class="small" style="margin:4px 0 8px">Makes the same shots with each AI model, shown as A, B, C in random order. Pick the best for each, then reveal which model won. Uses the photos in your current listing (fan, fireplace and pool shots first).</p>
@@ -2356,6 +2360,7 @@ $("#signBtn").onclick=async()=>{
   if(!signedIn()) return openAuth(null,"login");
   await fetch("/api/account/logout",{method:"POST",headers:{"content-type":"application/json"},body:"{}"}).catch(()=>{});
   setUser(null); document.body.classList.add("ai-off");
+  if(window.RBS) location.reload();   // the business studio is locked: show its sign-in screen
 };
 $("#plansBtn").onclick=()=>openPlans();
 $("#creditPill").onclick=()=>openPlans();
@@ -2491,7 +2496,7 @@ $("#partnerForm").addEventListener("submit",async e=>{
   const partners=parsePartners($("#partnerList").value);
   if(!partners.length){ st.className="status bad"; st.textContent="Add at least one partner."; return; }
   st.className="status"; st.textContent="Creating accounts\u2026";
-  const r=await fetch("/api/account/admin/partners",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({partners,tier:$("#partnerTier").value,videos:+$("#partnerVideos").value})}); const j=await r.json().catch(()=>({}));
+  const r=await fetch("/api/account/admin/partners",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({partners,tier:$("#partnerTier").value,videos:+$("#partnerVideos").value,biz:$("#partnerBiz").checked})}); const j=await r.json().catch(()=>({}));
   if(!r.ok){ st.className="status bad"; st.textContent=j.error||"Didn't work."; return; }
   const ok=j.results.filter(x=>x.ok).length; st.className=ok===j.results.length?"status ok":"status warn";
   st.textContent=`${ok} of ${j.results.length} partner accounts ready. Send each partner their link below (it works once, for 14 days).`;
@@ -2506,6 +2511,15 @@ $("#partnerForm").addEventListener("submit",async e=>{
       sm.textContent=r.ok?"Sent \u2713":"Didn't send"; if(!r.ok){ sm.disabled=false; const ps=$("#partnerStatus"); ps.className="status bad"; ps.textContent=j.error||"The email didn't send."; } };
     out.appendChild(d); });
 });
+async function setBiz(on){
+  const st=$("#bizStatus"), email=$("#bizEmail").value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)){ st.className="status bad"; st.textContent="Type the account's email first."; $("#bizEmail").focus(); return; }
+  const r=await fetch("/api/account/admin/biz",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,on})}); const j=await r.json().catch(()=>({}));
+  st.className=r.ok?"status ok":"status bad";
+  st.textContent=r.ok?(on?`Done. ${j.user.email} can now open Reel Business Studio at ${siteURL()}/business/studio.`:`Done. ${j.user.email} now sees the sign-in screen at /business/studio.`):(j.error||"Didn't work.");
+}
+$("#bizForm").addEventListener("submit",e=>{ e.preventDefault(); setBiz(true); });
+$("#bizOff").onclick=()=>setBiz(false);
 $("#plinkCode").addEventListener("input",e=>{ e.target.value=e.target.value.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,""); });
 $("#plinkForm").addEventListener("submit",async e=>{
   e.preventDefault(); const st=$("#plinkStatus");
@@ -2562,7 +2576,7 @@ $("#partnersBtn").onclick=async()=>{
   const box=$("#allLeads"); box.textContent="Loading\u2026"; const r=await fetch("/api/account/admin/partners"); const j=await r.json().catch(()=>({}));
   if(!r.ok){ box.textContent=j.error||"Couldn't load."; return; }
   box.innerHTML=""; const h=document.createElement("p"); h.className="small"; h.textContent=`${j.partners.length} partner account${j.partners.length===1?"":"s"}. A partner sees Agency tools only when signed in with the email listed here.`; box.appendChild(h);
-  j.partners.forEach(p=>{ const d=document.createElement("div"); d.className="lead"; d.textContent=`${p.name||"(no name)"} \u2013 ${p.email} \u2013 link /${p.ref_code||"?"} \u2013 ${p.pending?"hasn't set a password yet (send a new welcome email)":p.signed_in?"signed in":"password set"}`; box.appendChild(d); });
+  j.partners.forEach(p=>{ const d=document.createElement("div"); d.className="lead"; d.textContent=`${p.name||"(no name)"} \u2013 ${p.email} \u2013 link /${p.ref_code||"?"} \u2013 business studio ${p.biz?"on":"off"} \u2013 ${p.pending?"hasn't set a password yet (send a new welcome email)":p.signed_in?"signed in":"password set"}`; box.appendChild(d); });
 };
 $("#allLeadsBtn").onclick=async()=>{
   const box=$("#allLeads"); box.textContent="Loading\u2026"; const r=await fetch("/api/account/admin/leads"); const j=await r.json().catch(()=>({}));

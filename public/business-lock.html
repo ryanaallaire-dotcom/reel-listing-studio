@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Reel Business Studio</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --ink:#0D0C0C; --ink2:#151213; --ink3:#1E191A; --sig:#D91F34; --sig-hi:#E8394C; --petal:#F2CFC8;
+  --on-dark:#F7EFEC; --dim:#A99F9D; --rule-d:rgba(247,239,236,.14); --ok:#7FD69B; --bad:#FF8A8A;
+  --wide:'Archivo','Arial Black',Arial,sans-serif; --body:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --serif:'Instrument Serif',Georgia,'Times New Roman',serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;min-height:100dvh;background:var(--ink);color:var(--on-dark);font-family:var(--body);font-size:17px;line-height:1.55;display:flex;flex-direction:column}
+a{color:var(--on-dark)}
+header{padding:22px 24px;border-bottom:1px solid var(--rule-d)}
+.logo{display:inline-flex;align-items:center;gap:12px;color:var(--on-dark);text-decoration:none}
+.mark{width:36px;height:36px;flex:none}
+.wm{display:flex;flex-direction:column;line-height:1}
+.wm b{font:900 26px/.9 var(--wide);font-stretch:125%;text-transform:uppercase;letter-spacing:-.01em}
+.wm span{font:700 9.5px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--dim);margin-top:6px;white-space:nowrap}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 16px 64px}
+.card{width:100%;max-width:440px;background:var(--ink2);border:1px solid var(--rule-d);border-radius:4px;padding:34px 28px;position:relative}
+.card::before{content:"";position:absolute;left:-1px;right:-1px;top:-1px;height:4px;background:var(--sig);border-radius:4px 4px 0 0}
+.kicker{display:flex;align-items:center;gap:10px;font:700 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin:0 0 16px}
+.kicker::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--sig);box-shadow:0 0 0 4px rgba(217,31,52,.24)}
+h1{margin:0 0 10px;font:800 32px/1.05 var(--wide);font-stretch:110%;text-wrap:balance}
+h1 .it{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--sig);font-size:1.12em}
+p.lede{margin:0 0 24px;color:var(--dim)}
+form{display:flex;flex-direction:column;gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+input{font:inherit;font-size:16px;color:var(--on-dark);background:var(--ink);border:1px solid var(--rule-d);border-radius:4px;padding:13px 14px;width:100%}
+input:focus{outline:2px solid var(--sig);outline-offset:1px;border-color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font:800 15px/1.1 var(--body);font-stretch:112%;text-transform:uppercase;letter-spacing:.03em;padding:17px 24px;border-radius:999px;border:2px solid transparent;cursor:pointer;color:#FFFFFF;background:var(--sig);text-decoration:none;width:100%}
+.btn:hover{background:var(--sig-hi)}
+.btn:disabled{opacity:.6;cursor:default}
+.btn-ghost{background:transparent;color:var(--on-dark);border-color:var(--rule-d)}
+.btn-ghost:hover{background:transparent;border-color:var(--on-dark)}
+.link{background:none;border:0;padding:0;font:inherit;font-size:14px;color:var(--on-dark);text-decoration:underline;text-underline-offset:3px;cursor:pointer;align-self:flex-start}
+.status{min-height:1.4em;margin:2px 0 0;font-size:14px}
+.status.bad{color:var(--bad)} .status.ok{color:var(--ok)}
+.who{margin:0 0 18px;padding:12px 14px;border:1px dashed var(--rule-d);border-radius:4px;font-size:15px;word-break:break-word}
+.stack{display:flex;flex-direction:column;gap:10px}
+.foot{margin-top:22px;padding-top:18px;border-top:1px solid var(--rule-d);font-size:14px;color:var(--dim)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/business" aria-label="Reel Business Studio">
+    <svg class="mark" viewBox="0 0 36 36" aria-hidden="true"><path d="M3 12V6a3 3 0 0 1 3-3h6M24 3h6a3 3 0 0 1 3 3v6M33 24v6a3 3 0 0 1-3 3h-6M12 33H6a3 3 0 0 1-3-3v-6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="18" cy="18" r="6.5" fill="#D91F34"/></svg>
+    <span class="wm"><b>Reel</b><span>Business Studio</span></span>
+  </a>
+</header>
+<main>
+  <div class="card">
+    <section id="signin">
+      <p class="kicker">Partners only</p>
+      <h1>Sign in to the <span class="it">studio</span>.</h1>
+      <p class="lede">Reel Business Studio is for Advance Marketing Group partners. Use the same email and password as Reel Listing Studio.</p>
+      <form id="form" novalidate>
+        <label>Email<input type="email" id="email" autocomplete="username" required></label>
+        <label>Password<input type="password" id="pass" autocomplete="current-password" required></label>
+        <button class="btn" type="submit" id="go">Sign in</button>
+        <button class="link" type="button" id="forgot">Forgot password?</button>
+        <p class="status" id="st" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+    <section id="noaccess" hidden>
+      <p class="kicker">Access needed</p>
+      <h1>Not turned on <span class="it">yet</span>.</h1>
+      <p class="who" id="who"></p>
+      <p class="lede">This account doesn't have Reel Business Studio yet. Ask Advance Marketing Group to turn it on at support@advancemarketinggroup.net, then sign in again.</p>
+      <div class="stack">
+        <a class="btn btn-ghost" href="/studio">Open Reel Listing Studio</a>
+        <button class="btn btn-ghost" type="button" id="out">Sign in with another account</button>
+      </div>
+      <p class="status" id="st2" role="status" aria-live="polite"></p>
+    </section>
+    <p class="foot">Not a partner yet? <a href="/business">See what Reel Business Studio makes</a>.</p>
+  </div>
+</main>
+<script>
+const ME=/*__ME__*/null;
+const $=id=>document.getElementById(id);
+function noAccess(email){ $("signin").hidden=true; $("noaccess").hidden=false; $("who").textContent="Signed in as "+email; }
+if(ME&&ME.email) noAccess(ME.email);
+const post=(url,body)=>fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body),credentials:"same-origin"});
+$("form").addEventListener("submit",async e=>{
+  e.preventDefault(); const st=$("st"), go=$("go"), email=$("email").value.trim(), password=$("pass").value;
+  if(!email||!password){ st.className="status bad"; st.textContent="Type your email and password."; return; }
+  go.disabled=true; st.className="status"; st.textContent="Signing in…";
+  try{
+    const r=await post("/api/account/login",{email,password}); const j=await r.json().catch(()=>({}));
+    if(!r.ok){ st.className="status bad"; st.textContent=j.error||"That didn't work. Check your email and password."; return; }
+    $("pass").value="";
+    if(j.user&&j.user.biz){ st.className="status ok"; st.textContent="Signed in. Opening the studio…"; location.reload(); return; }
+    st.textContent=""; noAccess(j.user?j.user.email:email);
+  }catch(err){ st.className="status bad"; st.textContent="Couldn't reach the studio. Check your connection and try again."; }
+  finally{ go.disabled=false; }
+});
+$("forgot").onclick=async()=>{
+  const st=$("st"), email=$("email").value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)){ st.className="status bad"; st.textContent="Type your email above, then press Forgot password? again."; $("email").focus(); return; }
+  try{ const r=await post("/api/account/forgot",{email}); const j=await r.json().catch(()=>({}));
+    st.className=r.ok?"status ok":"status bad"; st.textContent=r.ok?`If ${email} has an account, a reset link is on its way. Check your inbox and spam.`:(j.error||"Couldn't send the reset email. Try again."); }
+  catch(err){ st.className="status bad"; st.textContent="Couldn't reach the studio. Try again."; }
+};
+$("out").onclick=async()=>{ try{ await post("/api/account/logout",{}); }catch(e){} location.reload(); };
+</script>
+</body>
+</html>

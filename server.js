@@ -54,11 +54,14 @@ function refCookie(req, res, code) {
 const agentsPage = partner => fs.readFileSync(AGENTS, "utf8").replace("/*__REF__*/null", JSON.stringify(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, prices: partner.prices, offer: partner.offer } : null).replace(/</g, "\\u003c"));
 // Reel Business Studio: its own sales page, and the same studio in business mode (window.RBS switches it)
 const BUSINESS = path.join(DIR, "public", "business.html");
+const BIZ_LOCK = path.join(DIR, "public", "business-lock.html");
 const bizPublic = () => ({ industries: Object.fromEntries(Object.entries(INDUSTRIES).map(([k, v]) => [k, v.name])), examples: bizExamplesPublic() });
 const safeJson = v => JSON.stringify(v).replace(/</g, "\\u003c");
 const businessPage = partner => fs.readFileSync(BUSINESS, "utf8")
   .replace("/*__REF__*/null", safeJson(partner ? { name: partner.name, phone: partner.phone, email: partner.email, code: partner.code, offer: partner.offer } : null))
   .replace("/*__BIZ__*/null", safeJson(bizPublic()));
+// the sign-in screen people see at /business/studio until their account has Reel Business Studio access
+const bizLockPage = me => fs.readFileSync(BIZ_LOCK, "utf8").replace("/*__ME__*/null", safeJson(me ? { email: me.email } : null));
 const bizStudioPage = () => page().replace("<title>Reel Listing Studio</title>", "<title>Reel Business Studio</title>").replace("<body>", `<body><script>window.RBS=${safeJson(bizPublic())};</script>`);
 // example clips: fetched once from the AI service's storage, then served from this site so the studio can draw them
 const BIZ_EX_DIR = path.join(process.env.CLIP_DIR || path.join(os.tmpdir(), "rls-clips"), "biz-examples");
@@ -174,7 +177,10 @@ export const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(businessPage(partner));
     }
     if (req.method === "GET" && (u.pathname === "/business/studio" || u.pathname === "/business/studio/")) {
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" }); return res.end(bizStudioPage());
+      // locked: only accounts with Reel Business Studio access (and the owner) get the studio; everyone else gets the sign-in screen
+      const me = acct.userFrom(req), ok = acct.hasBiz(me);
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", vary: "cookie" });
+      return res.end(ok ? bizStudioPage() : bizLockPage(me));
     }
     const bex = (req.method === "GET" || req.method === "HEAD") && /^\/api\/biz\/example\/([a-z]{2,20})\/([0-3])\.(mp4|jpg)$/.exec(u.pathname);
     if (bex) {
@@ -380,16 +386,20 @@ export const server = http.createServer(async (req, res) => {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
         return json(res, 200, acct.allLeads());
       }
+      if (u.pathname === "/api/account/admin/biz" && req.method === "POST") {   // owner turns Reel Business Studio on or off for an account
+        const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
+        const { email, on } = await readJson(req); return json(res, 200, { user: acct.adminSetBiz(email, on !== false) });
+      }
       if (u.pathname === "/api/account/admin/partners" && req.method === "GET") {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
         return json(res, 200, { partners: acct.partnerList() });
       }
       if (u.pathname === "/api/account/admin/partners" && req.method === "POST") {
         const user = needUser(req); if (!acct.isAdmin(user)) return json(res, 403, { error: "Admins only." });
-        const { partners, tier, videos } = await readJson(req);
+        const { partners, tier, videos, biz } = await readJson(req);
         if (!Array.isArray(partners) || !partners.length || partners.length > 50) return json(res, 400, { error: "Add between 1 and 50 partners." });
         const base = (process.env.PUBLIC_URL || `${SECURE ? "https" : "http"}://${req.headers.host}`).replace(/\/$/, "");
-        const results = partners.map(p => { try { const r = acct.adminCreatePartner({ ...p, tier: tier || "agency", videos: videos ?? 25 });
+        const results = partners.map(p => { try { const r = acct.adminCreatePartner({ name: p?.name, email: p?.email, phone: p?.phone, tier: tier || "agency", videos: videos ?? 25, biz: biz === true });
             const link = `${base}/studio?setup=${r.token}`;
             return { ok: true, email: r.user.email, name: r.user.name, created: r.created, credits: r.user.credits, videos: r.videos, link,
               welcome: welcomeEmail({ name: r.user.name, setupLink: link, site: base, code: r.user.refCode, videos: Math.round(r.user.credits / acct.CREDITS_PER_VIDEO) }) }; }

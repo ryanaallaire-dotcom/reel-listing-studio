@@ -302,8 +302,29 @@ const Gp = 18917; const sg = await startServer(Gp, { RESEND_API_KEY: "re_test", 
   const bl = await fetch(`http://127.0.0.1:${Gp}/business/r/${gid}`); const blh = await bl.text();
   check("Business: /business/r/<code> shows the business page with the partner and the 90-day cookie", bl.status === 200 && /Reel Business Studio/.test(blh) && /"name":"Gary Test"/.test(blh) && (bl.headers.get("set-cookie") || "").startsWith(`rls_ref=${gid}`), bl.headers.get("set-cookie"));
   check("Business: the page lists all 10 industries with captions and never the storage addresses", /const BIZ=\{"industries":\{"restaurant"/.test(blh) && (blh.match(/"captions":/g) || []).length === 10 && !/fal\.media/.test(blh));
-  const bst = await (await fetch(`http://127.0.0.1:${Gp}/business/studio`)).text(), rst = await (await fetch(`http://127.0.0.1:${Gp}/studio`)).text();
+  const bst = await (await api(Gp, "/business/studio")).text(), rst = await (await fetch(`http://127.0.0.1:${Gp}/studio`)).text();
   check("Business: /business/studio opens the studio in business mode; the listing studio is unchanged", /<script>window\.RBS=\{"industries"/.test(bst) && /<title>Reel Business Studio<\/title>/.test(bst) && !/window\.RBS=/.test(rst) && /<title>Reel Listing Studio<\/title>/.test(rst));
+  // the business studio is locked: only accounts with access (and the owner) get in; everyone else gets the sign-in screen
+  const isLock = h => /Partners only/.test(h) && /api\/account\/login/.test(h) && !/window\.RBS=/.test(h);
+  const lAnon = await fetch(`http://127.0.0.1:${Gp}/business/studio`), lAnonH = await lAnon.text();
+  const lCust = await (await api(Gp, "/business/studio", undefined, { as: "u" })).text(), lGary = await (await api(Gp, "/business/studio", undefined, { as: "gary3" })).text();
+  check("Business lock: visitors and customers get the sign-in screen, never the studio, and it's never cached", isLock(lAnonH) && /const ME=null/.test(lAnonH) && isLock(lCust) && /"email":"agent@test.com"/.test(lCust) && /no-store/.test(lAnon.headers.get("cache-control") || ""));
+  const gBiz0 = (await (await api(Gp, "/api/me", undefined, { as: "gary3" })).json()).user;
+  check("Business lock: a partner added after the lock needs access granted (sees the sign-in screen as themselves)", isLock(lGary) && /"email":"gary.partner@test.com"/.test(lGary) && gBiz0.biz === false && gBiz0.partner === true);
+  const gNo = await postAs(Gp, "u", "/api/account/admin/biz", { email: "gary.partner@test.com", on: true });
+  const gYes = await postAs(Gp, "default", "/api/account/admin/biz", { email: "Gary.Partner@test.com", on: true }), gYesJ = await gYes.json();
+  const gIn = await (await api(Gp, "/business/studio", undefined, { as: "gary3" })).text();
+  check("Business lock: only the owner can give access; once given, the partner gets the studio", gNo.status === 403 && gYes.status === 200 && gYesJ.user.biz === true && /<script>window\.RBS=\{"industries"/.test(gIn) && !isLock(gIn), `${gNo.status} ${gYes.status}`);
+  const plist = (await (await api(Gp, "/api/account/admin/partners")).json()).partners;
+  check("Business lock: the owner's partner list shows who has the business studio", plist.find(x => x.email === "gary.partner@test.com")?.biz === true);
+  const gOff = await postAs(Gp, "default", "/api/account/admin/biz", { email: "gary.partner@test.com", on: false });
+  const gOut = await (await api(Gp, "/business/studio", undefined, { as: "gary3" })).text();
+  const gMiss = await postAs(Gp, "default", "/api/account/admin/biz", { email: "nobody@test.com", on: true });
+  check("Business lock: the owner can take access away; unknown emails are reported", gOff.status === 200 && isLock(gOut) && gMiss.status === 404 && /No account uses/.test((await gMiss.json()).error));
+  const pBiz = await (await postAs(Gp, "default", "/api/account/admin/partners", { tier: "agency", videos: 1, biz: true, partners: [{ name: "Bea Biz", email: "bea@test.com" }] })).json();
+  const pPlain = await (await postAs(Gp, "default", "/api/account/admin/partners", { tier: "agency", videos: 1, partners: [{ name: "Pat Plain", email: "pat@test.com", biz: true }] })).json();
+  const pl2 = (await (await api(Gp, "/api/account/admin/partners")).json()).partners;
+  check("Business lock: new partners get the business studio only when the owner ticks the box", pBiz.results[0].ok && pPlain.results[0].ok && pl2.find(x => x.email === "bea@test.com")?.biz === true && pl2.find(x => x.email === "pat@test.com")?.biz === false);
   const bx1 = await fetch(`http://127.0.0.1:${Gp}/api/biz/example/restaurant/7.mp4`), bx2 = await fetch(`http://127.0.0.1:${Gp}/api/biz/example/nothing/0.mp4`), bx3 = await fetch(`http://127.0.0.1:${Gp}/api/biz/example/..%2f..%2fetc/0.jpg`);
   check("Business: example clips are served only by industry and shot number", bx1.status === 404 && bx2.status === 404 && bx3.status === 404, `${bx1.status} ${bx2.status} ${bx3.status}`);
   const lead = await fetch(`http://127.0.0.1:${Gp}/api/leads`, { method: "POST", headers: { "content-type": "application/json", cookie: rc }, body: JSON.stringify({ name: "Agent Amy", email: "amy@realty.test", phone: "555-201-3344", listing: "https://zillow.test/1", package: "Signature ($399)" }) });
@@ -610,6 +631,23 @@ sp = await startServer(Pp, ppEnv, { keep: true });
   check("Accounts survive a restart; PayPal plans aren't created twice", relog.status === 200 && me.extra === 20 && pp.products === 1 && pp.webhooks === 1, `${relog.status} products=${pp.products}`);
 }
 sp.kill(); ppmock.close();
+// Business lock on an existing site: partners who already had accounts keep the business studio; later partners don't
+{
+  const Lp = 18931, ldb = path.join(os.tmpdir(), `rls-test-${Lp}-${process.pid}.db`);
+  let sl = await startServer(Lp, {});
+  await signIn(Lp);
+  await postAs(Lp, "default", "/api/account/admin/partners", { tier: "agency", videos: 1, partners: [{ name: "Olga Old", email: "olga@test.com" }] });
+  const stop = p => new Promise(r => { p.once("exit", r); p.kill(); });
+  await stop(sl);
+  { const { DatabaseSync } = await import("node:sqlite"); const d = new DatabaseSync(ldb); d.exec("UPDATE users SET biz=0; DELETE FROM settings WHERE k='biz_seeded'"); d.close(); }   // as before the lock
+  sl = await startServer(Lp, {}, { keep: true });
+  await postAs(Lp, "default", "/api/account/admin/partners", { tier: "agency", videos: 1, partners: [{ name: "Nina New", email: "nina@test.com" }] });
+  await stop(sl);
+  sl = await startServer(Lp, {}, { keep: true });
+  const ll = (await (await api(Lp, "/api/account/admin/partners")).json()).partners;
+  check("Business lock: on the first start, every partner who already had an account gets the business studio; partners added later don't, even after restarts", ll.find(x => x.email === "olga@test.com")?.biz === true && ll.find(x => x.email === "nina@test.com")?.biz === false, JSON.stringify(ll.map(x => [x.email, x.biz])));
+  await stop(sl); for (const x of ["", "-wal", "-shm"]) fs.rmSync(ldb + x, { force: true });
+}
 
 fixture.close(); mock.close(); aimock.close(); falmock.close();
 console.log(results.join("\n"));
